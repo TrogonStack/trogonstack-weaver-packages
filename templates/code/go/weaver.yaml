@@ -4,6 +4,9 @@
 params:
   # Name of the root package, declared by the top-level doc.go.
   root_package: semconv
+  # Extra paragraph for the root package comment, such as when to use this
+  # registry instead of another one. Omitted when empty.
+  root_description: ""
   # Import path of the output directory. Metric packages import attribute
   # packages through it, so it must match where the output lands in your module.
   import_path: example.com/semconv
