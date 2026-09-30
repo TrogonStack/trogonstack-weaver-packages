@@ -1,5 +1,6 @@
 [tools]
 "github:open-telemetry/weaver" = "0.26.1"
+go = "1.27.1"
 jq = "1.8.1"
 node = "24.21.0"
 "npm:prettier" = "3.9.9"

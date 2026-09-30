@@ -1,0 +1,5 @@
+{%- macro notice(item) -%}
+{%- if item.deprecated -%}
+Deprecated: {{ (item.deprecated.note or ("This is " ~ item.deprecated.reason ~ ".")) | trim }}
+{%- endif -%}
+{%- endmacro -%}

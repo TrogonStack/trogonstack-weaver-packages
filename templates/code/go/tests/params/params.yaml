@@ -1,0 +1,7 @@
+params:
+  root_package: acmesemconv
+  import_path: example.com/acme/internal/acmesemconv
+  header_source: model/
+  regenerate_command: mise run generate
+  vendor_prefixes: [acme]
+  exclude_deprecated: true

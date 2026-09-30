@@ -1,0 +1,7 @@
+{%- macro exported(name) -%}
+{{ name | title_case | acronym | replace(" ", "") }}
+{%- endmacro -%}
+{%- macro unexported(name) -%}
+{%- set words = name | title_case | acronym | split(" ") | list -%}
+{{ words[0] | lower }}{{ words[1:] | join }}
+{%- endmacro -%}

@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-#MISE description="Run every policy and template package test"
-#MISE depends=["weaver:test:policies", "weaver:test:templates"]
+#MISE description="Run every policy and template package test, and compile the generated Go"
+#MISE depends=["weaver:test:policies", "weaver:test:templates", "weaver:test:go"]

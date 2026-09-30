@@ -1,0 +1,237 @@
+# Go code generation for a semantic convention registry.
+# See README.md for what this package generates and full parameter docs.
+# Override params per registry via `--param key=value` or `--params <file>`.
+params:
+  # Name of the root package, declared by the top-level doc.go.
+  root_package: semconv
+  # Import path of the output directory. Metric packages import attribute
+  # packages through it, so it must match where the output lands in your module.
+  import_path: example.com/semconv
+
+  # Generated file header. `header_source` names what the code was generated
+  # from and `regenerate_command` tells readers how to refresh it. Both are
+  # omitted from the header when empty.
+  header_source: ""
+  regenerate_command: ""
+
+  # Leading name segments that are a vendor prefix rather than a namespace.
+  # With `[acme]`, `acme.billing.invoice.id` lands in `billingattr` as
+  # `InvoiceID`, while `billing.invoice.id` still lands in the same package.
+  vendor_prefixes: []
+
+  # Signal & attribute selection (forwarded to the semconv_grouped_* helpers).
+  exclude_deprecated: false
+  stable_only: false
+
+templates:
+  - template: doc.go.j2
+    filter: |-
+      def ns: split(".") as $s
+        | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
+          then {namespace: $s[1], prefix: ($s[0:2] | join("."))}
+          else {namespace: $s[0], prefix: $s[0]}
+          end;
+      def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
+      | [ (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key | ns + {suffix: "attr"})),
+          (semconv_grouped_metrics($opts) | map(.metrics) | add // [] | map(.name | ns + {suffix: "metric"})) ]
+      | add
+      | group_by(.namespace + "/" + .suffix)
+      | map({namespace: .[0].namespace, suffix: .[0].suffix, prefixes: (map(.prefix) | unique)})
+      | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
+    application_mode: single
+    file_name: doc.go
+
+  - template: namespace_doc.go.j2
+    filter: |-
+      def ns: split(".") as $s
+        | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
+          then {namespace: $s[1], prefix: ($s[0:2] | join("."))}
+          else {namespace: $s[0], prefix: $s[0]}
+          end;
+      def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      semconv_grouped_attributes({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
+      | map(.attributes) | add // []
+      | map(.key | ns)
+      | group_by(.namespace)
+      | map({namespace: .[0].namespace, suffix: "attr", prefixes: (map(.prefix) | unique)})
+      | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
+    application_mode: each
+    file_name: "{{ ctx.namespace }}attr/doc.go"
+
+  - template: namespace_doc.go.j2
+    filter: |-
+      def ns: split(".") as $s
+        | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
+          then {namespace: $s[1], prefix: ($s[0:2] | join("."))}
+          else {namespace: $s[0], prefix: $s[0]}
+          end;
+      def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      semconv_grouped_metrics({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
+      | map(.metrics) | add // []
+      | map(.name | ns)
+      | group_by(.namespace)
+      | map({namespace: .[0].namespace, suffix: "metric", prefixes: (map(.prefix) | unique)})
+      | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
+    application_mode: each
+    file_name: "{{ ctx.namespace }}metric/doc.go"
+
+  # Attributes are regrouped by the derived namespace, and each one carries the
+  # identifier its package declares: the key with the package prefix removed.
+  # Keys that would render to the same Go identifier fail generation.
+  - template: attributes.go.j2
+    filter: |-
+      def ns: split(".") as $s
+        | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
+          then {namespace: $s[1], short_name: ($s[2:] | join("."))}
+          else {namespace: $s[0], short_name: ($s[1:] | join("."))}
+          end;
+      semconv_grouped_attributes({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
+      | map(.attributes) | add // []
+      | map(. + (.key | ns))
+      | map(if .short_name == ""
+            then error("attribute \(.key) has no name left after its namespace, so it cannot become a Go identifier")
+            else . end)
+      | group_by(.namespace)
+      | map({namespace: .[0].namespace, attributes: sort_by(.key)})
+      | map(
+          (.attributes
+           | group_by(.short_name | gsub("[._]"; "") | ascii_downcase)
+           | map(select(length > 1) | map(.key) | join(" and "))) as $collisions
+          | if ($collisions | length) > 0
+            then error("package \(.namespace)attr has attributes that render to the same Go identifier: \($collisions | join("; "))")
+            else . end
+        )
+    application_mode: each
+    file_name: "{{ ctx.namespace }}attr/attributes.go"
+
+  # Every attribute a metric references is decorated with the namespace and
+  # identifier of the package that owns it, so a metric can use attributes
+  # from other namespaces.
+  - template: metrics.go.j2
+    filter: |-
+      def ns: split(".") as $s
+        | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
+          then {namespace: $s[1], prefix: ($s[0:2] | join(".")), short_name: ($s[2:] | join(".")), param: ($s[1:] | join("."))}
+          else {namespace: $s[0], prefix: $s[0], short_name: ($s[1:] | join(".")), param: ($s | join("."))}
+          end;
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
+      | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key)) as $rendered
+      | semconv_grouped_metrics($opts)
+      | map(.metrics) | add // []
+      | map(. + (.name | ns | {namespace, prefix, short_name}))
+      | map(if .short_name == ""
+            then error("metric \(.name) has no name left after its namespace, so it cannot become a Go identifier")
+            else . end)
+      | map(.name as $metric
+            | .attributes |= ((. // []) | sort_by(.key) | map(
+                if (.key as $k | $rendered | any(. == $k))
+                then . + (.key | ns | {attr_namespace: .namespace, attr_short_name: .short_name, attr_param: .param})
+                else error("metric \($metric) references attribute \(.key), which is not generated with the current exclude_deprecated and stable_only params")
+                end)))
+      | map(.required = (.attributes | map(select(.requirement_level == "required"))))
+      | map(.optional = (.attributes | map(select(.requirement_level != "required"))))
+      | map(
+          (.required
+           | group_by(.attr_param | gsub("[._]"; "") | ascii_downcase)
+           | map(select(length > 1) | map(.key) | join(" and "))) as $required_collisions
+          | (.optional
+             | group_by(.attr_short_name | gsub("[._]"; "") | ascii_downcase)
+             | map(select(length > 1) | map(.key) | join(" and "))) as $optional_collisions
+          | if ($required_collisions | length) > 0
+            then error("metric \(.name) has required attributes that render to the same Go parameter: \($required_collisions | join("; "))")
+            elif ($optional_collisions | length) > 0
+            then error("metric \(.name) has optional attributes that render to the same Go identifier: \($optional_collisions | join("; "))")
+            else . end
+        )
+      | group_by(.namespace)
+      | map({namespace: .[0].namespace, prefix: .[0].prefix, metrics: sort_by(.name),
+             attr_namespaces: ([.[] | .attributes[] | .attr_namespace] | unique)})
+    application_mode: each
+    file_name: "{{ ctx.namespace }}metric/metrics.go"
+
+comment_formats:
+  go:
+    format: markdown
+    prefix: "// "
+    trim: true
+    word_wrap:
+      line_length: 76
+  go_indented:
+    format: markdown
+    prefix: "\t// "
+    trim: true
+    word_wrap:
+      line_length: 72
+default_comment_format: go
+
+text_maps:
+  # Registry type to the attribute.Key method that builds a KeyValue, the Go
+  # type a constructor accepts, and the Go type a value stores.
+  attribute_type_method:
+    string: String
+    string[]: StringSlice
+    int: Int
+    int[]: IntSlice
+    double: Float64
+    double[]: Float64Slice
+    boolean: Bool
+    boolean[]: BoolSlice
+  attribute_type_value:
+    string: string
+    string[]: "...string"
+    int: int
+    int[]: "...int"
+    double: float64
+    double[]: "...float64"
+    boolean: bool
+    boolean[]: "...bool"
+  attribute_field_type:
+    string: string
+    string[]: "[]string"
+    int: int
+    int[]: "[]int"
+    double: float64
+    double[]: "[]float64"
+    boolean: bool
+    boolean[]: "[]bool"
+  # Registry instrument to the suffix of the otel constructor name. The prefix
+  # comes from `annotations.go.value_type` on the metric, since the registry
+  # schema has no field for it.
+  metric_instrument:
+    counter: Counter
+    updowncounter: UpDownCounter
+    histogram: Histogram
+    gauge: Gauge
+  metric_instrument_method:
+    counter: Add
+    updowncounter: Add
+    histogram: Record
+    gauge: Record
+  metric_instrument_arg:
+    counter: incr
+    updowncounter: incr
+    histogram: value
+    gauge: value
+  metric_value_type:
+    int64: Int64
+    float64: Float64
+
+# Words kept upper case when a name segment becomes part of a Go identifier.
+acronyms:
+  - API
+  - CPU
+  - DB
+  - DNS
+  - HTTP
+  - ID
+  - IP
+  - JSON
+  - RPC
+  - SQL
+  - TCP
+  - TLS
+  - UDP
+  - URI
+  - URL
+  - UUID
