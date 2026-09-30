@@ -1,0 +1,23 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: TrogonStack/github-actions/actions/release-please@66abe3e586179d97a806bb05ea36caea671422e9 # release-please@v0.0.2
+        with:
+          token: ${{ secrets.GH_PAT_RELEASE_PLEASE_ACTION }}
