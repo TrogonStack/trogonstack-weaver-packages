@@ -1,0 +1,16 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]
+  - key: myapp.task.label
+    type: template[string]
+    stability: stable
+    brief: Labels attached to the task, keyed by label name.
+    examples: ["nightly"]
+  - key: myapp.task.payload
+    type: any
+    stability: development
+    brief: Raw payload the task was created from.

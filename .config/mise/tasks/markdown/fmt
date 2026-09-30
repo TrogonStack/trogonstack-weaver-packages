@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Format every Markdown file with prettier"
+set -euo pipefail
+exec prettier --write "**/*.md"

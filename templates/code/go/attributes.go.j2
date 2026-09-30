@@ -1,0 +1,47 @@
+{% import "header.j2" as h -%}
+{% import "deprecation.j2" as d -%}
+{% import "names.j2" as n -%}
+{{ h.header() }}
+
+package {{ ctx.namespace }}attr
+
+import "go.opentelemetry.io/otel/attribute"
+{% for attr in ctx.attributes -%}
+{%- set base = n.exported(attr.short_name) -%}
+{%- set name = base ~ "Attr" -%}
+{%- set key = n.unexported(attr.short_name) ~ "Key" -%}
+{%- set is_enum = attr.type is mapping -%}
+{%- set reg_type = attr.type | enum_type if is_enum else attr.type -%}
+{%- set deprecated = d.notice(attr) %}
+{{ [key ~ " is the attribute key of `" ~ attr.key ~ "`.", deprecated] | select | join("\n\n") | comment }}
+const {{ key }} = attribute.Key("{{ attr.key }}")
+
+{{ [name ~ " is a value of `" ~ attr.key ~ "`.", attr.brief, attr.note, deprecated] | select | join("\n\n") | comment }}
+type {{ name }} struct{ value {{ reg_type | map_text("attribute_field_type") }} }
+{% if not is_enum %}
+{{ ["New" ~ name ~ " returns a value of `" ~ attr.key ~ "`.", deprecated] | select | join("\n\n") | comment }}
+func New{{ name }}(value {{ reg_type | map_text("attribute_type_value") }}) {{ name }} {
+	return {{ name }}{value: value}
+}
+{% endif %}
+// Key is the attribute key, for filters and views that need it.
+func ({{ name }}) Key() attribute.Key {
+	return {{ key }}
+}
+
+{{ ["KeyValue is the `" ~ attr.key ~ "` attribute set to this value."] | join | comment }}
+func (v {{ name }}) KeyValue() attribute.KeyValue {
+	return {{ key }}.{{ reg_type | map_text("attribute_type_method") }}(v.value)
+}
+{% if is_enum %}
+var (
+{% for member in attr.type.members %}
+{%- if not loop.first %}
+
+{% endif -%}
+{{ [base ~ n.exported(member.id) ~ " is the " ~ (member.value | print_member_value) ~ " member of `" ~ attr.key ~ "`.", member.brief, member.note, d.notice(member)] | select | join("\n\n") | comment(format="go_indented") }}
+	{{ base }}{{ n.exported(member.id) }} = {{ name }}{value: {{ member.value | print_member_value }}}
+{%- endfor %}
+)
+{% endif -%}
+{% endfor %}

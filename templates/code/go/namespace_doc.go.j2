@@ -1,0 +1,13 @@
+{% import "header.j2" as h -%}
+{{ h.header() }}
+
+{% if ctx.suffix == "attr" -%}
+{{ ["Package " ~ ctx.namespace ~ "attr is the Go form of the attributes named " ~ ctx.patterns ~ ".",
+    "Each attribute is a value type bound to its attribute.Key, so an attribute.KeyValue only exists once a value has gone through the type's constructor. Identifiers omit the namespace prefix " ~ ctx.prefix_note ~ ", because the package name already carries it."] | join("\n\n") | comment }}
+package {{ ctx.namespace }}attr
+{%- else -%}
+{{ ["Package " ~ ctx.namespace ~ "metric is the Go form of the metrics named " ~ ctx.patterns ~ ".",
+    "Each metric is an instrument type built from a metric.Meter by its New constructor, and recorded through the method its instrument kind gives it. Required attributes are typed parameters and the rest are trailing options. Identifiers omit the namespace prefix " ~ ctx.prefix_note ~ ", because the package name already carries it."] | join("\n\n") | comment }}
+package {{ ctx.namespace }}metric
+{%- endif %}
+

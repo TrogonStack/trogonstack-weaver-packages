@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Check that the expected output of the Go template tests is gofmt clean, builds, and vets"
+set -euo pipefail
+exec ./buildscripts/check_go_output.sh

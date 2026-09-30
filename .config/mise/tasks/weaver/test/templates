@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Run the template package tests under templates"
+set -euo pipefail
+exec ./buildscripts/test_weaver_templates.sh
