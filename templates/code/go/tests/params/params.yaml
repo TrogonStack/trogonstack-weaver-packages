@@ -1,5 +1,6 @@
 params:
   root_package: acmesemconv
+  root_description: Use these packages for names the upstream registry does not define.
   import_path: example.com/acme/internal/acmesemconv
   header_source: model/
   regenerate_command: mise run generate

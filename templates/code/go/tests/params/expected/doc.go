@@ -4,6 +4,8 @@
 // Package acmesemconv is the root of the Go form of a semantic convention
 // registry.
 //
+// Use these packages for names the upstream registry does not define.
+//
 // It declares nothing itself. Every name lives in a package scoped by its
 // namespace and the kind of signal it describes: attributes become
 // `<namespace>attr`, holding typed attribute values, and metrics become

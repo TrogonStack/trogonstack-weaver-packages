@@ -98,6 +98,7 @@ Deprecated attributes, enum members, and metrics are generated with a
 | Param                | Default               | Description                                                                                 |
 | -------------------- | --------------------- | ------------------------------------------------------------------------------------------- |
 | `root_package`       | `semconv`             | Package name declared by the root `doc.go`.                                                 |
+| `root_description`   | `""`                  | Extra paragraph in the root `doc.go` comment. Omitted when empty.                           |
 | `import_path`        | `example.com/semconv` | Import path of the output directory. Metric packages import attribute packages through it.  |
 | `header_source`      | `""`                  | What the code was generated from, shown in the `Code generated` header. Omitted when empty. |
 | `regenerate_command` | `""`                  | Command that regenerates the code, shown under the header. Omitted when empty.              |
@@ -123,11 +124,11 @@ when:
 
 ## Tests
 
-| Case         | Covers                                                                                 |
-| ------------ | -------------------------------------------------------------------------------------- |
-| `attributes` | Every supported type, string and int enums, notes, deprecated attributes and members.  |
-| `metrics`    | Every instrument, required and optional attributes, cross-namespace references.        |
-| `params`     | Custom root package, import path, header, `vendor_prefixes`, and `exclude_deprecated`. |
+| Case         | Covers                                                                                                   |
+| ------------ | -------------------------------------------------------------------------------------------------------- |
+| `attributes` | Every supported type, string and int enums, notes, deprecated attributes and members.                    |
+| `metrics`    | Every instrument, required and optional attributes, cross-namespace references.                          |
+| `params`     | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`. |
 
 Run them with `mise run weaver:test:templates`, and compile their expected
 output with `mise run weaver:test:go`.
