@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Run the policy package tests under policies/check"
+set -euo pipefail
+exec ./buildscripts/test_weaver_policies.sh "$@"

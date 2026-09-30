@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#MISE description="Regenerate the expected output of every policy and template package test"
+set -euo pipefail
+export UPDATE_EXPECTED=1
+./buildscripts/test_weaver_policies.sh
+./buildscripts/test_weaver_templates.sh
