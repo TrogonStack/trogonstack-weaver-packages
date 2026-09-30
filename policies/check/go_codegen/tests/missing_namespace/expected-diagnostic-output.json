@@ -1,0 +1,40 @@
+[
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_attribute_without_namespace, context={\"attribute_key\":\"tenant\"}, message=Attribute 'tenant' has no namespace. The Go template puts each attribute in a package named for its namespace and names it after the rest of the key, so the key needs both., level=Violation, signal_type=None, signal_name=None, provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "attribute_key": "tenant"
+        },
+        "id": "go_codegen_attribute_without_namespace",
+        "level": "violation",
+        "message": "Attribute 'tenant' has no namespace. The Go template puts each attribute in a package named for its namespace and names it after the rest of the key, so the key needs both.",
+        "signal_name": null,
+        "signal_type": null,
+        "type": "PolicyFinding"
+      }
+    }
+  },
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_metric_without_namespace, context={}, message=Metric 'requests' has no namespace. The Go template puts each metric in a package named for its namespace and names it after the rest of the name, so the name needs both., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"requests\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {},
+        "id": "go_codegen_metric_without_namespace",
+        "level": "violation",
+        "message": "Metric 'requests' has no namespace. The Go template puts each metric in a package named for its namespace and names it after the rest of the name, so the name needs both.",
+        "signal_name": "requests",
+        "signal_type": "metric",
+        "type": "PolicyFinding"
+      }
+    }
+  }
+]

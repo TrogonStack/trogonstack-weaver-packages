@@ -1,0 +1,58 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]
+  - key: myapp.task.tags
+    type: string[]
+    stability: stable
+    brief: Tags attached to the task.
+    examples: [["nightly"]]
+  - key: myapp.task.retries
+    type: int
+    stability: stable
+    brief: Number of times the task was retried.
+    examples: 3
+  - key: myapp.task.progress
+    type: double
+    stability: stable
+    brief: Fraction of the task that has completed.
+    examples: 0.5
+  - key: myapp.task.cancelled
+    type: boolean
+    stability: stable
+    brief: Whether the task was cancelled.
+    examples: false
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The task is waiting to run.
+    stability: stable
+    brief: Current state of the task.
+metrics:
+  - name: myapp.task.duration
+    instrument: histogram
+    unit: s
+    stability: stable
+    requirement_level: recommended
+    brief: Time a task took from start to finish.
+    annotations:
+      go:
+        value_type: float64
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+  - name: myapp.task.started
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    requirement_level: recommended
+    brief: Number of tasks started.
+    annotations:
+      go:
+        value_type: int64
