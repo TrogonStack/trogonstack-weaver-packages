@@ -1,0 +1,42 @@
+file_format: definition/2
+attributes:
+  - key: acme.billing.invoice.id
+    type: string
+    stability: stable
+    brief: Identifier of the invoice.
+    examples: ["inv_1"]
+  - key: billing.currency
+    type: string
+    stability: stable
+    brief: ISO 4217 currency code of the amount.
+    examples: ["EUR"]
+  - key: acme.billing.legacy_code
+    type: string
+    stability: development
+    brief: Code used before invoices had identifiers.
+    examples: ["X1"]
+    deprecated:
+      reason: renamed
+      renamed_to: acme.billing.invoice.id
+  - key: myapp.request.url
+    type: string
+    stability: stable
+    brief: URL the request was sent to.
+    examples: ["https://example.com/"]
+metrics:
+  - name: acme.billing.invoice.amount
+    requirement_level: recommended
+    instrument: histogram
+    unit: "{currency_unit}"
+    stability: stable
+    brief: Amount of each issued invoice.
+    annotations:
+      go:
+        value_type: float64
+    attributes:
+      - ref: acme.billing.invoice.id
+        requirement_level: required
+      - ref: billing.currency
+        requirement_level: recommended
+      - ref: myapp.request.url
+        requirement_level: recommended

@@ -1,0 +1,85 @@
+{% import "header.j2" as h -%}
+{% import "deprecation.j2" as d -%}
+{% import "names.j2" as n -%}
+{{ h.header() }}
+
+package {{ ctx.namespace }}metric
+
+import (
+	"context"
+	"fmt"
+{% if ctx.attr_namespaces %}
+	"go.opentelemetry.io/otel/attribute"
+{%- endif %}
+	"go.opentelemetry.io/otel/metric"
+{% if ctx.attr_namespaces %}
+{%- for ns in ctx.attr_namespaces %}
+	"{{ params.import_path }}/{{ ns }}attr"
+{%- endfor %}
+{%- endif %}
+)
+{% for def in ctx.metrics %}
+{%- set suffix = def.instrument | map_text("metric_instrument") %}
+{%- set name = n.exported(def.short_name) ~ suffix %}
+{%- set private = n.unexported(def.short_name) ~ suffix %}
+{%- set method = def.instrument | map_text("metric_instrument_method") %}
+{%- set arg = def.instrument | map_text("metric_instrument_arg") %}
+{%- set gotype = def.annotations.go.value_type %}
+{%- set instrument = gotype | map_text("metric_value_type") ~ suffix %}
+{%- set deprecated = d.notice(def) -%}
+{% if def.optional %}
+{{ [name ~ "Attr is an attribute `" ~ def.name ~ "` accepts in addition to the ones " ~ name ~ "." ~ method ~ " requires."] | join | comment }}
+type {{ name }}Attr interface {
+	{{ private }}Attr() attribute.KeyValue
+}
+{% for opt in def.optional %}
+{%- set optname = n.exported(opt.attr_short_name) %}
+type {{ private }}{{ optname }} struct{ v {{ opt.attr_namespace }}attr.{{ optname }}Attr }
+
+func (o {{ private }}{{ optname }}) {{ private }}Attr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+{{ ["With" ~ name ~ optname ~ " attaches `" ~ opt.key ~ "` to " ~ name ~ "."] | join | comment }}
+func With{{ name }}{{ optname }}(v {{ opt.attr_namespace }}attr.{{ optname }}Attr) {{ name }}Attr {
+	return {{ private }}{{ optname }}{v: v}
+}
+{% endfor %}
+{%- endif %}
+{{ [name ~ " is `" ~ def.name ~ "`.", def.brief, def.note, deprecated] | select | join("\n\n") | comment }}
+type {{ name }} struct{ inst metric.{{ instrument }} }
+
+{{ ["New" ~ name ~ " creates the `" ~ def.name ~ "` instrument from meter.", deprecated] | select | join("\n\n") | comment }}
+func New{{ name }}(meter metric.Meter) ({{ name }}, error) {
+	inst, err := meter.{{ instrument }}(
+		"{{ def.name }}",
+		metric.WithDescription({{ def.brief | trim | tojson }}),
+		metric.WithUnit({{ def.unit | tojson }}),
+	)
+	if err != nil {
+		return {{ name }}{}, fmt.Errorf("create the %s instrument: %w", "{{ def.name }}", err)
+	}
+	return {{ name }}{inst: inst}, nil
+}
+
+{{ [method ~ " records one `" ~ def.name ~ "` measurement. The zero " ~ name ~ " records nothing."] | join | comment }}
+func (m {{ name }}) {{ method }}(ctx context.Context, {{ arg }} {{ gotype }}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ req.attr_namespace }}attr.{{ n.exported(req.attr_short_name) }}Attr{% endfor %}{% if def.optional %}, opts ...{{ name }}Attr{% endif %}) {
+	if m.inst == nil {
+		return
+	}
+{%- if def.required or def.optional %}
+	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
+{%- for req in def.required %}
+	kvs = append(kvs, {{ n.unexported(req.attr_param) }}.KeyValue())
+{%- endfor %}
+{%- if def.optional %}
+	for _, opt := range opts {
+		kvs = append(kvs, opt.{{ private }}Attr())
+	}
+{%- endif %}
+	m.inst.{{ method }}(ctx, {{ arg }}, metric.WithAttributes(kvs...))
+{%- else %}
+	m.inst.{{ method }}(ctx, {{ arg }})
+{%- endif %}
+}
+{% endfor %}

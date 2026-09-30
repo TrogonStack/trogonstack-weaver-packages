@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Compiles the expected output of every Go template test, so a template change
+# that renders code which does not build fails even when the diff was accepted.
+
+set -euo pipefail
+
+OTEL_GO_VERSION="${OTEL_GO_VERSION:-v1.46.0}"
+ROOT="$(pwd)"
+PACKAGE_DIR="${ROOT}/templates/code/go"
+DEFAULT_IMPORT_PATH="$(sed -n 's/^  import_path: *//p' "${PACKAGE_DIR}/weaver.yaml")"
+
+WORK_DIR="$(mktemp -d)"
+trap 'rm -rf "${WORK_DIR}"' EXIT
+
+for test_dir in "${PACKAGE_DIR}"/tests/*/; do
+  test_name="$(basename "${test_dir}")"
+  expected="${test_dir}expected"
+  echo "-> Compiling [${test_name}] ..."
+  if [[ ! -d "${expected}" ]]; then
+    echo "  SKIPPED: Missing expected directory: ${expected}"
+    continue
+  fi
+
+  import_path="${DEFAULT_IMPORT_PATH}"
+  if [[ -f "${test_dir}params.yaml" ]]; then
+    override="$(sed -n 's/^  import_path: *//p' "${test_dir}params.yaml")"
+    import_path="${override:-${import_path}}"
+  fi
+
+  module_dir="${WORK_DIR}/${test_name}"
+  mkdir -p "${module_dir}"
+  cp -R "${expected}/." "${module_dir}/"
+
+  unformatted="$(gofmt -l "${module_dir}")"
+  if [[ -n "${unformatted}" ]]; then
+    echo "  FAIL: ${test_name} is not gofmt clean:"
+    echo "${unformatted}"
+    exit 1
+  fi
+
+  (
+    cd "${module_dir}"
+    go mod init "${import_path}" >/dev/null 2>&1
+    go get "go.opentelemetry.io/otel@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/metric@${OTEL_GO_VERSION}" 2>&1 | grep -v "^go: " || true
+    go mod tidy
+    go build ./...
+    go vet ./...
+  ) || { echo "  FAIL: ${test_name} does not build."; exit 1; }
+  echo "  PASS: ${test_name} builds and vets."
+done
