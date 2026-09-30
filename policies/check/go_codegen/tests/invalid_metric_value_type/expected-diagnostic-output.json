@@ -1,0 +1,42 @@
+[
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_invalid_metric_value_type, context={\"value_type\":\"\"}, message=Metric 'myapp.task.duration' must set annotations.go.value_type to one of: float64, int64. The Go template reads the instrument's value type from it., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"myapp.task.duration\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "value_type": ""
+        },
+        "id": "go_codegen_invalid_metric_value_type",
+        "level": "violation",
+        "message": "Metric 'myapp.task.duration' must set annotations.go.value_type to one of: float64, int64. The Go template reads the instrument's value type from it.",
+        "signal_name": "myapp.task.duration",
+        "signal_type": "metric",
+        "type": "PolicyFinding"
+      }
+    }
+  },
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_invalid_metric_value_type, context={\"value_type\":\"int32\"}, message=Metric 'auth.attempts' must set annotations.go.value_type to one of: float64, int64. The Go template reads the instrument's value type from it., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"auth.attempts\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "value_type": "int32"
+        },
+        "id": "go_codegen_invalid_metric_value_type",
+        "level": "violation",
+        "message": "Metric 'auth.attempts' must set annotations.go.value_type to one of: float64, int64. The Go template reads the instrument's value type from it.",
+        "signal_name": "auth.attempts",
+        "signal_type": "metric",
+        "type": "PolicyFinding"
+      }
+    }
+  }
+]

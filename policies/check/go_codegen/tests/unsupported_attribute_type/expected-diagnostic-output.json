@@ -1,0 +1,44 @@
+[
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_unsupported_attribute_type, context={\"attribute_key\":\"myapp.task.label\",\"attribute_type\":\"template[string]\"}, message=Attribute 'myapp.task.label' has type 'template[string]', which the Go template does not render. Use one of: boolean, boolean[], double, double[], int, int[], string, string[], or an enum., level=Violation, signal_type=None, signal_name=None, provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "attribute_key": "myapp.task.label",
+          "attribute_type": "template[string]"
+        },
+        "id": "go_codegen_unsupported_attribute_type",
+        "level": "violation",
+        "message": "Attribute 'myapp.task.label' has type 'template[string]', which the Go template does not render. Use one of: boolean, boolean[], double, double[], int, int[], string, string[], or an enum.",
+        "signal_name": null,
+        "signal_type": null,
+        "type": "PolicyFinding"
+      }
+    }
+  },
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_unsupported_attribute_type, context={\"attribute_key\":\"myapp.task.payload\",\"attribute_type\":\"any\"}, message=Attribute 'myapp.task.payload' has type 'any', which the Go template does not render. Use one of: boolean, boolean[], double, double[], int, int[], string, string[], or an enum., level=Violation, signal_type=None, signal_name=None, provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "attribute_key": "myapp.task.payload",
+          "attribute_type": "any"
+        },
+        "id": "go_codegen_unsupported_attribute_type",
+        "level": "violation",
+        "message": "Attribute 'myapp.task.payload' has type 'any', which the Go template does not render. Use one of: boolean, boolean[], double, double[], int, int[], string, string[], or an enum.",
+        "signal_name": null,
+        "signal_type": null,
+        "type": "PolicyFinding"
+      }
+    }
+  }
+]
