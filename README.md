@@ -25,17 +25,9 @@ checked telemetry instead of stringly typed calls.
 
 ## Packages
 
-### Templates
-
-| Package                        | Description                                                             | Stability   |
-| ------------------------------ | ----------------------------------------------------------------------- | ----------- |
-| [`code/go`](templates/code/go) | Typed Go attributes and metric instruments on the OpenTelemetry Go API. | Development |
-
-### Policies
-
-| Package                                         | Description                                              | Stability   |
-| ----------------------------------------------- | -------------------------------------------------------- | ----------- |
-| [`check/go_codegen`](policies/check/go_codegen) | Rejects registries the `code/go` template cannot render. | Development |
+Templates live under [`templates`](templates) and policies under
+[`policies`](policies). Each package directory has a README describing what it
+does and the params it accepts.
 
 ## Using a package
 
@@ -71,20 +63,6 @@ mise install
 mise run weaver:test
 ```
 
-| Task                    | What it does                                                                           |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| `weaver:test`           | Runs every task below except `weaver:test:update`.                                     |
-| `weaver:test:policies`  | Checks each policy test registry against its expected diagnostics.                     |
-| `weaver:test:templates` | Generates each template test registry and diffs it against its expected output.        |
-| `weaver:test:go`        | Formats, builds, and vets the expected Go output. Needs network access for Go modules. |
-| `weaver:test:update`    | Rewrites every expected output from the current packages.                              |
-| `markdown:fmt`          | Formats Markdown with Prettier.                                                        |
-| `markdown:check`        | Checks Markdown formatting.                                                            |
+Run `mise tasks` to list every task and what it does.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to add a package.
-
-## License
-
-[Apache-2.0](LICENSE). The test harness in [`buildscripts`](buildscripts) and
-the [`diagnostic_templates`](diagnostic_templates) are adapted from
-opentelemetry-weaver-packages, also Apache-2.0.

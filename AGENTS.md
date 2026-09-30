@@ -41,7 +41,7 @@ Generated Go must pass `gofmt`, `go build`, and `go vet`, which
 ## Contribution guidelines
 
 - Keep changes to the package being modified.
-- Every package has a `README.md`, and the root `README.md` lists every package.
+- Every package has a `README.md`.
 - Every param has a default that works for any registry. Do not encode a
   particular product, vendor, or domain in a package.
 - Keep test registries synthetic.
