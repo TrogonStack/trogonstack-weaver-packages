@@ -53,16 +53,6 @@ YAML file passed to `--params`. Each package README lists its params.
 Releases and their tags are listed on the
 [releases page](https://github.com/TrogonStack/trogonstack-weaver-packages/releases).
 
-## Development
+## Contributing
 
-Tools are pinned in [`mise.toml`](mise.toml). With [mise](https://mise.jdx.dev)
-installed:
-
-```bash
-mise install
-mise run weaver:test
-```
-
-Run `mise tasks` to list every task and what it does.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to add a package.
+See [CONTRIBUTING.md](CONTRIBUTING.md).

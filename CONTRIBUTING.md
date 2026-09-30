@@ -39,11 +39,16 @@ Include a case that produces no findings and a case for each finding ID.
 
 ## Testing
 
+Tools are pinned in [`mise.toml`](mise.toml). With [mise](https://mise.jdx.dev)
+installed:
+
 ```bash
 mise install
 mise run weaver:test
 mise run markdown:check
 ```
+
+Run `mise tasks` to list every task and what it does.
 
 Every test must pass before a pull request is merged. The `Checks` workflow
 runs the same tasks.
