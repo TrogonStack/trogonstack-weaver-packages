@@ -9,8 +9,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"example.com/semconv"
 	"example.com/semconv/myappattr"
+	"example.com/semconv/semconvmeter"
 )
 
 // TaskFailedCounterAttr is an attribute `myapp.task.failed` accepts in
@@ -38,7 +38,7 @@ type TaskFailedCounter struct{ inst metric.Int64Counter }
 
 // NewTaskFailedCounter creates the `myapp.task.failed` instrument from
 // meter.
-func NewTaskFailedCounter(meter semconv.Meter) (TaskFailedCounter, error) {
+func NewTaskFailedCounter(meter semconvmeter.Meter) (TaskFailedCounter, error) {
 	inst, err := meter.MetricMeter().Int64Counter(
 		"myapp.task.failed",
 		metric.WithDescription("Number of tasks that failed."),
@@ -101,7 +101,7 @@ type TaskFailedObservableCounter struct {
 
 // NewTaskFailedObservableCounter creates the `myapp.task.failed` instrument
 // from meter and registers callback to observe it on every collection.
-func NewTaskFailedObservableCounter(meter semconv.Meter, callback TaskFailedCounterCallback) (TaskFailedObservableCounter, error) {
+func NewTaskFailedObservableCounter(meter semconvmeter.Meter, callback TaskFailedCounterCallback) (TaskFailedObservableCounter, error) {
 	if callback == nil {
 		return TaskFailedObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.failed")
 	}

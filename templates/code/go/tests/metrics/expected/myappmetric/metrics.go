@@ -9,9 +9,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"example.com/semconv"
 	"example.com/semconv/authattr"
 	"example.com/semconv/myappattr"
+	"example.com/semconv/semconvmeter"
 )
 
 // QueueDepthGauge is `myapp.queue.depth`.
@@ -24,7 +24,7 @@ type QueueDepthGauge struct{ inst metric.Int64Gauge }
 // NewQueueDepthGauge creates the `myapp.queue.depth` instrument from meter.
 //
 // Deprecated: Replaced by `myapp.task.active`.
-func NewQueueDepthGauge(meter semconv.Meter) (QueueDepthGauge, error) {
+func NewQueueDepthGauge(meter semconvmeter.Meter) (QueueDepthGauge, error) {
 	inst, err := meter.MetricMeter().Int64Gauge(
 		"myapp.queue.depth",
 		metric.WithDescription("Number of tasks waiting in the queue."),
@@ -81,7 +81,7 @@ type QueueDepthObservableGauge struct {
 // from meter and registers callback to observe it on every collection.
 //
 // Deprecated: Replaced by `myapp.task.active`.
-func NewQueueDepthObservableGauge(meter semconv.Meter, callback QueueDepthGaugeCallback) (QueueDepthObservableGauge, error) {
+func NewQueueDepthObservableGauge(meter semconvmeter.Meter, callback QueueDepthGaugeCallback) (QueueDepthObservableGauge, error) {
 	if callback == nil {
 		return QueueDepthObservableGauge{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.queue.depth")
 	}
@@ -106,7 +106,7 @@ type TaskActiveUpDownCounter struct{ inst metric.Int64UpDownCounter }
 
 // NewTaskActiveUpDownCounter creates the `myapp.task.active` instrument from
 // meter.
-func NewTaskActiveUpDownCounter(meter semconv.Meter) (TaskActiveUpDownCounter, error) {
+func NewTaskActiveUpDownCounter(meter semconvmeter.Meter) (TaskActiveUpDownCounter, error) {
 	inst, err := meter.MetricMeter().Int64UpDownCounter(
 		"myapp.task.active",
 		metric.WithDescription("Number of tasks currently running."),
@@ -163,7 +163,7 @@ type TaskActiveObservableUpDownCounter struct {
 // NewTaskActiveObservableUpDownCounter creates the `myapp.task.active`
 // instrument from meter and registers callback to observe it on every
 // collection.
-func NewTaskActiveObservableUpDownCounter(meter semconv.Meter, callback TaskActiveUpDownCounterCallback) (TaskActiveObservableUpDownCounter, error) {
+func NewTaskActiveObservableUpDownCounter(meter semconvmeter.Meter, callback TaskActiveUpDownCounterCallback) (TaskActiveObservableUpDownCounter, error) {
 	if callback == nil {
 		return TaskActiveObservableUpDownCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.active")
 	}
@@ -224,7 +224,7 @@ type TaskDurationHistogram struct{ inst metric.Float64Histogram }
 
 // NewTaskDurationHistogram creates the `myapp.task.duration` instrument from
 // meter.
-func NewTaskDurationHistogram(meter semconv.Meter) (TaskDurationHistogram, error) {
+func NewTaskDurationHistogram(meter semconvmeter.Meter) (TaskDurationHistogram, error) {
 	inst, err := meter.MetricMeter().Float64Histogram(
 		"myapp.task.duration",
 		metric.WithDescription("Time a task took from start to finish."),
@@ -282,7 +282,7 @@ type TaskRetryDurationHistogram struct{ inst metric.Float64Histogram }
 
 // NewTaskRetryDurationHistogram creates the `myapp.task.duration` instrument
 // from meter.
-func NewTaskRetryDurationHistogram(meter semconv.Meter) (TaskRetryDurationHistogram, error) {
+func NewTaskRetryDurationHistogram(meter semconvmeter.Meter) (TaskRetryDurationHistogram, error) {
 	inst, err := meter.MetricMeter().Float64Histogram(
 		"myapp.task.duration",
 		metric.WithDescription("Time a task took from start to finish."),
@@ -343,7 +343,7 @@ type TaskStartedCounter struct{ inst metric.Int64Counter }
 //
 // Opt-in: the convention records `myapp.task.started` only when a user asks
 // for it.
-func NewTaskStartedCounter(meter semconv.Meter) (TaskStartedCounter, error) {
+func NewTaskStartedCounter(meter semconvmeter.Meter) (TaskStartedCounter, error) {
 	inst, err := meter.MetricMeter().Int64Counter(
 		"myapp.task.started",
 		metric.WithDescription("Number of tasks started."),
@@ -409,7 +409,7 @@ type TaskStartedObservableCounter struct {
 //
 // Opt-in: the convention records `myapp.task.started` only when a user asks
 // for it.
-func NewTaskStartedObservableCounter(meter semconv.Meter, callback TaskStartedCounterCallback) (TaskStartedObservableCounter, error) {
+func NewTaskStartedObservableCounter(meter semconvmeter.Meter, callback TaskStartedCounterCallback) (TaskStartedObservableCounter, error) {
 	if callback == nil {
 		return TaskStartedObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.started")
 	}

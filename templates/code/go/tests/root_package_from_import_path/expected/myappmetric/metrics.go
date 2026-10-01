@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"example.com/acme/acmeconv"
+	"example.com/acme/acmeconv/acmeconvmeter"
 	"example.com/acme/acmeconv/myappattr"
 )
 
@@ -20,7 +20,7 @@ type TaskStartedCounter struct{ inst metric.Int64Counter }
 
 // NewTaskStartedCounter creates the `myapp.task.started` instrument from
 // meter.
-func NewTaskStartedCounter(meter acmeconv.Meter) (TaskStartedCounter, error) {
+func NewTaskStartedCounter(meter acmeconvmeter.Meter) (TaskStartedCounter, error) {
 	inst, err := meter.MetricMeter().Int64Counter(
 		"myapp.task.started",
 		metric.WithDescription("Number of tasks started."),
@@ -76,7 +76,7 @@ type TaskStartedObservableCounter struct {
 // NewTaskStartedObservableCounter creates the `myapp.task.started`
 // instrument from meter and registers callback to observe it on every
 // collection.
-func NewTaskStartedObservableCounter(meter acmeconv.Meter, callback TaskStartedCounterCallback) (TaskStartedObservableCounter, error) {
+func NewTaskStartedObservableCounter(meter acmeconvmeter.Meter, callback TaskStartedCounterCallback) (TaskStartedObservableCounter, error) {
 	if callback == nil {
 		return TaskStartedObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.started")
 	}

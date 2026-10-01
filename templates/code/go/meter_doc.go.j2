@@ -3,9 +3,6 @@
 {%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
 {{ h.header() }}
 
-package {{ n.root() }}
-
-// SchemaURL is the schema URL of the registry these packages are generated
-// from.
-const SchemaURL = {{ ctx.schema_url | tojson }}
+{{ ["Package " ~ n.root() ~ "meter holds the Meter every metric instrument of the registry is created from, so everything the instruments record is tied to " ~ n.root() ~ ".SchemaURL."] | join | comment }}
+package {{ n.root() }}meter
 {% endfilter %}

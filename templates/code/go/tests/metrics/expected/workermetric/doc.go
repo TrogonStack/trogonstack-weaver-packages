@@ -3,9 +3,9 @@
 // Package workermetric is the Go form of the metrics named `worker.*`.
 //
 // Each metric and metric refinement is an instrument type built from a
-// semconv.Meter by its New constructor, and recorded through the method its
-// instrument kind gives it. Counters, up-down counters, and gauges also have
-// an Observable form, observed from a callback. Required attributes are
+// semconvmeter.Meter by its New constructor, and recorded through the method
+// its instrument kind gives it. Counters, up-down counters, and gauges also
+// have an Observable form, observed from a callback. Required attributes are
 // typed parameters and the rest are trailing options. Identifiers omit the
 // namespace prefix `worker.`, because the package name already carries it.
 package workermetric
