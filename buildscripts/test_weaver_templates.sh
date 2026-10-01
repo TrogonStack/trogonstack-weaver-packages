@@ -68,6 +68,46 @@ run_generate_test() {
   ) || log_err "  FAIL: weaver registry generate exited with an error."
 }
 
+# A case with `expected-error.txt` instead of `expected/` passes when generation
+# fails and one of its diagnostics contains the file's text.
+run_error_test() {
+  local test_dir="$1"
+  local package_dir="$2"
+  local observed_dir="$3"
+  local test_name="$4"
+  local templates_root
+  templates_root="$(realpath "${package_dir}/../..")"
+  local target="${package_dir#"${templates_root}"/}"
+  local params_arg=()
+  if [[ -f "${test_dir}/params.yaml" ]]; then
+    params_arg=(--params "${test_dir}/params.yaml")
+  fi
+  local diagnostics
+  if diagnostics="$(
+    cd "${test_dir}" || exit 1
+    NO_COLOR=1 "${WEAVER}" registry generate \
+      -r registry \
+      --v2 \
+      --quiet \
+      --diagnostic-format json \
+      ${params_arg[@]+"${params_arg[@]}"} \
+      --templates="${templates_root}" \
+      "${target}" \
+      "${observed_dir}" 2>&1
+  )"; then
+    log_err "  FAIL: ${test_name} generated output, but it must fail."
+  fi
+  local expected
+  expected="$(<"${test_dir}/expected-error.txt")"
+  if jq -e --arg expected "${expected}" 'any(.[]; .diagnostic.message | contains($expected))' <<<"${diagnostics}" >/dev/null 2>&1; then
+    echo "  PASS: ${test_name} fails with the expected error."
+  else
+    echo "  FAIL: ${test_name} does not fail with: ${expected}"
+    echo "${diagnostics}"
+    exit 1
+  fi
+}
+
 run_template_test() {
   local test_dir="$1"
   local package_dir="$2"
@@ -76,6 +116,10 @@ run_template_test() {
   local observed_dir="${package_dir}/observed-output/${test_name}"
   rm -rf "${observed_dir}"
   mkdir -p "${observed_dir}"
+  if [[ -f "${test_dir}/expected-error.txt" ]]; then
+    run_error_test "${test_dir}" "${package_dir}" "${observed_dir}" "${test_name}"
+    return
+  fi
   run_generate_test "${test_dir}" "${package_dir}" "${observed_dir}"
   check_output "${observed_dir}" "${test_dir}/expected" "${test_name} - Template Output"
 }
