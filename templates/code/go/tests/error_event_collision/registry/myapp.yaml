@@ -1,0 +1,10 @@
+file_format: definition/2
+events:
+  - name: myapp.task.finished
+    requirement_level: recommended
+    stability: stable
+    brief: A task finished.
+  - name: myapp.task_finished
+    requirement_level: recommended
+    stability: stable
+    brief: A task finished, under another name.

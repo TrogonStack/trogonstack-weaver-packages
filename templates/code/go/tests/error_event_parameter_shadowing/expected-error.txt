@@ -1,0 +1,1 @@
+event myapp.task.finished has required attributes whose Go parameter would shadow a name its Emit function declares: logger

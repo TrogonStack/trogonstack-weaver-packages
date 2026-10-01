@@ -1,0 +1,15 @@
+file_format: definition/2
+attributes:
+  - key: myapp.severity
+    type: string
+    stability: stable
+    brief: Severity the task reported for itself.
+    examples: ["high"]
+events:
+  - name: myapp.task.finished
+    requirement_level: recommended
+    stability: stable
+    brief: A task finished.
+    attributes:
+      - ref: myapp.severity
+        requirement_level: recommended

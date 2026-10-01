@@ -1,0 +1,9 @@
+file_format: definition/2
+events:
+  - name: myapp.task.finished
+    requirement_level: recommended
+    stability: stable
+    brief: A task finished.
+    attributes:
+      - ref: logger
+        requirement_level: required

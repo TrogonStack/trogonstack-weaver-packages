@@ -1,0 +1,1 @@
+event myapp.task.finished requires myapp.task.id, which exclude_deprecated or stable_only leaves out

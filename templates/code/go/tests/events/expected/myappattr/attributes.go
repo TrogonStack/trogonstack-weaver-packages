@@ -4,6 +4,29 @@ package myappattr
 
 import "go.opentelemetry.io/otel/attribute"
 
+// taskAttemptKey is the attribute key of `myapp.task.attempt`.
+const taskAttemptKey = attribute.Key("myapp.task.attempt")
+
+// TaskAttemptAttr is a value of `myapp.task.attempt`.
+//
+// Number of the attempt, starting at 1.
+type TaskAttemptAttr struct{ value int }
+
+// NewTaskAttemptAttr returns a value of `myapp.task.attempt`.
+func NewTaskAttemptAttr(value int) TaskAttemptAttr {
+	return TaskAttemptAttr{value: value}
+}
+
+// Key is the attribute key, for filters and views that need it.
+func (TaskAttemptAttr) Key() attribute.Key {
+	return taskAttemptKey
+}
+
+// KeyValue is the `myapp.task.attempt` attribute set to this value.
+func (v TaskAttemptAttr) KeyValue() attribute.KeyValue {
+	return taskAttemptKey.Int(v.value)
+}
+
 // taskStateKey is the attribute key of `myapp.task.state`.
 const taskStateKey = attribute.Key("myapp.task.state")
 
@@ -11,11 +34,6 @@ const taskStateKey = attribute.Key("myapp.task.state")
 //
 // Current state of the task.
 type TaskStateAttr struct{ value string }
-
-// NewTaskStateAttr returns a value of `myapp.task.state`.
-func NewTaskStateAttr(value string) TaskStateAttr {
-	return TaskStateAttr{value: value}
-}
 
 // Key is the attribute key, for filters and views that need it.
 func (TaskStateAttr) Key() attribute.Key {
@@ -26,3 +44,15 @@ func (TaskStateAttr) Key() attribute.Key {
 func (v TaskStateAttr) KeyValue() attribute.KeyValue {
 	return taskStateKey.String(v.value)
 }
+
+var (
+	// TaskStateDone is the "done" member of `myapp.task.state`.
+	//
+	// The task finished.
+	TaskStateDone = TaskStateAttr{value: "done"}
+
+	// TaskStateFailed is the "failed" member of `myapp.task.state`.
+	//
+	// The task gave up.
+	TaskStateFailed = TaskStateAttr{value: "failed"}
+)

@@ -1,0 +1,15 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: development
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]
+events:
+  - name: myapp.task.finished
+    requirement_level: recommended
+    stability: stable
+    brief: A task finished.
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required

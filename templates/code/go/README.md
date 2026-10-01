@@ -1,7 +1,7 @@
 # Go Template Package
 
-Generates typed Go attributes, metric instruments, and span starters from a
-semantic convention registry, on top of the OpenTelemetry Go API.
+Generates typed Go attributes, metric instruments, span starters, and event
+emitters from a semantic convention registry, on top of the OpenTelemetry Go API.
 
 Stability: Development
 
@@ -47,6 +47,8 @@ that carries the registry's schema URL:
 | `<namespace>metric/metrics.go`  | A typed instrument per metric and refinement, plus asynchronous forms. |
 | `<namespace>span/doc.go`        | Package comment for the span package.                                  |
 | `<namespace>span/spans.go`      | A typed starter and span per span and refinement.                      |
+| `<namespace>event/doc.go`       | Package comment for the event package.                                 |
+| `<namespace>event/events.go`    | A typed `Emit` function per event and refinement.                      |
 
 The namespace is the first segment of a name, or the second when the first is
 listed in `vendor_prefixes`. Identifiers drop that prefix, so `myapp.task.id`
@@ -121,11 +123,12 @@ The zero `Tracer` starts spans that record nothing.
 
 When the registry declares an event, `<root>logger` holds a `Logger` built the
 same way, over the OpenTelemetry Logs API, so log records emitted from it are
-tied to the registry's schema:
+tied to the registry's schema. The generated [event emitters](#events) take
+it, and `LogLogger` exposes the underlying `log.Logger` for records the
+registry does not declare:
 
 ```go
 logger := semconvlogger.New(provider, "example.com/myservice")
-logger.LogLogger().Emit(ctx, record)
 ```
 
 The zero `Logger` emits log records that go nowhere.
@@ -282,9 +285,33 @@ Each span refinement becomes its own starter, named from its id, with the
 kind, name, attributes, and requirement levels the refinement resolves to. A
 refinement is generated only when the span it refines is.
 
+### Events
+
+Each event becomes an `Emit<Name>` function that emits it as a log record
+through the logger, with the event's name and no body. Required attributes are
+typed parameters, and the rest are `<Name>Option` values, alongside the
+severity and the timestamp:
+
+```go
+myappevent.EmitTaskFinished(ctx, logger, myappattr.TaskStateDone,
+	myappevent.WithTaskFinishedTaskAttempt(myappattr.NewTaskAttemptAttr(2)),
+	myappevent.WithTaskFinishedSeverity(log.SeverityWarn),
+)
+```
+
+The severity is `log.SeverityInfo` unless an option sets another. Without a
+timestamp option the record carries only the time it was observed. The record
+is emitted only when `Enabled` reports the logger takes an event of that name
+and severity, and the zero `Logger` emits nothing.
+
+Each event refinement becomes its own `Emit` function, named from its id. Weaver
+resolves a refinement's event name to its id and keeps no link to the event it
+refines, so the record carries the refinement's id as its event name and the
+refinement is generated on its own stability and deprecation.
+
 ### Deprecation
 
-Deprecated attributes, enum members, metrics, and spans are generated with a
+Deprecated attributes, enum members, metrics, spans, and events are generated with a
 `Deprecated:` paragraph in their doc comment, which Go tooling recognizes. The
 members of a deprecated enum carry its paragraph unless they declare their own,
 since the registry does not pass an attribute's deprecation on to its members
@@ -293,9 +320,9 @@ since the registry does not pass an attribute's deprecation on to its members
 
 ### Not generated
 
-Typed events and entities are not generated: the package covers attributes,
-metrics, and spans, plus the logger that events would be emitted from. Span
-events and links have no registry form, so `Span` exposes the `trace.Span`
+Entities are not generated: the package covers attributes, metrics, spans,
+and events. An event body has no registry form, so events are emitted without
+one. Span events and links have no registry form either, so `Span` exposes the `trace.Span`
 they are added through.
 Attribute `examples` and entity associations are not rendered either, since
 neither has a Go API counterpart.
@@ -321,8 +348,8 @@ neither has a Go API counterpart.
 | `header_source`      | `""`                  | What the code was generated from, shown in the `Code generated` header. Omitted when empty.            |
 | `regenerate_command` | `""`                  | Command that regenerates the code, shown under the header. Omitted when empty.                         |
 | `vendor_prefixes`    | `[]`                  | Leading segments that are a vendor prefix rather than a namespace, such as `[acme]`.                   |
-| `exclude_deprecated` | `false`               | Leave deprecated attributes, metrics, and spans out.                                                   |
-| `stable_only`        | `false`               | Generate only stable attributes, metrics, and spans.                                                   |
+| `exclude_deprecated` | `false`               | Leave deprecated attributes, metrics, spans, and events out.                                           |
+| `stable_only`        | `false`               | Generate only stable attributes, metrics, spans, and events.                                           |
 
 Pass them with `--param key=value` or a `--params` file. Acronyms that stay
 upper case in identifiers, such as `ID` and `URL`, are listed in
@@ -339,14 +366,19 @@ or is tied to no schema, when:
   end in the schema version.
 - Two attribute keys in one package render to the same Go identifier, such as
   `myapp.task.id` and `myapp.task_id`.
-- Two attributes of one metric or span render to the same parameter or option
-  name.
-- A required attribute of a span renders to a parameter named like one its
-  starter already declares, such as an imported `tracer`.
-- A key, metric name, or span type has nothing left after its namespace.
+- Two attributes of one metric, span, or event render to the same parameter or
+  option name.
+- A required attribute of a span or event renders to a parameter named like
+  one its starter or `Emit` function already declares, such as an imported
+  `tracer` or `logger`.
+- An optional attribute of an event renders to an option named like its
+  severity or timestamp option, such as `myapp.severity`.
+- A key, metric name, span type, or event name has nothing left after its
+  namespace.
 - An enum mixes member value types, or `exclude_deprecated` or `stable_only`
   leaves it with no members.
-- A metric or span references an imported attribute whose type is not supported.
+- A metric, span, or event references an imported attribute whose type is not
+  supported.
 - `annotations.aggregation` is set on an instrument other than a histogram,
   uses a method or parameter other than `explicithistogram` and `boundaries`,
   or its boundaries are not a non-empty list of numbers in strictly increasing
@@ -359,7 +391,9 @@ or is tied to no schema, when:
   `annotations.aggregation` than the metric it refines.
 - Two spans or refinements in one package render to the same Go identifier,
   such as `myapp.task.run` and `myapp.task_run`.
-- `exclude_deprecated` or `stable_only` keeps a metric or span but leaves out
+- Two events or refinements in one package render to the same Go identifier,
+  such as `myapp.task.finished` and `myapp.task_finished`.
+- `exclude_deprecated` or `stable_only` keeps a metric, span, or event but leaves out
   one of its required attributes.
 
 ## Tests
@@ -368,12 +402,12 @@ or is tied to no schema, when:
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `attributes`                    | Every supported type, enums of every member type, notes, deprecated attributes and members.                                                   |
 | `metrics`                       | Every instrument, every requirement level, cross-namespace references, bucket boundaries.                                                     |
-| `imported`                      | Required and optional attributes imported from a dependency registry, including an enum and a span named from them.                           |
+| `imported`                      | Required and optional attributes imported from a dependency registry, including an enum, a span named from them, and an event.                |
 | `params`                        | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`.                                      |
 | `root_package_from_import_path` | The root package named after `import_path`.                                                                                                   |
 | `root_package_version_segment`  | A version element at the end of `import_path` skipped in the root package name.                                                               |
 | `spans`                         | Derived and typed span names, every kind of option, deprecation, refinements, cross-namespace references, and a tracer with no meter package. |
-| `events`                        | A registry with an event and no metrics, which gets a logger package and no meter package.                                                    |
+| `events`                        | Required and optional attributes, opt-in and deprecated events, a refinement, cross-namespace references, and a logger with no meter package. |
 | `error_*`                       | Each case fails generation with one of the errors above.                                                                                      |
 
 Run them with `mise run weaver:test:templates`, and compile their expected

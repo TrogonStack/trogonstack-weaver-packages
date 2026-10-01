@@ -53,3 +53,13 @@ spans:
         sampling_relevant: true
       - ref: http.request.method_list
         requirement_level: recommended
+events:
+  - name: edge.upstream.failed
+    requirement_level: recommended
+    stability: stable
+    brief: A request to an upstream server failed.
+    attributes:
+      - ref: error.type
+        requirement_level: required
+      - ref: server.address
+        requirement_level: recommended
