@@ -1,0 +1,6 @@
+name: error_event_parameter_shadowing
+schema_url: https://example.com/schemas/error_event_parameter_shadowing/1.0.0
+dependencies:
+  - name: upstream
+    registry_path: dependency
+    schema_url: https://example.com/schemas/upstream/1.0.0

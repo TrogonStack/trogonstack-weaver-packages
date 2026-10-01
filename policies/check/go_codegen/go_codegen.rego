@@ -116,6 +116,23 @@ deny contains finding if {
 	}
 }
 
+deny contains finding if {
+	some event in input.registry.events
+	count(split(event.name, ".")) < 2
+
+	finding := {
+		"id": "go_codegen_event_without_namespace",
+		"context": {},
+		"message": sprintf(
+			"Event '%s' has no namespace. The Go template puts each event in a package named for its namespace and names it after the rest of the name, so the name needs both.",
+			[event.name],
+		),
+		"level": "violation",
+		"signal_type": "event",
+		"signal_name": event.name,
+	}
+}
+
 # The value type follows the code_generation.metric_value_type annotation the
 # OpenTelemetry semantic conventions use; a missing and a misspelled one fail
 # the same way.

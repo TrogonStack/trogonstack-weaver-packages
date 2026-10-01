@@ -21,6 +21,24 @@
   },
   {
     "diagnostic": {
+      "message": "Policy violation: id=go_codegen_event_without_namespace, context={}, message=Event 'finished' has no namespace. The Go template puts each event in a package named for its namespace and names it after the rest of the name, so the name needs both., level=Violation, signal_type=Some(\"event\"), signal_name=Some(\"finished\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {},
+        "id": "go_codegen_event_without_namespace",
+        "level": "violation",
+        "message": "Event 'finished' has no namespace. The Go template puts each event in a package named for its namespace and names it after the rest of the name, so the name needs both.",
+        "signal_name": "finished",
+        "signal_type": "event",
+        "type": "PolicyFinding"
+      }
+    }
+  },
+  {
+    "diagnostic": {
       "message": "Policy violation: id=go_codegen_metric_without_namespace, context={}, message=Metric 'requests' has no namespace. The Go template puts each metric in a package named for its namespace and names it after the rest of the name, so the name needs both., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"requests\"), provenance: current"
     },
     "error": {

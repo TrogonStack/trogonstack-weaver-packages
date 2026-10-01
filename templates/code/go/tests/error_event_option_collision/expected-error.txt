@@ -1,0 +1,1 @@
+event myapp.task.finished has optional attributes that render to the same Go identifier: myapp.task.id and queue.task.id

@@ -1,13 +1,60 @@
 file_format: definition/2
 attributes:
   - key: myapp.task.state
-    type: string
+    type:
+      members:
+        - id: done
+          value: done
+          stability: stable
+          brief: The task finished.
+        - id: failed
+          value: failed
+          stability: stable
+          brief: The task gave up.
     stability: stable
     brief: Current state of the task.
+  - key: myapp.task.attempt
+    type: int
+    stability: stable
+    brief: Number of the attempt, starting at 1.
+    examples: [1]
+  - key: worker.host.name
+    type: string
+    stability: stable
+    brief: Name of the worker host.
+    examples: ["worker-1"]
 events:
   - name: myapp.task.finished
     stability: development
+    requirement_level: recommended
     brief: A task reached a final state.
+    note: Emitted once per task, after its last attempt.
     attributes:
       - ref: myapp.task.state
+        requirement_level: required
+      - ref: myapp.task.attempt
+        requirement_level:
+          recommended: When the task ran more than once.
+      - ref: worker.host.name
+        requirement_level: opt_in
+  - name: myapp.task.retried
+    stability: development
+    requirement_level: opt_in
+    brief: A task is about to run again.
+    deprecated:
+      reason: obsoleted
+      note: Read the attempt from `myapp.task.finished` instead.
+    attributes:
+      - ref: myapp.task.attempt
+        requirement_level: required
+  - name: worker.host.started
+    stability: stable
+    requirement_level: recommended
+    brief: A worker host started taking tasks.
+event_refinements:
+  - id: worker.task.finished
+    ref: myapp.task.finished
+    brief: A task reached a final state on a worker.
+    attributes:
+      - ref: worker.host.name
         requirement_level: required

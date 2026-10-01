@@ -1,0 +1,7 @@
+file_format: definition/2
+attributes:
+  - key: logger
+    type: string
+    stability: stable
+    brief: Name of the logger that recorded the work.
+    examples: ["scheduler"]

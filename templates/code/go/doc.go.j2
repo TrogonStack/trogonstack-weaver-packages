@@ -5,7 +5,7 @@
 
 {{ ["Package " ~ n.root() ~ " is the root of the Go form of a semantic convention registry.",
     params.root_description,
-    "It declares only SchemaURL, so importing it pulls in no OpenTelemetry API. The handles that carry it into telemetry, such as a Meter, live in packages of their own. Every name lives in a package scoped by its namespace and the kind of signal it describes: attributes become `<namespace>attr`, holding typed attribute values, metrics become `<namespace>metric`, holding typed instruments, and spans become `<namespace>span`, holding typed span starters. Identifiers drop the namespace prefix the package name already carries, and a signal package imports the `<namespace>attr` packages its signals need, never the reverse."] | select | join("\n\n") | comment }}
+    "It declares only SchemaURL, so importing it pulls in no OpenTelemetry API. The handles that carry it into telemetry, such as a Meter, live in packages of their own. Every name lives in a package scoped by its namespace and the kind of signal it describes: attributes become `<namespace>attr`, holding typed attribute values, metrics become `<namespace>metric`, holding typed instruments, spans become `<namespace>span`, holding typed span starters, and events become `<namespace>event`, holding typed event emitters. Identifiers drop the namespace prefix the package name already carries, and a signal package imports the `<namespace>attr` packages its signals need, never the reverse."] | select | join("\n\n") | comment }}
 //
 // # Packages
 //
@@ -13,7 +13,7 @@
 //   - [{{ params.import_path }}/{{ n.root() }}{{ entry.handle }}]: {{ entry.summary }}
 {%- endfor %}
 {%- for entry in ctx if not entry.handle %}
-//   - [{{ params.import_path }}/{{ entry.namespace }}{{ entry.suffix }}]: {{ entry.patterns }} {{ {"attr": "attributes", "metric": "metrics", "span": "spans"}[entry.suffix] }}
+//   - [{{ params.import_path }}/{{ entry.namespace }}{{ entry.suffix }}]: {{ entry.patterns }} {{ {"attr": "attributes", "metric": "metrics", "span": "spans", "event": "events"}[entry.suffix] }}
 {%- endfor %}
 package {{ n.root() }}
 {% endfilter %}

@@ -28,3 +28,8 @@ spans:
     brief: A unit of work.
     name:
       note: ""
+events:
+  - name: finished
+    requirement_level: recommended
+    stability: stable
+    brief: A unit of work finished.

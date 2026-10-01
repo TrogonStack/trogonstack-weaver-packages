@@ -45,12 +45,18 @@ templates:
         (.registry.spans // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | map(.type)) as $types
         | $types + (.refinements.spans // [] | map(select(.id != .type)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
                     | map(select(.type as $base | $types | any(. == $base)) | .id));
+      def event_ids($o):
+        [.registry.events // [] | .[].name] as $bases
+        | (.registry.events // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | map(.name))
+          + (.refinements.events // [] | map(select(.id as $id | $bases | any(. == $id) | not)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+             | map(.id));
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | (.registry.spans // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts)) as $registry_spans
       | (.registry.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts)) as $registry_events
       | [ (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key | ns + {suffix: "attr"})),
           (instrument_names($opts) | map(ns + {suffix: "metric"})),
-          (span_ids($opts) | map(ns + {suffix: "span"})) ]
+          (span_ids($opts) | map(ns + {suffix: "span"})),
+          (event_ids($opts) | map(ns + {suffix: "event"})) ]
       | add
       | group_by(.namespace + "/" + .suffix)
       | map({namespace: .[0].namespace, suffix: .[0].suffix, prefixes: (map(.prefix) | unique)})
@@ -186,6 +192,27 @@ templates:
       | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
     application_mode: each
     file_name: "{{ ctx.namespace }}span/doc.go"
+
+  - template: namespace_doc.go.j2
+    filter: |-
+      def ns: split(".") as $s
+        | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
+          then {namespace: $s[1], prefix: ($s[0:2] | join("."))}
+          else {namespace: $s[0], prefix: $s[0]}
+          end;
+      def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      def event_ids($o):
+        [.registry.events // [] | .[].name] as $bases
+        | (.registry.events // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | map(.name))
+          + (.refinements.events // [] | map(select(.id as $id | $bases | any(. == $id) | not)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+             | map(.id));
+      event_ids({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
+      | map(ns)
+      | group_by(.namespace)
+      | map({namespace: .[0].namespace, suffix: "event", prefixes: (map(.prefix) | unique)})
+      | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
+    application_mode: each
+    file_name: "{{ ctx.namespace }}event/doc.go"
 
   # Attributes are regrouped by the derived namespace, and each one carries the
   # identifier its package declares: the key with the package prefix removed.
@@ -487,6 +514,113 @@ templates:
              imports: ([.[] | .attributes[] | select(.imported | not) | .attr_namespace + "attr"] + [root + "tracer"] | unique)})
     application_mode: each
     file_name: "{{ ctx.namespace }}span/spans.go"
+
+  # Events follow the span rules for attributes, requirement levels, and
+  # identifier collisions. An event refinement becomes its own Emit function,
+  # named from its id. Weaver resolves a refinement's event name to its id and
+  # keeps no link to the event it refines, so it is emitted under its id and
+  # generated on its own stability and deprecation. Severity and
+  # timestamp share the event's option type, so an attribute that would render
+  # to either name fails.
+  - template: events.go.j2
+    filter: |-
+      def ns: split(".") as $s
+        | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
+          then {namespace: $s[1], prefix: ($s[0:2] | join(".")), short_name: ($s[2:] | join(".")), param: ($s[1:] | join("."))}
+          else {namespace: $s[0], prefix: $s[0], short_name: ($s[1:] | join(".")), param: ($s | join("."))}
+          end;
+      def enum_value_type($key):
+        .members as $members
+        | if ($members | length) == 0
+          then error("attribute \($key) has no enum members left after exclude_deprecated or stable_only, so no value of it could be built")
+          elif ($members | all(.value | type == "string")) then "string"
+          elif ($members | all(.value | type == "boolean")) then "boolean"
+          elif ($members | all(.value | type == "number" and . == floor)) then "int"
+          elif ($members | all(.value | type == "number")) then "double"
+          else error("attribute \($key) has enum members of more than one value type, which no single Go type can hold")
+          end;
+      def root: if ($root_package // "") != "" then $root_package
+        else $import_path | sub("(/v[0-9]+(\\.[0-9]+)*)+/*$"; "") | split("/") | last end;
+      def norm: gsub("[._]"; "") | ascii_downcase;
+      def kept($o):
+        stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+        | map(.attributes = (if .attributes == null then .attributes else .attributes | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) end));
+      def events($o):
+        [.registry.events // [] | .[].name] as $bases
+        | (.registry.events // [] | kept($o) | map(. + {id: .name}))
+          + (.refinements.events // [] | map(select(.id as $id | $bases | any(. == $id) | not)) | kept($o));
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
+      | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key)) as $rendered
+      | (events({v2: true})
+         | map({key: .id, value: [(.attributes // [])[] | select(.requirement_level == "required") | .key]})
+         | from_entries) as $declared_required
+      | events($opts)
+      | map(.id as $event
+            | (($declared_required[$event] // []) - [(.attributes // [])[] | .key]) as $dropped
+            | if ($dropped | length) > 0
+              then error("event \($event) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated Emit function could not set them")
+              else . end)
+      | map(. + (.id | ns | {namespace, prefix, short_name}))
+      | map(if .short_name == ""
+            then error("event \(.id) has no name left after its namespace, so it cannot become a Go identifier")
+            else . end)
+      | map(.id as $event
+            | .attributes |= ((. // []) | sort_by(.key) | map(
+                if (.key as $k | $rendered | any(. == $k))
+                then . + (.key | ns | {attr_namespace: .namespace, attr_short_name: .short_name, attr_param: .param})
+                else . + {imported: true, attr_short_name: .key, attr_param: .key,
+                          attr_type: (if (.type | type) == "object"
+                                      then (.key as $key | .type | enum_value_type($key))
+                                      elif ([.type] | inside(["string", "string[]", "int", "int[]", "double", "double[]", "boolean", "boolean[]"]))
+                                      then .type
+                                      else error("event \($event) references imported attribute \(.key) of type \(.type | tostring), which the Go template does not render") end)}
+                end)))
+      | map(.attributes |= map(. + {requirement_doc: (.requirement_level
+            | if type == "object" and has("conditionally_required") then "Conditionally required: \(.conditionally_required)"
+              elif type == "object" and has("recommended") then "Recommended: \(.recommended)"
+              elif . == "opt_in" then "Opt-in: the convention records it only when a user asks for it."
+              else null end)}))
+      | map(.required = (.attributes | map(select(.requirement_level == "required"))))
+      | map(.optional = (.attributes | map(select(.requirement_level != "required"))))
+      | map(
+          (.required
+           | group_by(.attr_param | norm)
+           | map(select(length > 1) | map(.key) | join(" and "))) as $required_collisions
+          | (.optional
+             | group_by(.attr_short_name | norm)
+             | map(select(length > 1) | map(.key) | join(" and "))) as $optional_collisions
+          | (.optional | map(select(.attr_short_name | norm | . as $p | ["severity", "timestamp"] | any(. == $p))) | map(.key)) as $reserved
+          | (.required | map(select(.attr_param | norm | . as $p | ["ctx", "logger", "opts", "opt", "record"] | any(. == $p))) | map(.key)) as $shadowing
+          | if ($required_collisions | length) > 0
+            then error("event \(.id) has required attributes that render to the same Go parameter: \($required_collisions | join("; "))")
+            elif ($optional_collisions | length) > 0
+            then error("event \(.id) has optional attributes that render to the same Go identifier: \($optional_collisions | join("; "))")
+            elif ($reserved | length) > 0
+            then error("event \(.id) has optional attributes whose option would share a name with its severity or timestamp option: \($reserved | join(", "))")
+            elif ($shadowing | length) > 0
+            then error("event \(.id) has required attributes whose Go parameter would shadow a name its Emit function declares: \($shadowing | join(", "))")
+            else . end
+        )
+      | group_by(.namespace)
+      | map(
+          ([.[] | . as $def | .id as $event | (.short_name | norm) as $short
+            | (["P:emit" + $short, "P:" + $short + "option",
+                "P:with" + $short + "severity", "P:with" + $short + "timestamp",
+                "p:" + $short + "option", "p:" + $short + "eventseverity", "p:" + $short + "eventtimestamp"]
+               + ($def.optional | map(.attr_short_name | norm) | map("P:with" + $short + ., "p:" + $short + "event" + .)))[]
+            | {identifier: ., name: $event}]
+           | group_by(.identifier)
+           | map(select(length > 1) | map(.name) | unique | join(" and "))
+           | unique) as $collisions
+          | if ($collisions | length) > 0
+            then error("package \(.[0].namespace)event has events that render to the same Go identifier: \($collisions | join("; "))")
+            else . end
+        )
+      | map({namespace: .[0].namespace, prefix: .[0].prefix, events: sort_by(.id),
+             uses_attributes: ([.[] | .attributes[] | select(.imported)] | length > 0),
+             imports: ([.[] | .attributes[] | select(.imported | not) | .attr_namespace + "attr"] + [root + "logger"] | unique)})
+    application_mode: each
+    file_name: "{{ ctx.namespace }}event/events.go"
 
 # Weaver's word wrap can start a line with the punctuation or space that
 # follows an inline code span, so every template rejoins those lines.

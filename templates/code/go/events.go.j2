@@ -1,0 +1,101 @@
+{% import "header.j2" as h -%}
+{% import "deprecation.j2" as d -%}
+{% import "names.j2" as n -%}
+{%- macro attr_type(a) -%}
+{%- if a.imported -%}
+{{ a.attr_type | map_text("attribute_field_type") }}
+{%- else -%}
+{{ a.attr_namespace }}attr.{{ n.exported(a.attr_short_name) }}Attr
+{%- endif -%}
+{%- endmacro -%}
+{%- macro attr_kv(a, v) -%}
+{%- if a.imported -%}
+attribute.{{ a.attr_type | map_text("attribute_type_method") }}({{ a.key | tojson }}, {{ v }})
+{%- else -%}
+{{ v }}.KeyValue()
+{%- endif -%}
+{%- endmacro -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
+{{ h.header() }}
+
+package {{ ctx.namespace }}event
+
+import (
+	"context"
+	"time"
+{% if ctx.uses_attributes %}
+	"go.opentelemetry.io/otel/attribute"
+{%- endif %}
+	"go.opentelemetry.io/otel/log"
+{% for pkg in ctx.imports %}
+	"{{ params.import_path }}/{{ pkg }}"
+{%- endfor %}
+)
+{% for def in ctx.events %}
+{%- set name = n.exported(def.short_name) %}
+{%- set private = n.unexported(def.short_name) %}
+{%- set emit = "Emit" ~ name %}
+{%- set option = name ~ "Option" %}
+{%- set deprecated = d.notice(def) %}
+{%- set opt_in = "Opt-in: the convention records `" ~ def.id ~ "` only when a user asks for it." if def.requirement_level == "opt_in" else none -%}
+{{ "" }}
+{{ [option ~ " sets an attribute, the severity, or the timestamp of an event " ~ emit ~ " emits."] | join | comment }}
+type {{ option }} interface {
+	{{ private }}Option(record *log.Record)
+}
+
+type {{ private }}EventSeverity struct{ v log.Severity }
+
+func (o {{ private }}EventSeverity) {{ private }}Option(record *log.Record) {
+	record.SetSeverity(o.v)
+}
+
+{{ ["With" ~ name ~ "Severity sets the severity of the event, in place of log.SeverityInfo."] | join | comment }}
+func With{{ name }}Severity(severity log.Severity) {{ option }} {
+	return {{ private }}EventSeverity{v: severity}
+}
+
+type {{ private }}EventTimestamp struct{ v time.Time }
+
+func (o {{ private }}EventTimestamp) {{ private }}Option(record *log.Record) {
+	record.SetTimestamp(o.v)
+}
+
+{{ ["With" ~ name ~ "Timestamp sets the time the event occurred. Without it the event carries only the time it was observed."] | join | comment }}
+func With{{ name }}Timestamp(timestamp time.Time) {{ option }} {
+	return {{ private }}EventTimestamp{v: timestamp}
+}
+{% for opt in def.optional %}
+{%- set optname = n.exported(opt.attr_short_name) %}
+type {{ private }}Event{{ optname }} struct{ v {{ attr_type(opt) }} }
+
+func (o {{ private }}Event{{ optname }}) {{ private }}Option(record *log.Record) {
+	record.AddAttributes({{ attr_kv(opt, "o.v") }})
+}
+
+{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on the event.", opt.requirement_doc] | select | join("\n\n") | comment }}
+func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ option }} {
+	return {{ private }}Event{{ optname }}{v: v}
+}
+{% endfor %}
+{{ [emit ~ " emits the `" ~ def.id ~ "` event through logger. It is skipped when logger is not enabled for it, and the zero logger emits nothing.", def.brief, def.note, opt_in, deprecated] | select | join("\n\n") | comment }}
+func {{ emit }}(ctx context.Context, logger {{ n.root() }}logger.Logger{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}, opts ...{{ option }}) {
+	var record log.Record
+	record.SetEventName({{ def.name | tojson }})
+	record.SetSeverity(log.SeverityInfo)
+{%- if def.required %}
+	record.AddAttributes(
+{%- for req in def.required %}
+		{{ attr_kv(req, n.unexported(req.attr_param)) }},
+{%- endfor %}
+	)
+{%- endif %}
+	for _, opt := range opts {
+		opt.{{ private }}Option(&record)
+	}
+	if !logger.LogLogger().Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
+		return
+	}
+	logger.LogLogger().Emit(ctx, record)
+}
+{% endfor %}{% endfilter %}
