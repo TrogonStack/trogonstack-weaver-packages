@@ -22,12 +22,13 @@ any file when a policy finds a violation.
 
 ## Rules
 
-| ID                                       | Signal    | Fails when                                                                      |
-| ---------------------------------------- | --------- | ------------------------------------------------------------------------------- |
-| `go_codegen_unsupported_attribute_type`  | Attribute | The type is not a string, int, double, or boolean, an array of one, or an enum. |
-| `go_codegen_attribute_without_namespace` | Attribute | The key has a single segment, so there is no package to put it in.              |
-| `go_codegen_metric_without_namespace`    | Metric    | The name has a single segment, so there is no package to put it in.             |
-| `go_codegen_invalid_metric_value_type`   | Metric    | `annotations.go.value_type` is missing or is not `int64` or `float64`.          |
+| ID                                       | Signal    | Fails when                                                                                                                                                                                                                                                                                                |
+| ---------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `go_codegen_unsupported_attribute_type`  | Attribute | The type is not a string, int, double, or boolean, an array of one, or an enum.                                                                                                                                                                                                                           |
+| `go_codegen_attribute_without_namespace` | Attribute | The key has a single segment, so there is no package to put it in.                                                                                                                                                                                                                                        |
+| `go_codegen_metric_without_namespace`    | Metric    | The name has a single segment, so there is no package to put it in.                                                                                                                                                                                                                                       |
+| `go_codegen_invalid_metric_value_type`   | Metric    | `annotations.go.value_type` is missing or is not `int64` or `float64`.                                                                                                                                                                                                                                    |
+| `go_codegen_invalid_aggregation`         | Metric    | `annotations.aggregation` is set on a non-histogram, uses anything but `method: explicithistogram` with `parameters.boundaries`, or the boundaries are not a non-empty list of numbers in strictly increasing order. Experimental, see [weaver#844](https://github.com/open-telemetry/weaver/issues/844). |
 
 Every finding is a `violation`. Metric findings set `signal_type` and
 `signal_name`.

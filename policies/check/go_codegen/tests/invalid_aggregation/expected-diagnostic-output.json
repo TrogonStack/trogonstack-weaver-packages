@@ -1,0 +1,139 @@
+[
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_invalid_aggregation, context={\"aggregation\":{\"method\":\"explicithistogram\",\"parameters\":{\"boundaries\":[\"fast\",\"slow\"]}}}, message=Metric 'myapp.task.wait' sets annotations.aggregation, but parameters.boundaries must be a non-empty list of numbers., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"myapp.task.wait\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "aggregation": {
+            "method": "explicithistogram",
+            "parameters": {
+              "boundaries": [
+                "fast",
+                "slow"
+              ]
+            }
+          }
+        },
+        "id": "go_codegen_invalid_aggregation",
+        "level": "violation",
+        "message": "Metric 'myapp.task.wait' sets annotations.aggregation, but parameters.boundaries must be a non-empty list of numbers.",
+        "signal_name": "myapp.task.wait",
+        "signal_type": "metric",
+        "type": "PolicyFinding"
+      }
+    }
+  },
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_invalid_aggregation, context={\"aggregation\":{\"method\":\"explicithistogram\",\"parameters\":{\"boundaries\":[0.1,1,1,0.5]}}}, message=Metric 'myapp.task.duration' sets annotations.aggregation, but parameters.boundaries must be in strictly increasing order., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"myapp.task.duration\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "aggregation": {
+            "method": "explicithistogram",
+            "parameters": {
+              "boundaries": [
+                0.1,
+                1,
+                1,
+                0.5
+              ]
+            }
+          }
+        },
+        "id": "go_codegen_invalid_aggregation",
+        "level": "violation",
+        "message": "Metric 'myapp.task.duration' sets annotations.aggregation, but parameters.boundaries must be in strictly increasing order.",
+        "signal_name": "myapp.task.duration",
+        "signal_type": "metric",
+        "type": "PolicyFinding"
+      }
+    }
+  },
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_invalid_aggregation, context={\"aggregation\":{\"method\":\"explicithistogram\",\"parameters\":{\"boundaries\":[0.1,1],\"recordminmax\":false}}}, message=Metric 'myapp.task.retry.wait' sets annotations.aggregation, but the Go API can express only parameters.boundaries., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"myapp.task.retry.wait\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "aggregation": {
+            "method": "explicithistogram",
+            "parameters": {
+              "boundaries": [
+                0.1,
+                1
+              ],
+              "recordminmax": false
+            }
+          }
+        },
+        "id": "go_codegen_invalid_aggregation",
+        "level": "violation",
+        "message": "Metric 'myapp.task.retry.wait' sets annotations.aggregation, but the Go API can express only parameters.boundaries.",
+        "signal_name": "myapp.task.retry.wait",
+        "signal_type": "metric",
+        "type": "PolicyFinding"
+      }
+    }
+  },
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_invalid_aggregation, context={\"aggregation\":{\"method\":\"explicithistogram\",\"parameters\":{\"boundaries\":[1,10]}}}, message=Metric 'myapp.task.started' sets annotations.aggregation, but the Go template supports it only on a histogram., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"myapp.task.started\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "aggregation": {
+            "method": "explicithistogram",
+            "parameters": {
+              "boundaries": [
+                1,
+                10
+              ]
+            }
+          }
+        },
+        "id": "go_codegen_invalid_aggregation",
+        "level": "violation",
+        "message": "Metric 'myapp.task.started' sets annotations.aggregation, but the Go template supports it only on a histogram.",
+        "signal_name": "myapp.task.started",
+        "signal_type": "metric",
+        "type": "PolicyFinding"
+      }
+    }
+  },
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_invalid_aggregation, context={\"aggregation\":{\"method\":\"histogram\"}}, message=Metric 'myapp.task.latency' sets annotations.aggregation, but the Go template supports only the explicithistogram method., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"myapp.task.latency\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "aggregation": {
+            "method": "histogram"
+          }
+        },
+        "id": "go_codegen_invalid_aggregation",
+        "level": "violation",
+        "message": "Metric 'myapp.task.latency' sets annotations.aggregation, but the Go template supports only the explicithistogram method.",
+        "signal_name": "myapp.task.latency",
+        "signal_type": "metric",
+        "type": "PolicyFinding"
+      }
+    }
+  }
+]

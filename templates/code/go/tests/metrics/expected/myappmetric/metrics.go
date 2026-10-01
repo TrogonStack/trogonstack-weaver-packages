@@ -119,6 +119,7 @@ func NewTaskDurationHistogram(meter semconv.Meter) (TaskDurationHistogram, error
 		"myapp.task.duration",
 		metric.WithDescription("Time a task took from start to finish."),
 		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries(0, 0.005, 0.01, 0.1, 1, 10),
 	)
 	if err != nil {
 		return TaskDurationHistogram{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.duration", err)
