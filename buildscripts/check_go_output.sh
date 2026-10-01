@@ -5,6 +5,7 @@
 set -euo pipefail
 
 OTEL_GO_VERSION="${OTEL_GO_VERSION:-v1.46.0}"
+OTEL_GO_LOG_VERSION="${OTEL_GO_LOG_VERSION:-v0.22.0}"
 ROOT="$(pwd)"
 PACKAGE_DIR="${ROOT}/templates/code/go"
 DEFAULT_IMPORT_PATH="$(sed -n 's/^  import_path: *//p' "${PACKAGE_DIR}/weaver.yaml")"
