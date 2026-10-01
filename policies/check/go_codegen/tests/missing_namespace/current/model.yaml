@@ -20,3 +20,11 @@ metrics:
     annotations:
       code_generation:
         metric_value_type: int
+spans:
+  - type: work
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A unit of work.
+    name:
+      note: ""

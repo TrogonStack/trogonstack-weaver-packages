@@ -29,12 +29,13 @@ any file when a policy finds a violation.
 | `go_codegen_mixed_enum_members`            | Attribute | The enum's members are not all strings, all numbers, or all booleans, so no single Go type can hold them.                                                                                                                                                                                                 |
 | `go_codegen_attribute_without_namespace`   | Attribute | The key has a single segment, so there is no package to put it in.                                                                                                                                                                                                                                        |
 | `go_codegen_metric_without_namespace`      | Metric    | The name has a single segment, so there is no package to put it in.                                                                                                                                                                                                                                       |
+| `go_codegen_span_without_namespace`        | Span      | The type has a single segment, so there is no package to put it in.                                                                                                                                                                                                                                       |
 | `go_codegen_invalid_metric_value_type`     | Metric    | `annotations.code_generation.metric_value_type` is missing or is not `int` or `double`.                                                                                                                                                                                                                   |
 | `go_codegen_invalid_aggregation`           | Metric    | `annotations.aggregation` is set on a non-histogram, uses anything but `method: explicithistogram` with `parameters.boundaries`, or the boundaries are not a non-empty list of numbers in strictly increasing order. Experimental, see [weaver#844](https://github.com/open-telemetry/weaver/issues/844). |
 | `go_codegen_refinement_changes_instrument` | Metric    | A metric refinement sets a different `code_generation.metric_value_type` or `annotations.aggregation` than the metric it refines.                                                                                                                                                                         |
 
-Every finding is a `violation`. Metric findings set `signal_type` and
-`signal_name`.
+Every finding is a `violation`. Metric and span findings set `signal_type`
+and `signal_name`.
 
 The template checks what depends on its params, such as identifier collisions
 after `vendor_prefixes` is applied, at generation time, since a policy cannot

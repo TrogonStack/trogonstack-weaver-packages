@@ -7,11 +7,12 @@
 // The handles that carry it into telemetry, such as a Meter, live in
 // packages of their own. Every name lives in a package scoped by its
 // namespace and the kind of signal it describes: attributes become
-// `<namespace>attr`, holding typed attribute values, and metrics become
-// `<namespace>metric`, holding typed instruments. Identifiers drop the
-// namespace prefix the package name already carries, and a
-// `<namespace>metric` package imports the `<namespace>attr` packages its
-// metrics need, never the reverse.
+// `<namespace>attr`, holding typed attribute values, metrics become
+// `<namespace>metric`, holding typed instruments, and spans become
+// `<namespace>span`, holding typed span starters. Identifiers drop the
+// namespace prefix the package name already carries, and a signal package
+// imports the `<namespace>attr` packages its signals need, never the
+// reverse.
 //
 // # Packages
 //

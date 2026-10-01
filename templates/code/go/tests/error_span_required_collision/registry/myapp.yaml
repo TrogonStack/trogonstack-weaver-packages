@@ -1,0 +1,25 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]
+  - key: myapp.task_id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task, under another name.
+    examples: ["task_0001"]
+spans:
+  - type: myapp.task.run
+    kind: internal
+    name:
+      note: ""
+    requirement_level: recommended
+    stability: stable
+    brief: One run of a task.
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+      - ref: myapp.task_id
+        requirement_level: required

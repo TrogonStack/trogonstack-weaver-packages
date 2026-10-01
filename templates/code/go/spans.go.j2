@@ -1,0 +1,156 @@
+{% import "header.j2" as h -%}
+{% import "deprecation.j2" as d -%}
+{% import "names.j2" as n -%}
+{%- macro attr_type(a) -%}
+{%- if a.imported -%}
+{{ a.attr_type | map_text("attribute_field_type") }}
+{%- else -%}
+{{ a.attr_namespace }}attr.{{ n.exported(a.attr_short_name) }}Attr
+{%- endif -%}
+{%- endmacro -%}
+{%- macro attr_kv(a, v) -%}
+{%- if a.imported -%}
+attribute.{{ a.attr_type | map_text("attribute_type_method") }}({{ a.key | tojson }}, {{ v }})
+{%- else -%}
+{{ v }}.KeyValue()
+{%- endif -%}
+{%- endmacro -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
+{{ h.header() }}
+
+package {{ ctx.namespace }}span
+
+import (
+	"context"
+{% if ctx.uses_attributes %}
+	"go.opentelemetry.io/otel/attribute"
+{%- endif %}
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
+{% for pkg in ctx.imports %}
+	"{{ params.import_path }}/{{ pkg }}"
+{%- endfor %}
+)
+{% for def in ctx.spans %}
+{%- set name = n.exported(def.short_name) %}
+{%- set private = n.unexported(def.short_name) %}
+{%- set span = name ~ "Span" %}
+{%- set start = "Start" ~ name %}
+{%- set deprecated = d.notice(def) %}
+{%- set opt_in = "Opt-in: the convention records `" ~ def.id ~ "` only when a user asks for it." if def.requirement_level == "opt_in" else none -%}
+{% if def.optional %}
+{{ [name ~ "StartAttr is an attribute " ~ start ~ " accepts in addition to the ones it requires."] | join | comment }}
+type {{ name }}StartAttr interface {
+	{{ private }}StartAttr() attribute.KeyValue
+}
+{% if def.has_late_attrs %}
+{{ [name ~ "Attr is an attribute a " ~ span ~ " also accepts after it started, through SetAttributes."] | join | comment }}
+type {{ name }}Attr interface {
+	{{ name }}StartAttr
+	{{ private }}Attr()
+}
+{% endif %}
+{%- for opt in def.optional %}
+{%- set optname = n.exported(opt.attr_short_name) %}
+type {{ private }}Span{{ optname }} struct{ v {{ attr_type(opt) }} }
+
+func (o {{ private }}Span{{ optname }}) {{ private }}StartAttr() attribute.KeyValue {
+	return {{ attr_kv(opt, "o.v") }}
+}
+{% if opt.sampling_relevant %}
+{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` when " ~ start ~ " starts the span. Samplers read it, so it is accepted only at start.", opt.requirement_doc] | select | join("\n\n") | comment }}
+func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}StartAttr {
+	return {{ private }}Span{{ optname }}{v: v}
+}
+{% else %}
+func ({{ private }}Span{{ optname }}) {{ private }}Attr() {}
+
+{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on a " ~ span ~ ", when " ~ start ~ " starts it or later through SetAttributes.", opt.requirement_doc] | select | join("\n\n") | comment }}
+func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
+	return {{ private }}Span{{ optname }}{v: v}
+}
+{% endif %}
+{%- endfor %}
+{%- endif %}
+{%- if not def.name_parts %}
+{{ [name ~ "Name is the name the `" ~ def.id ~ "` span is started with.", def.name.note, "An empty " ~ name ~ "Name, including the zero one, names the span `" ~ def.type ~ "`."] | select | join("\n\n") | comment }}
+type {{ name }}Name struct{ value string }
+
+{{ ["New" ~ name ~ "Name returns name as a " ~ name ~ "Name."] | join | comment }}
+func New{{ name }}Name(name string) {{ name }}Name {
+	return {{ name }}Name{value: name}
+}
+{% endif %}
+{{ [span ~ " is a started span of `" ~ def.id ~ "`. The zero " ~ span ~ " records nothing.", deprecated] | select | join("\n\n") | comment }}
+type {{ span }} struct{ span trace.Span }
+
+{{ ["Span returns the underlying trace.Span, or a no-op one for the zero " ~ span ~ "."] | join | comment }}
+func (s {{ span }}) Span() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+{{ ["End ends the span."] | join | comment }}
+func (s {{ span }}) End(opts ...trace.SpanEndOption) {
+	s.Span().End(opts...)
+}
+{% if def.has_late_attrs %}
+{{ ["SetAttributes sets attributes on the span after it started."] | join | comment }}
+func (s {{ span }}) SetAttributes(attrs ...{{ name }}Attr) {
+	kvs := make([]attribute.KeyValue, 0, len(attrs))
+	for _, attr := range attrs {
+		kvs = append(kvs, attr.{{ private }}StartAttr())
+	}
+	s.Span().SetAttributes(kvs...)
+}
+{% endif %}
+{{ ["RecordError records err as an exception event on the span."] | join | comment }}
+func (s {{ span }}) RecordError(err error, opts ...trace.EventOption) {
+	s.Span().RecordError(err, opts...)
+}
+
+{{ ["SetStatus sets the status of the span."] | join | comment }}
+func (s {{ span }}) SetStatus(code codes.Code, description string) {
+	s.Span().SetStatus(code, description)
+}
+{%- set name_doc = "The span is named `" ~ def.name_template ~ "`, with each placeholder replaced by the value of the attribute it names." if def.name_parts else none %}
+
+{{ [start ~ " starts the `" ~ def.id ~ "` span from tracer with span kind " ~ def.kind ~ (", as a refinement of `" ~ def.refines ~ "`" if def.refines else "") ~ ".", def.brief, def.note, name_doc, opt_in, deprecated] | select | join("\n\n") | comment }}
+func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if not def.name_parts %}, name {{ name }}Name{% endif %}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.optional %}, opts ...{{ name }}StartAttr{% endif %}) (context.Context, {{ span }}) {
+{%- if not def.name_parts %}
+	if name.value == "" {
+		name = {{ name }}Name{value: {{ def.type | tojson }}}
+	}
+{%- endif %}
+{%- if def.required or def.optional %}
+	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
+{%- for req in def.required %}
+	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
+{%- endfor %}
+{%- if def.optional %}
+	for _, opt := range opts {
+		kvs = append(kvs, opt.{{ private }}StartAttr())
+	}
+{%- endif %}
+{%- endif %}
+{%- if def.name_parts %}
+	name := {% for part in def.name_parts %}{% if not loop.first %} + {% endif %}{% if part.attr %}{{ attr_kv(part.attr, n.unexported(part.attr.attr_param)) }}.Value.Emit(){% else %}{{ part.text | tojson }}{% endif %}{% endfor %}
+{%- endif %}
+	ctx, span := tracer.TraceTracer().Start(
+		ctx,
+{%- if def.name_parts %}
+		name,
+{%- else %}
+		name.value,
+{%- endif %}
+		trace.WithSpanKind(trace.{{ def.kind | map_text("span_kind") }}),
+{%- if def.required or def.optional %}
+		trace.WithAttributes(kvs...),
+{%- endif %}
+	)
+	return ctx, {{ span }}{span: span}
+}
+{% endfor %}{% endfilter %}

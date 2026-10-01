@@ -99,6 +99,23 @@ deny contains finding if {
 	}
 }
 
+deny contains finding if {
+	some span in input.registry.spans
+	count(split(span.type, ".")) < 2
+
+	finding := {
+		"id": "go_codegen_span_without_namespace",
+		"context": {},
+		"message": sprintf(
+			"Span '%s' has no namespace. The Go template puts each span in a package named for its namespace and names it after the rest of the type, so the type needs both.",
+			[span.type],
+		),
+		"level": "violation",
+		"signal_type": "span",
+		"signal_name": span.type,
+	}
+}
+
 # The value type follows the code_generation.metric_value_type annotation the
 # OpenTelemetry semantic conventions use; a missing and a misspelled one fail
 # the same way.

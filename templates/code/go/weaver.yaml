@@ -41,11 +41,16 @@ templates:
         (semconv_grouped_metrics($o) | map(.metrics) | add // [] | map(.name)) as $names
         | $names + (.refinements.metrics // [] | map(select(.id != .name)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
                     | map(select(.name as $base | $names | any(. == $base)) | .id));
+      def span_ids($o):
+        (.registry.spans // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | map(.type)) as $types
+        | $types + (.refinements.spans // [] | map(select(.id != .type)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+                    | map(select(.type as $base | $types | any(. == $base)) | .id));
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | (.registry.spans // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts)) as $registry_spans
       | (.registry.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts)) as $registry_events
       | [ (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key | ns + {suffix: "attr"})),
-          (instrument_names($opts) | map(ns + {suffix: "metric"})) ]
+          (instrument_names($opts) | map(ns + {suffix: "metric"})),
+          (span_ids($opts) | map(ns + {suffix: "span"})) ]
       | add
       | group_by(.namespace + "/" + .suffix)
       | map({namespace: .[0].namespace, suffix: .[0].suffix, prefixes: (map(.prefix) | unique)})
@@ -161,6 +166,26 @@ templates:
       | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
     application_mode: each
     file_name: "{{ ctx.namespace }}metric/doc.go"
+
+  - template: namespace_doc.go.j2
+    filter: |-
+      def ns: split(".") as $s
+        | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
+          then {namespace: $s[1], prefix: ($s[0:2] | join("."))}
+          else {namespace: $s[0], prefix: $s[0]}
+          end;
+      def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      def span_ids($o):
+        (.registry.spans // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | map(.type)) as $types
+        | $types + (.refinements.spans // [] | map(select(.id != .type)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+                    | map(select(.type as $base | $types | any(. == $base)) | .id));
+      span_ids({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
+      | map(ns)
+      | group_by(.namespace)
+      | map({namespace: .[0].namespace, suffix: "span", prefixes: (map(.prefix) | unique)})
+      | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
+    application_mode: each
+    file_name: "{{ ctx.namespace }}span/doc.go"
 
   # Attributes are regrouped by the derived namespace, and each one carries the
   # identifier its package declares: the key with the package prefix removed.
@@ -337,6 +362,132 @@ templates:
     application_mode: each
     file_name: "{{ ctx.namespace }}metric/metrics.go"
 
+  # Spans follow the metric rules for attributes, requirement levels, and
+  # identifier collisions. A span refinement becomes its own starter, named
+  # from its id, generated only alongside the span it refines. Every attribute
+  # is set when the span starts, since a sampler reads only those.
+  # `name.note` is read only for a name template: a single code span with at
+  # least one `{placeholder}`, each the key of an attribute the span requires.
+  # Such a span is named from those attributes, and any other span takes a
+  # typed name, since Go cannot check prose.
+  - template: spans.go.j2
+    filter: |-
+      def ns: split(".") as $s
+        | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
+          then {namespace: $s[1], prefix: ($s[0:2] | join(".")), short_name: ($s[2:] | join(".")), param: ($s[1:] | join("."))}
+          else {namespace: $s[0], prefix: $s[0], short_name: ($s[1:] | join(".")), param: ($s | join("."))}
+          end;
+      def enum_value_type($key):
+        .members as $members
+        | if ($members | length) == 0
+          then error("attribute \($key) has no enum members left after exclude_deprecated or stable_only, so no value of it could be built")
+          elif ($members | all(.value | type == "string")) then "string"
+          elif ($members | all(.value | type == "boolean")) then "boolean"
+          elif ($members | all(.value | type == "number" and . == floor)) then "int"
+          elif ($members | all(.value | type == "number")) then "double"
+          else error("attribute \($key) has enum members of more than one value type, which no single Go type can hold")
+          end;
+      def root: if ($root_package // "") != "" then $root_package
+        else $import_path | sub("(/v[0-9]+(\\.[0-9]+)*)+/*$"; "") | split("/") | last end;
+      def norm: gsub("[._]"; "") | ascii_downcase;
+      def kept($o):
+        stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+        | map(.attributes = (if .attributes == null then .attributes else .attributes | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) end));
+      def spans($o):
+        (.registry.spans // [] | kept($o) | map(. + {id: .type})) as $spans
+        | ($spans | map(.type)) as $kept_bases
+        | $spans + (.refinements.spans // [] | map(select(.id != .type)) | kept($o)
+            | map(select(.type as $base | $kept_bases | any(. == $base)) | . + {refines: .type}));
+      def name_parts:
+        .required as $required
+        | [(.name.note // "") | scan("`[^`]*`"; "g")] as $codes
+        | if ($codes | length) != 1 then null
+          else ($codes[0] | .[1:-1]) as $code
+          | [$code | scan("\\{[^{}]*\\}"; "g") | .[1:-1]] as $keys
+          | [$code | splits("\\{[^{}]*\\}")] as $texts
+          | if ($keys | length) == 0
+               or ($texts | any(test("[{}]")))
+               or ($keys | any(. as $k | $required | any(.key == $k) | not))
+            then null
+            else [range(0; $keys | length) as $i | {text: $texts[$i]}, ($keys[$i] as $k | {attr: ($required | map(select(.key == $k)) | .[0])})]
+                 + [{text: $texts[-1]}]
+                 | map(select(.text != ""))
+            end
+          end;
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
+      | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key)) as $rendered
+      | (spans({v2: true})
+         | map({key: .id, value: [(.attributes // [])[] | select(.requirement_level == "required") | .key]})
+         | from_entries) as $declared_required
+      | spans($opts)
+      | map(.id as $span
+            | (($declared_required[$span] // []) - [(.attributes // [])[] | .key]) as $dropped
+            | if ($dropped | length) > 0
+              then error("span \($span) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated starter could not set them")
+              else . end)
+      | map(. + (.id | ns | {namespace, prefix, short_name}))
+      | map(if .short_name == ""
+            then error("span \(.id) has no name left after its namespace, so it cannot become a Go identifier")
+            else . end)
+      | map(.id as $span
+            | .attributes |= ((. // []) | sort_by(.key) | map(
+                if (.key as $k | $rendered | any(. == $k))
+                then . + (.key | ns | {attr_namespace: .namespace, attr_short_name: .short_name, attr_param: .param})
+                else . + {imported: true, attr_short_name: .key, attr_param: .key,
+                          attr_type: (if (.type | type) == "object"
+                                      then (.key as $key | .type | enum_value_type($key))
+                                      elif ([.type] | inside(["string", "string[]", "int", "int[]", "double", "double[]", "boolean", "boolean[]"]))
+                                      then .type
+                                      else error("span \($span) references imported attribute \(.key) of type \(.type | tostring), which the Go template does not render") end)}
+                end)))
+      | map(.attributes |= map(. + {requirement_doc: (.requirement_level
+            | if type == "object" and has("conditionally_required") then "Conditionally required: \(.conditionally_required)"
+              elif type == "object" and has("recommended") then "Recommended: \(.recommended)"
+              elif . == "opt_in" then "Opt-in: the convention records it only when a user asks for it."
+              else null end)}))
+      | map(.required = (.attributes | map(select(.requirement_level == "required"))))
+      | map(.optional = (.attributes | map(select(.requirement_level != "required"))))
+      | map(.has_late_attrs = (.optional | any(.sampling_relevant != true)))
+      | map(.name_parts = name_parts)
+      | map(.name_template = (if .name_parts then [.name.note | scan("`[^`]*`"; "g")][0][1:-1] else null end))
+      | map(
+          (.required
+           | group_by(.attr_param | norm)
+           | map(select(length > 1) | map(.key) | join(" and "))) as $required_collisions
+          | (.optional
+             | group_by(.attr_short_name | norm)
+             | map(select(length > 1) | map(.key) | join(" and "))) as $optional_collisions
+          | (.required | map(select(.attr_param | norm | . as $p | ["ctx", "tracer", "name", "opts", "opt", "kvs", "span"] | any(. == $p))) | map(.key)) as $shadowing
+          | if ($required_collisions | length) > 0
+            then error("span \(.id) has required attributes that render to the same Go parameter: \($required_collisions | join("; "))")
+            elif ($optional_collisions | length) > 0
+            then error("span \(.id) has optional attributes that render to the same Go identifier: \($optional_collisions | join("; "))")
+            elif ($shadowing | length) > 0
+            then error("span \(.id) has required attributes whose Go parameter would shadow a name its starter declares: \($shadowing | join(", "))")
+            else . end
+        )
+      | group_by(.namespace)
+      | map(
+          ([.[] | . as $def | .id as $span | (.short_name | norm) as $short
+            | (["P:start" + $short, "P:" + $short + "span"]
+               + (if $def.name_parts then [] else ["P:" + $short + "name", "P:new" + $short + "name"] end)
+               + (if ($def.optional | length) > 0 then ["P:" + $short + "startattr"] else [] end)
+               + (if $def.has_late_attrs then ["P:" + $short + "attr"] else [] end)
+               + ($def.optional | map(.attr_short_name | norm) | map("P:with" + $short + ., "p:" + $short + "span" + .)))[]
+            | {identifier: ., name: $span}]
+           | group_by(.identifier)
+           | map(select(length > 1) | map(.name) | unique | join(" and "))
+           | unique) as $collisions
+          | if ($collisions | length) > 0
+            then error("package \(.[0].namespace)span has spans that render to the same Go identifier: \($collisions | join("; "))")
+            else . end
+        )
+      | map({namespace: .[0].namespace, prefix: .[0].prefix, spans: sort_by(.id),
+             uses_attributes: ([.[] | .attributes[]] | length > 0),
+             imports: ([.[] | .attributes[] | select(.imported | not) | .attr_namespace + "attr"] + [root + "tracer"] | unique)})
+    application_mode: each
+    file_name: "{{ ctx.namespace }}span/spans.go"
+
 # Weaver's word wrap can start a line with the punctuation or space that
 # follows an inline code span, so every template rejoins those lines.
 comment_formats:
@@ -404,6 +555,12 @@ text_maps:
   metric_value_type:
     int: Int64
     double: Float64
+  span_kind:
+    internal: SpanKindInternal
+    server: SpanKindServer
+    client: SpanKindClient
+    producer: SpanKindProducer
+    consumer: SpanKindConsumer
 
 # Words kept upper case when a name segment becomes part of a Go identifier.
 acronyms:

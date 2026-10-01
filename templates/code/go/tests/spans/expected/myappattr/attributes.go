@@ -4,6 +4,75 @@ package myappattr
 
 import "go.opentelemetry.io/otel/attribute"
 
+// queueNameKey is the attribute key of `myapp.queue.name`.
+const queueNameKey = attribute.Key("myapp.queue.name")
+
+// QueueNameAttr is a value of `myapp.queue.name`.
+//
+// Name of the queue the task came from.
+type QueueNameAttr struct{ value string }
+
+// NewQueueNameAttr returns a value of `myapp.queue.name`.
+func NewQueueNameAttr(value string) QueueNameAttr {
+	return QueueNameAttr{value: value}
+}
+
+// Key is the attribute key, for filters and views that need it.
+func (QueueNameAttr) Key() attribute.Key {
+	return queueNameKey
+}
+
+// KeyValue is the `myapp.queue.name` attribute set to this value.
+func (v QueueNameAttr) KeyValue() attribute.KeyValue {
+	return queueNameKey.String(v.value)
+}
+
+// taskAttemptKey is the attribute key of `myapp.task.attempt`.
+const taskAttemptKey = attribute.Key("myapp.task.attempt")
+
+// TaskAttemptAttr is a value of `myapp.task.attempt`.
+//
+// Number of the attempt, starting at one.
+type TaskAttemptAttr struct{ value int }
+
+// NewTaskAttemptAttr returns a value of `myapp.task.attempt`.
+func NewTaskAttemptAttr(value int) TaskAttemptAttr {
+	return TaskAttemptAttr{value: value}
+}
+
+// Key is the attribute key, for filters and views that need it.
+func (TaskAttemptAttr) Key() attribute.Key {
+	return taskAttemptKey
+}
+
+// KeyValue is the `myapp.task.attempt` attribute set to this value.
+func (v TaskAttemptAttr) KeyValue() attribute.KeyValue {
+	return taskAttemptKey.Int(v.value)
+}
+
+// taskIDKey is the attribute key of `myapp.task.id`.
+const taskIDKey = attribute.Key("myapp.task.id")
+
+// TaskIDAttr is a value of `myapp.task.id`.
+//
+// Unique identifier of the task.
+type TaskIDAttr struct{ value string }
+
+// NewTaskIDAttr returns a value of `myapp.task.id`.
+func NewTaskIDAttr(value string) TaskIDAttr {
+	return TaskIDAttr{value: value}
+}
+
+// Key is the attribute key, for filters and views that need it.
+func (TaskIDAttr) Key() attribute.Key {
+	return taskIDKey
+}
+
+// KeyValue is the `myapp.task.id` attribute set to this value.
+func (v TaskIDAttr) KeyValue() attribute.KeyValue {
+	return taskIDKey.String(v.value)
+}
+
 // taskStateKey is the attribute key of `myapp.task.state`.
 const taskStateKey = attribute.Key("myapp.task.state")
 
@@ -11,11 +80,6 @@ const taskStateKey = attribute.Key("myapp.task.state")
 //
 // Current state of the task.
 type TaskStateAttr struct{ value string }
-
-// NewTaskStateAttr returns a value of `myapp.task.state`.
-func NewTaskStateAttr(value string) TaskStateAttr {
-	return TaskStateAttr{value: value}
-}
 
 // Key is the attribute key, for filters and views that need it.
 func (TaskStateAttr) Key() attribute.Key {
@@ -26,3 +90,15 @@ func (TaskStateAttr) Key() attribute.Key {
 func (v TaskStateAttr) KeyValue() attribute.KeyValue {
 	return taskStateKey.String(v.value)
 }
+
+var (
+	// TaskStateQueued is the "queued" member of `myapp.task.state`.
+	//
+	// The task is waiting to run.
+	TaskStateQueued = TaskStateAttr{value: "queued"}
+
+	// TaskStateDone is the "done" member of `myapp.task.state`.
+	//
+	// The task finished.
+	TaskStateDone = TaskStateAttr{value: "done"}
+)

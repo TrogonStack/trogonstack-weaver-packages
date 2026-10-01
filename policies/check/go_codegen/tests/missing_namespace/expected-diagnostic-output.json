@@ -36,5 +36,23 @@
         "type": "PolicyFinding"
       }
     }
+  },
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_span_without_namespace, context={}, message=Span 'work' has no namespace. The Go template puts each span in a package named for its namespace and names it after the rest of the type, so the type needs both., level=Violation, signal_type=Some(\"span\"), signal_name=Some(\"work\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {},
+        "id": "go_codegen_span_without_namespace",
+        "level": "violation",
+        "message": "Span 'work' has no namespace. The Go template puts each span in a package named for its namespace and names it after the rest of the type, so the type needs both.",
+        "signal_name": "work",
+        "signal_type": "span",
+        "type": "PolicyFinding"
+      }
+    }
   }
 ]
