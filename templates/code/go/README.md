@@ -146,6 +146,8 @@ or is tied to no schema, when:
 - Two attributes of one metric render to the same parameter or option name.
 - A key has nothing left after its namespace.
 - A metric references an imported attribute whose type is not supported.
+- `exclude_deprecated` or `stable_only` keeps a metric but leaves out one of
+  its required attributes.
 
 ## Tests
 
