@@ -89,6 +89,8 @@ func (o taskDurationHistogramMethod) taskDurationHistogramAttr() attribute.KeyVa
 
 // WithTaskDurationHistogramMethod attaches `auth.method` to
 // TaskDurationHistogram.
+//
+// Opt-in: the convention records it only when a user asks for it.
 func WithTaskDurationHistogramMethod(v authattr.MethodAttr) TaskDurationHistogramAttr {
 	return taskDurationHistogramMethod{v: v}
 }
@@ -101,6 +103,8 @@ func (o taskDurationHistogramTaskState) taskDurationHistogramAttr() attribute.Ke
 
 // WithTaskDurationHistogramTaskState attaches `myapp.task.state` to
 // TaskDurationHistogram.
+//
+// Conditionally required: If the task reached a final state.
 func WithTaskDurationHistogramTaskState(v myappattr.TaskStateAttr) TaskDurationHistogramAttr {
 	return taskDurationHistogramTaskState{v: v}
 }
@@ -141,13 +145,39 @@ func (m TaskDurationHistogram) Record(ctx context.Context, value float64, myappT
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
 
+// TaskStartedCounterAttr is an attribute `myapp.task.started` accepts in
+// addition to the ones TaskStartedCounter.Add requires.
+type TaskStartedCounterAttr interface {
+	taskStartedCounterAttr() attribute.KeyValue
+}
+
+type taskStartedCounterTaskID struct{ v myappattr.TaskIDAttr }
+
+func (o taskStartedCounterTaskID) taskStartedCounterAttr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+// WithTaskStartedCounterTaskID attaches `myapp.task.id` to
+// TaskStartedCounter.
+//
+// Recommended: When the scheduler assigned an id before the task started.
+func WithTaskStartedCounterTaskID(v myappattr.TaskIDAttr) TaskStartedCounterAttr {
+	return taskStartedCounterTaskID{v: v}
+}
+
 // TaskStartedCounter is `myapp.task.started`.
 //
 // Number of tasks started.
+//
+// Opt-in: the convention records `myapp.task.started` only when a user asks
+// for it.
 type TaskStartedCounter struct{ inst metric.Int64Counter }
 
 // NewTaskStartedCounter creates the `myapp.task.started` instrument from
 // meter.
+//
+// Opt-in: the convention records `myapp.task.started` only when a user asks
+// for it.
 func NewTaskStartedCounter(meter semconv.Meter) (TaskStartedCounter, error) {
 	inst, err := meter.MetricMeter().Int64Counter(
 		"myapp.task.started",
@@ -162,9 +192,13 @@ func NewTaskStartedCounter(meter semconv.Meter) (TaskStartedCounter, error) {
 
 // Add records one `myapp.task.started` measurement. The zero
 // TaskStartedCounter records nothing.
-func (m TaskStartedCounter) Add(ctx context.Context, incr int64) {
+func (m TaskStartedCounter) Add(ctx context.Context, incr int64, opts ...TaskStartedCounterAttr) {
 	if m.inst == nil {
 		return
 	}
-	m.inst.Add(ctx, incr)
+	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
+	for _, opt := range opts {
+		kvs = append(kvs, opt.taskStartedCounterAttr())
+	}
+	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }

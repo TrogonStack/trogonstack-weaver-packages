@@ -55,11 +55,12 @@ metrics:
       - ref: myapp.task.id
         requirement_level: required
       - ref: myapp.task.state
-        requirement_level: recommended
+        requirement_level:
+          conditionally_required: If the task reached a final state.
       - ref: auth.method
         requirement_level: opt_in
   - name: myapp.task.started
-    requirement_level: recommended
+    requirement_level: opt_in
     instrument: counter
     unit: "{task}"
     stability: stable
@@ -67,6 +68,10 @@ metrics:
     annotations:
       code_generation:
         metric_value_type: int
+    attributes:
+      - ref: myapp.task.id
+        requirement_level:
+          recommended: When the scheduler assigned an id before the task started.
   - name: myapp.task.active
     requirement_level: recommended
     instrument: updowncounter

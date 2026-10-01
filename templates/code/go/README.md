@@ -89,6 +89,12 @@ duration.Record(ctx, 1.5, myappattr.NewTaskIDAttr("task_0001"),
 	myappmetric.WithTaskDurationHistogramTaskState(myappattr.TaskStateRunning))
 ```
 
+Go cannot check a requirement condition, so conditionally required,
+recommended, and opt-in attributes are all options. The option's doc comment
+carries the level and its condition, such as
+`Conditionally required: If the task reached a final state.`, and a metric whose
+own `requirement_level` is `opt_in` says so on its type and constructor.
+
 The zero value of an instrument records nothing, so a service can hold one
 before its meter exists. A metric package imports the attribute packages its
 metrics reference, which can belong to other namespaces, and attribute packages
@@ -195,7 +201,7 @@ or is tied to no schema, when:
 | Case         | Covers                                                                                                   |
 | ------------ | -------------------------------------------------------------------------------------------------------- |
 | `attributes` | Every supported type, enums of every member type, notes, deprecated attributes and members.              |
-| `metrics`    | Every instrument, required and optional attributes, cross-namespace references, bucket boundaries.       |
+| `metrics`    | Every instrument, every requirement level, cross-namespace references, bucket boundaries.                |
 | `imported`   | Required and optional attributes imported from a dependency registry, including an enum.                 |
 | `params`     | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`. |
 | `error_*`    | Each case fails generation with one of the errors above.                                                 |
