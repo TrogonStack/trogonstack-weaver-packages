@@ -258,8 +258,13 @@ templates:
         )
       | group_by(.namespace)
       | map(
-          (group_by((.short_name | gsub("[._]"; "") | ascii_downcase) + "/" + .instrument)
-           | map(select(length > 1) | map(.name) | join(" and "))) as $collisions
+          ([.[] | .name as $metric | (.short_name | gsub("[._]"; "") | ascii_downcase) as $short | .instrument as $kind
+            | ([$short + $kind, $short + $kind + "attr", $short + $kind + "observer"]
+               + (if $kind == "histogram" then [] else [$short + "observable" + $kind] end))[]
+            | {identifier: ., name: $metric}]
+           | group_by(.identifier)
+           | map(select(length > 1) | map(.name) | unique | join(" and "))
+           | unique) as $collisions
           | if ($collisions | length) > 0
             then error("package \(.[0].namespace)metric has metrics that render to the same Go identifier: \($collisions | join("; "))")
             else . end

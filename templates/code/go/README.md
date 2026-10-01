@@ -228,7 +228,9 @@ or is tied to no schema, when:
   or its boundaries are not a non-empty list of numbers in strictly increasing
   order.
 - Two metrics or refinements in one package render to the same Go
-  identifier, such as `myapp.task.started` and `myapp.task_started`.
+  identifier, such as `myapp.task.started` and `myapp.task_started`, or the
+  observable form of one is named like the other, such as
+  `myapp.task.started` and `myapp.task.started.observable`.
 - A metric refinement sets a different `code_generation.metric_value_type` or
   `annotations.aggregation` than the metric it refines.
 - `exclude_deprecated` or `stable_only` keeps a metric but leaves out one of
