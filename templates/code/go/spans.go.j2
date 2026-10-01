@@ -34,7 +34,7 @@ import (
 )
 {% for def in ctx.spans %}
 {%- set name = n.exported(def.short_name) %}
-{%- set private = n.unexported(def.short_name) %}
+{%- set private = n.unexported(def.short_name) if def.short_name else "bare" %}
 {%- set span = name ~ "Span" %}
 {%- set start = "Start" ~ name %}
 {%- set deprecated = d.notice(def) %}

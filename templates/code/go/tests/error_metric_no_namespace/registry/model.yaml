@@ -1,0 +1,10 @@
+file_format: definition/2
+metrics:
+  - name: heartbeat
+    instrument: counter
+    unit: "{heartbeat}"
+    stability: stable
+    brief: Number of heartbeats sent.
+    annotations:
+      code_generation:
+        metric_value_type: int

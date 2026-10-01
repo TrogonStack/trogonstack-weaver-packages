@@ -33,7 +33,7 @@ import (
 )
 {% for def in ctx.events %}
 {%- set name = n.exported(def.short_name) %}
-{%- set private = n.unexported(def.short_name) %}
+{%- set private = n.unexported(def.short_name) if def.short_name else "bare" %}
 {%- set emit = "Emit" ~ name %}
 {%- set option = name ~ "Option" %}
 {%- set deprecated = d.notice(def) %}
