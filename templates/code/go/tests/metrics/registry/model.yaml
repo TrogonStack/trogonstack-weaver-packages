@@ -121,3 +121,10 @@ metric_refinements:
         requirement_level: required
       - ref: myapp.task.state
         requirement_level: required
+  - id: worker.task.duration
+    ref: myapp.task.duration
+    stability: stable
+    brief: Time a task took on the worker that ran it.
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required

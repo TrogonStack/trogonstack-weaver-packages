@@ -35,9 +35,13 @@ templates:
           else {namespace: $s[0], prefix: $s[0]}
           end;
       def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      def instrument_names($o):
+        (semconv_grouped_metrics($o) | map(.metrics) | add // [] | map(.name)) as $names
+        | $names + (.refinements.metrics // [] | map(select(.id != .name)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+                    | map(select(.name as $base | $names | any(. == $base)) | .id));
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | [ (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key | ns + {suffix: "attr"})),
-          (semconv_grouped_metrics($opts) | map(.metrics) | add // [] | map(.name | ns + {suffix: "metric"})) ]
+          (instrument_names($opts) | map(ns + {suffix: "metric"})) ]
       | add
       | group_by(.namespace + "/" + .suffix)
       | map({namespace: .[0].namespace, suffix: .[0].suffix, prefixes: (map(.prefix) | unique)})
@@ -86,9 +90,12 @@ templates:
           else {namespace: $s[0], prefix: $s[0]}
           end;
       def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
-      semconv_grouped_metrics({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
-      | map(.metrics) | add // []
-      | map(.name | ns)
+      def instrument_names($o):
+        (semconv_grouped_metrics($o) | map(.metrics) | add // [] | map(.name)) as $names
+        | $names + (.refinements.metrics // [] | map(select(.id != .name)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+                    | map(select(.name as $base | $names | any(. == $base)) | .id));
+      instrument_names({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
+      | map(ns)
       | group_by(.namespace)
       | map({namespace: .[0].namespace, suffix: "metric", prefixes: (map(.prefix) | unique)})
       | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
