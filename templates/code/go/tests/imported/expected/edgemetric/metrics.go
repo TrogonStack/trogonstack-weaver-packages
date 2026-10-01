@@ -42,6 +42,7 @@ func NewUpstreamDurationHistogram(meter semconvmeter.Meter) (UpstreamDurationHis
 		"edge.upstream.duration",
 		metric.WithDescription("Time spent waiting on an upstream server."),
 		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries(0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10),
 	)
 	if err != nil {
 		return UpstreamDurationHistogram{}, fmt.Errorf("create the %s instrument: %w", "edge.upstream.duration", err)
