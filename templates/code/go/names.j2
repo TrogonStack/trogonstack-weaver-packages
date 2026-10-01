@@ -5,3 +5,10 @@
 {%- set words = name | title_case | acronym | split(" ") | list -%}
 {{ words[0] | lower }}{{ words[1:] | join }}
 {%- endmacro -%}
+{%- macro root() -%}
+{%- if params.root_package -%}
+{{ params.root_package }}
+{%- else -%}
+{{ params.import_path | regex_replace("(/v[0-9]+(\\.[0-9]+)*)+/*$", "") | split("/") | last }}
+{%- endif -%}
+{%- endmacro -%}

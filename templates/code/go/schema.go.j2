@@ -1,8 +1,9 @@
 {% import "header.j2" as h -%}
+{% import "names.j2" as n -%}
 {%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
 {{ h.header() }}
 
-package {{ params.root_package }}
+package {{ n.root() }}
 {% if ctx.has_metrics %}
 import (
 	"go.opentelemetry.io/otel/metric"

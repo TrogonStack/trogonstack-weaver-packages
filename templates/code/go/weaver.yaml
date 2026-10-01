@@ -2,8 +2,10 @@
 # See README.md for what this package generates and full parameter docs.
 # Override params per registry via `--param key=value` or `--params <file>`.
 params:
-  # Name of the root package, declared by the top-level doc.go.
-  root_package: semconv
+  # Name of the root package, declared by the top-level doc.go. When empty it
+  # is the last element of `import_path` that is not a version, such as `v2`
+  # or `v1.2.0`, so the package name matches its directory.
+  root_package: ""
   # Extra paragraph for the root package comment, such as when to use this
   # registry instead of another one. Omitted when empty.
   root_description: ""
@@ -52,10 +54,17 @@ templates:
   # The schema URL, and the Meter that carries it into every instrument. A
   # registry without a manifest resolves to weaver's placeholder URL, which
   # would tie the telemetry to no schema at all, and a URL must end in the
-  # schema version to name one schema.
+  # schema version to name one schema. The root package name is checked here,
+  # since every generated package refers to it.
   - template: schema.go.j2
     filter: |-
-      if (.schema_url // "") == "" or .schema_url == "https://unknown/unknown"
+      (if ($root_package // "") != "" then $root_package
+       else $import_path | sub("(/v[0-9]+(\\.[0-9]+)*)+/*$"; "") | split("/") | last end) as $root
+      | if ($root | test("^[A-Za-z_][A-Za-z0-9_]*$") | not) or $root == "_"
+           or any(["break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough", "for", "func", "go", "goto", "if", "import", "interface", "map", "package", "range", "return", "select", "struct", "switch", "type", "var"][]; . == $root)
+        then error("the root package name `\($root)` is not a valid Go package name. Set root_package, or end import_path in an element that is one.")
+        else . end
+      | if (.schema_url // "") == "" or .schema_url == "https://unknown/unknown"
       then error("the registry has no schema_url, so the generated code cannot tie its telemetry to a schema. Declare one in the registry manifest.")
       elif (.schema_url | test("^https?://[^/]+(/[^/]+)*/[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$") | not)
       then error("the registry schema_url \(.schema_url) does not end in the schema version, such as https://example.com/schemas/1.0.0, so it names no particular schema")
