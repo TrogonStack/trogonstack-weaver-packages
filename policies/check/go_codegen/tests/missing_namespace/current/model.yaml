@@ -18,5 +18,5 @@ metrics:
     requirement_level: recommended
     brief: Number of requests handled.
     annotations:
-      go:
-        value_type: int64
+      code_generation:
+        metric_value_type: int

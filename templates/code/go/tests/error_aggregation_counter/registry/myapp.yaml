@@ -7,8 +7,8 @@ metrics:
     stability: stable
     brief: Number of tasks started.
     annotations:
-      go:
-        value_type: int64
+      code_generation:
+        metric_value_type: int
       aggregation:
         method: explicithistogram
         parameters:

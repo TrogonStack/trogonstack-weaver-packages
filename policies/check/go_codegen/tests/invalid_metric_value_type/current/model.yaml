@@ -13,8 +13,8 @@ metrics:
     requirement_level: recommended
     brief: Number of authentication attempts.
     annotations:
-      go:
-        value_type: int32
+      code_generation:
+        metric_value_type: long
   - name: myapp.task.started
     instrument: counter
     unit: "{task}"
@@ -22,5 +22,5 @@ metrics:
     requirement_level: recommended
     brief: Number of tasks started.
     annotations:
-      go:
-        value_type: int64
+      code_generation:
+        metric_value_type: int

@@ -31,8 +31,8 @@ metrics:
     stability: stable
     brief: Amount of each issued invoice.
     annotations:
-      go:
-        value_type: float64
+      code_generation:
+        metric_value_type: double
     attributes:
       - ref: acme.billing.invoice.id
         requirement_level: required

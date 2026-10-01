@@ -38,8 +38,9 @@ import (
 {%- set private = n.unexported(def.short_name) ~ suffix %}
 {%- set method = def.instrument | map_text("metric_instrument_method") %}
 {%- set arg = def.instrument | map_text("metric_instrument_arg") %}
-{%- set gotype = def.annotations.go.value_type %}
-{%- set instrument = gotype | map_text("metric_value_type") ~ suffix %}
+{%- set value_type = def.annotations.code_generation.metric_value_type | map_text("metric_value_type") %}
+{%- set gotype = value_type | lower %}
+{%- set instrument = value_type ~ suffix %}
 {%- set deprecated = d.notice(def) -%}
 {% if def.optional %}
 {{ [name ~ "Attr is an attribute `" ~ def.name ~ "` accepts in addition to the ones " ~ name ~ "." ~ method ~ " requires."] | join | comment }}

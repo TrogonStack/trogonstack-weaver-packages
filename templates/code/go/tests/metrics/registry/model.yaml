@@ -45,8 +45,8 @@ metrics:
     brief: Time a task took from start to finish.
     note: Measured by the worker that ran the task.
     annotations:
-      go:
-        value_type: float64
+      code_generation:
+        metric_value_type: double
       aggregation:
         method: explicithistogram
         parameters:
@@ -65,8 +65,8 @@ metrics:
     stability: stable
     brief: Number of tasks started.
     annotations:
-      go:
-        value_type: int64
+      code_generation:
+        metric_value_type: int
   - name: myapp.task.active
     requirement_level: recommended
     instrument: updowncounter
@@ -74,8 +74,8 @@ metrics:
     stability: development
     brief: Number of tasks currently running.
     annotations:
-      go:
-        value_type: int64
+      code_generation:
+        metric_value_type: int
     attributes:
       - ref: myapp.task.state
         requirement_level: required
@@ -86,8 +86,8 @@ metrics:
     stability: development
     brief: Number of tasks waiting in the queue.
     annotations:
-      go:
-        value_type: int64
+      code_generation:
+        metric_value_type: int
     deprecated:
       reason: renamed
       renamed_to: myapp.task.active
@@ -98,8 +98,8 @@ metrics:
     stability: stable
     brief: Number of authentication attempts.
     annotations:
-      go:
-        value_type: int64
+      code_generation:
+        metric_value_type: int
     attributes:
       - ref: auth.method
         requirement_level: required

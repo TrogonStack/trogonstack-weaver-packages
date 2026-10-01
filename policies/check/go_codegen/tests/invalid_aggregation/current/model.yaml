@@ -7,8 +7,8 @@ metrics:
     requirement_level: recommended
     brief: Time a task took from start to finish.
     annotations:
-      go:
-        value_type: float64
+      code_generation:
+        metric_value_type: double
       aggregation:
         method: explicithistogram
         parameters:
@@ -20,8 +20,8 @@ metrics:
     requirement_level: recommended
     brief: Time a task waited before it started.
     annotations:
-      go:
-        value_type: float64
+      code_generation:
+        metric_value_type: double
       aggregation:
         method: explicithistogram
         parameters:
@@ -33,8 +33,8 @@ metrics:
     requirement_level: recommended
     brief: Number of tasks started.
     annotations:
-      go:
-        value_type: int64
+      code_generation:
+        metric_value_type: int
       aggregation:
         method: explicithistogram
         parameters:
@@ -46,8 +46,8 @@ metrics:
     requirement_level: recommended
     brief: Size of a task's payload.
     annotations:
-      go:
-        value_type: int64
+      code_generation:
+        metric_value_type: int
       aggregation:
         method: explicithistogram
         parameters:
@@ -59,8 +59,8 @@ metrics:
     requirement_level: recommended
     brief: Time between a task being queued and finishing.
     annotations:
-      go:
-        value_type: float64
+      code_generation:
+        metric_value_type: double
       aggregation:
         method: histogram
   - name: myapp.task.retry.wait
@@ -70,8 +70,8 @@ metrics:
     requirement_level: recommended
     brief: Time a task waited before a retry.
     annotations:
-      go:
-        value_type: float64
+      code_generation:
+        metric_value_type: double
       aggregation:
         method: explicithistogram
         parameters:
