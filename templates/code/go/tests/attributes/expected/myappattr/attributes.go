@@ -4,6 +4,32 @@ package myappattr
 
 import "go.opentelemetry.io/otel/attribute"
 
+// taskAssignedByKey is the attribute key of `myapp.task.assigned_by`.
+const taskAssignedByKey = attribute.Key("myapp.task.assigned_by")
+
+// TaskAssignedByAttr is a value of `myapp.task.assigned_by`.
+//
+// Who assigned the task.
+//
+// The scheduler sets it on every task it passes along to `myapp.task.state`.
+// Workers never set it themselves.
+type TaskAssignedByAttr struct{ value string }
+
+// NewTaskAssignedByAttr returns a value of `myapp.task.assigned_by`.
+func NewTaskAssignedByAttr(value string) TaskAssignedByAttr {
+	return TaskAssignedByAttr{value: value}
+}
+
+// Key is the attribute key, for filters and views that need it.
+func (TaskAssignedByAttr) Key() attribute.Key {
+	return taskAssignedByKey
+}
+
+// KeyValue is the `myapp.task.assigned_by` attribute set to this value.
+func (v TaskAssignedByAttr) KeyValue() attribute.KeyValue {
+	return taskAssignedByKey.String(v.value)
+}
+
 // taskCancelledKey is the attribute key of `myapp.task.cancelled`.
 const taskCancelledKey = attribute.Key("myapp.task.cancelled")
 

@@ -127,6 +127,12 @@ attributes:
           brief: Every task is sampled.
     stability: stable
     brief: Fraction of tasks whose telemetry is sampled.
+  - key: myapp.task.assigned_by
+    type: string
+    stability: stable
+    brief: Who assigned the task.
+    note: The scheduler sets it on every task it passes along to `myapp.task.state`. Workers never set it themselves.
+    examples: ["scheduler"]
   - key: myapp.task.lane
     type:
       members:

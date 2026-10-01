@@ -1,7 +1,7 @@
 {% import "header.j2" as h -%}
 {% import "deprecation.j2" as d -%}
 {% import "names.j2" as n -%}
-{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") -%}
 {{ h.header() }}
 
 package {{ ctx.namespace }}attr

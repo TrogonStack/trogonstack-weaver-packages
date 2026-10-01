@@ -15,7 +15,7 @@ attribute.{{ a.attr_type | map_text("attribute_type_method") }}({{ a.key | tojso
 {{ v }}.KeyValue()
 {%- endif -%}
 {%- endmacro -%}
-{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") -%}
 {{ h.header() }}
 
 package {{ ctx.namespace }}metric
