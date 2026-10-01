@@ -45,6 +45,19 @@ templates:
     application_mode: single
     file_name: doc.go
 
+  # The schema URL, and the Meter that carries it into every instrument. A
+  # registry without a manifest resolves to weaver's placeholder URL, which
+  # would tie the telemetry to no schema at all.
+  - template: schema.go.j2
+    filter: |-
+      if (.schema_url // "") == "" or .schema_url == "https://unknown/unknown"
+      then error("the registry has no schema_url, so the generated code cannot tie its telemetry to a schema. Declare one in the registry manifest.")
+      else . end
+      | {schema_url: .schema_url,
+         has_metrics: (semconv_grouped_metrics({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only}) | map(.metrics) | add // [] | length > 0)}
+    application_mode: single
+    file_name: schema.go
+
   - template: namespace_doc.go.j2
     filter: |-
       def ns: split(".") as $s

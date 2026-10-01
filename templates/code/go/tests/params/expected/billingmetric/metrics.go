@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"example.com/acme/internal/acmesemconv"
 	"example.com/acme/internal/acmesemconv/billingattr"
 	"example.com/acme/internal/acmesemconv/myappattr"
 )
@@ -51,8 +52,8 @@ type InvoiceAmountHistogram struct{ inst metric.Float64Histogram }
 
 // NewInvoiceAmountHistogram creates the `acme.billing.invoice.amount`
 // instrument from meter.
-func NewInvoiceAmountHistogram(meter metric.Meter) (InvoiceAmountHistogram, error) {
-	inst, err := meter.Float64Histogram(
+func NewInvoiceAmountHistogram(meter acmesemconv.Meter) (InvoiceAmountHistogram, error) {
+	inst, err := meter.MetricMeter().Float64Histogram(
 		"acme.billing.invoice.amount",
 		metric.WithDescription("Amount of each issued invoice."),
 		metric.WithUnit("{currency_unit}"),

@@ -26,11 +26,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 {%- endif %}
 	"go.opentelemetry.io/otel/metric"
-{%- if ctx.attr_namespaces %}
-{% for ns in ctx.attr_namespaces %}
+
+	{% if params.import_path.split("/") | last != params.root_package %}{{ params.root_package }} {% endif %}"{{ params.import_path }}"
+{%- for ns in ctx.attr_namespaces %}
 	"{{ params.import_path }}/{{ ns }}attr"
 {%- endfor %}
-{%- endif %}
 )
 {% for def in ctx.metrics %}
 {%- set suffix = def.instrument | map_text("metric_instrument") %}
@@ -64,8 +64,8 @@ func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
 type {{ name }} struct{ inst metric.{{ instrument }} }
 
 {{ ["New" ~ name ~ " creates the `" ~ def.name ~ "` instrument from meter.", deprecated] | select | join("\n\n") | comment }}
-func New{{ name }}(meter metric.Meter) ({{ name }}, error) {
-	inst, err := meter.{{ instrument }}(
+func New{{ name }}(meter {{ params.root_package }}.Meter) ({{ name }}, error) {
+	inst, err := meter.MetricMeter().{{ instrument }}(
 		"{{ def.name }}",
 		metric.WithDescription({{ def.brief | trim | tojson }}),
 		metric.WithUnit({{ def.unit | tojson }}),

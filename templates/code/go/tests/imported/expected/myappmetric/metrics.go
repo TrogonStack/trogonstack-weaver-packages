@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"example.com/semconv"
 	"example.com/semconv/myappattr"
 )
 
@@ -37,8 +38,8 @@ type TaskFailedCounter struct{ inst metric.Int64Counter }
 
 // NewTaskFailedCounter creates the `myapp.task.failed` instrument from
 // meter.
-func NewTaskFailedCounter(meter metric.Meter) (TaskFailedCounter, error) {
-	inst, err := meter.Int64Counter(
+func NewTaskFailedCounter(meter semconv.Meter) (TaskFailedCounter, error) {
+	inst, err := meter.MetricMeter().Int64Counter(
 		"myapp.task.failed",
 		metric.WithDescription("Number of tasks that failed."),
 		metric.WithUnit("{task}"),
