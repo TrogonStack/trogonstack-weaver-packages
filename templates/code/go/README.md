@@ -382,6 +382,132 @@ neither has a Go API counterpart.
   ([weaver#878](https://github.com/open-telemetry/weaver/issues/878)). The
   template carries it over, see [Deprecation](#deprecation).
 
+## Wiring it into a program
+
+Create one `sdklog.LoggerProvider`, `sdktrace.TracerProvider`, and
+`sdkmetric.MeterProvider` per process, register them as the OpenTelemetry
+globals, and build the generated handles from them once at startup. A
+provider caches the logger, tracer, or meter it hands out by instrumentation
+scope, so calling `<root>logger.New`, `<root>tracer.New`, or `<root>meter.New`
+again with the same scope never creates a second SDK instance. Build each
+handle once and pass it down instead of rebuilding it. `devlog.Processor`
+below, under [Readable local output](#readable-local-output), is a processor
+that forwards records to a plain handler so they also print to the terminal.
+
+```go
+const scope = "example.com/myservice/internal/worker"
+
+func main() {
+	ctx := context.Background()
+
+	exporter, err := otlploghttp.New(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	lp := sdklog.NewLoggerProvider(
+		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)),
+		sdklog.WithProcessor(devlog.Processor{Handler: slog.NewTextHandler(os.Stderr, nil)}),
+	)
+	defer lp.Shutdown(ctx)
+	global.SetLoggerProvider(lp)
+	slog.SetDefault(otelslog.NewLogger(scope, otelslog.WithLoggerProvider(lp)))
+
+	logger := semconvlogger.New(lp, scope)
+	tracer := semconvtracer.New(tracerProvider, scope)
+	meter := semconvmeter.New(meterProvider, scope)
+
+	run(ctx, logger, tracer, meter)
+}
+```
+
+`tracerProvider` and `meterProvider` are built the same way, with
+`sdktrace.NewTracerProvider` and `sdkmetric.NewMeterProvider`, and registered
+with `otel.SetTracerProvider` and `otel.SetMeterProvider`. A library that
+takes its telemetry from the ambient OpenTelemetry API, rather than from a
+handle passed to it, reaches the provider through those globals instead of
+building one of its own, so it still ties into the same pipeline.
+
+The scope is the instrumenting package's import path, such as
+`example.com/myservice/internal/worker` above, not the service name. The
+service name belongs in the `Resource` passed to all three providers with
+`WithResource`, since every provider in a process should describe the same
+service.
+
+The zero value of a handle, like the zero `Logger` the [Logger](#logger)
+section describes, records or emits nothing, so a package can hold one before
+its provider exists.
+
+### slog and typed events share one pipeline
+
+`slog.SetDefault(otelslog.NewLogger(scope, otelslog.WithLoggerProvider(lp)))`
+makes slog calls and the generated `Emit...` functions feed the same
+`LoggerProvider`, so a line written with `slog.InfoContext` lands beside the
+events emitted through `<root>logger.Logger`. Always use the `...Context`
+variants, `InfoContext`, `WarnContext`, and so on: `otelslog` reads the trace
+and span IDs from `ctx`, and without it a line is not linked to the span it
+happened in.
+
+Libraries take a `*slog.Logger`, or call `slog.Default()`, and never build
+their own handler, so they inherit whichever handler `main` installed.
+
+Use the typed event when the registry defines the occurrence, and slog for
+everything else: debugging, startup, operational notes. Never log a fact both
+ways. When a slog line starts driving dashboards or alerts, add it to the
+registry and regenerate to get a typed `Emit...` in its place.
+
+### Readable local output
+
+A `sdklog.LoggerProvider` can run more than one processor, and that, not a
+slog multi-handler, is where local output should fan out. The generated
+`Emit...` functions call `log.Logger.Emit` directly, bypassing slog, so a
+`slog.NewMultiHandler` tee registered only on the slog side never sees them.
+A processor registered on the provider sees every record either path
+produces:
+
+```go
+type Processor struct{ Handler slog.Handler }
+
+func (p Processor) OnEmit(ctx context.Context, r *sdklog.Record) error {
+	msg := r.Body().Emit()
+	if name := r.EventName(); name != "" {
+		msg = name
+	}
+	rec := slog.NewRecord(r.Timestamp(), levelOf(r.Severity()), msg, 0)
+	if rec.Time.IsZero() {
+		rec.Time = r.ObservedTimestamp()
+	}
+	r.WalkAttributes(func(kv attribute.KeyValue) bool {
+		rec.AddAttrs(slog.String(string(kv.Key), kv.Value.Emit()))
+		return true
+	})
+	return p.Handler.Handle(ctx, rec)
+}
+
+func (p Processor) Enabled(ctx context.Context, param sdklog.EnabledParameters) bool {
+	return p.Handler.Enabled(ctx, levelOf(param.Severity))
+}
+
+func (Processor) Shutdown(context.Context) error   { return nil }
+func (Processor) ForceFlush(context.Context) error { return nil }
+
+func levelOf(s log.Severity) slog.Level {
+	switch {
+	case s >= log.SeverityError:
+		return slog.LevelError
+	case s >= log.SeverityWarn:
+		return slog.LevelWarn
+	case s >= log.SeverityInfo:
+		return slog.LevelInfo
+	default:
+		return slog.LevelDebug
+	}
+}
+```
+
+`Handler` must be a plain handler, such as `slog.NewTextHandler`, built
+without going through `otelslog`. Pointing it at `slog.Default()` would loop,
+since `slog.SetDefault` above made the default handler `otelslog`.
+
 ## Parameters
 
 | Param                          | Default                                                                            | Description                                                                                                                               |
