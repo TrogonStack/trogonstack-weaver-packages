@@ -20,6 +20,26 @@ attributes:
     stability: stable
     brief: Name of the component that sent the heartbeat.
     examples: ["worker-1"]
+  - key: host.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the host.
+    examples: ["h-1"]
+  - key: host.name
+    type: string
+    stability: stable
+    brief: Name of the host.
+    examples: ["worker-1"]
+entities:
+  - type: host
+    requirement_level: recommended
+    stability: stable
+    brief: A physical or virtual machine.
+    identity:
+      - ref: host.id
+        requirement_level: required
+    description:
+      - ref: host.name
 events:
   - name: exception
     requirement_level: recommended

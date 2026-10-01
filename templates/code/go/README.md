@@ -1,7 +1,8 @@
 # Go Template Package
 
-Generates typed Go attributes, metric instruments, span starters, and event
-emitters from a semantic convention registry, on top of the OpenTelemetry Go API.
+Generates typed Go attributes, metric instruments, span starters, event
+emitters, and entity value types from a semantic convention registry, on top
+of the OpenTelemetry Go API.
 
 Stability: Development
 
@@ -49,6 +50,8 @@ that carries the registry's schema URL:
 | `<namespace>span/spans.go`      | A typed starter and span per span and refinement.                      |
 | `<namespace>event/doc.go`       | Package comment for the event package.                                 |
 | `<namespace>event/events.go`    | A typed `Emit` function per event and refinement.                      |
+| `<namespace>entity/doc.go`      | Package comment for the entity package.                                |
+| `<namespace>entity/entities.go` | A typed value type per entity and refinement.                          |
 
 The namespace is the first segment of a name, or the second when the first is
 listed in `vendor_prefixes`. Identifiers drop that prefix, so `myapp.task.id`
@@ -353,6 +356,46 @@ exceptionevent.Emit(ctx, logger, exceptionattr.NewTypeAttr("ValueError"),
 )
 ```
 
+### Entities
+
+Each entity becomes a `<Name>Entity` value type built by `New<Name>Entity`.
+A required attribute of the entity's identity or description is a typed
+parameter of the constructor, and every other attribute is a trailing option:
+
+```go
+host := myappentity.NewHostEntity(
+	myappattr.NewHostNameAttr("worker-1"),
+	myappentity.WithHostEntityHostType(myappattr.HostTypeVirtual),
+)
+```
+
+`Attributes` returns a copy of the attributes the entity was built from, and
+`Resource` builds a `*resource.Resource` from them, tied to the registry's
+schema. Resources from the same registry merge cleanly:
+
+```go
+res, err := resource.Merge(host.Resource(), queue.Resource())
+```
+
+The zero `<Name>Entity` carries no attributes. Identity attributes come
+before description attributes in both the constructor and the doc comment, so
+a reader can tell at a glance which attributes identify the entity and which
+merely describe it.
+
+Each entity refinement becomes its own value type, named from its id, with
+the identity and description the refinement resolves to. Unlike an event
+refinement, weaver keeps the link to the entity it refines, so the doc
+comment names the base entity. A refinement is generated only when the entity
+it refines is.
+
+An entity whose type has a single segment, such as `host`, has nothing left
+after its namespace. Rather than failing, it renders
+unprefixed, in its own `<name>entity` package:
+
+```go
+host := hostentity.NewEntity(hostattr.NewIDAttr("h-1"))
+```
+
 ### Deprecation
 
 Deprecated attributes, enum members, metrics, spans, and events are generated with a
@@ -364,12 +407,11 @@ since the registry does not pass an attribute's deprecation on to its members
 
 ### Not generated
 
-Entities are not generated: the package covers attributes, metrics, spans,
-and events. An event body has no registry form, so events are emitted without
-one. Span events and links have no registry form either, so `Span` exposes the `trace.Span`
-they are added through.
-Attribute `examples` and entity associations are not rendered either, since
-neither has a Go API counterpart.
+An event body has no registry form, so events are emitted without one. Span
+events and links have no registry form either, so `Span` exposes the
+`trace.Span` they are added through.
+Attribute `examples` and an attribute's `entity_associations` are not
+rendered either, since neither has a Go API counterpart.
 
 ### Known registry caveats
 
@@ -432,6 +474,35 @@ The scope is the instrumenting package's import path, such as
 service name belongs in the `Resource` passed to all three providers with
 `WithResource`, since every provider in a process should describe the same
 service.
+
+An entity describing the process, such as the host it runs on, belongs in
+that same `Resource`. Pass its attributes to `resource.New` under the
+registry's schema URL:
+
+```go
+host := myappentity.NewHostEntity(
+	myappattr.NewHostNameAttr(hostname),
+	myappentity.WithHostEntityHostType(myappattr.HostTypeVirtual),
+)
+
+res, err := resource.New(ctx,
+	resource.WithSchemaURL(semconv.SchemaURL),
+	resource.WithAttributes(host.Attributes()...),
+)
+if err != nil {
+	log.Fatal(err)
+}
+
+lp := sdklog.NewLoggerProvider(sdklog.WithResource(res), ...)
+```
+
+The SDK's own resources, such as `resource.Default()` and the detectors
+`resource.WithTelemetrySDK` and `resource.WithHost`, carry the schema URL of
+the semantic conventions the SDK was built against. Merging one with an
+entity's `Resource` fails with `resource.ErrSchemaURLConflict` and drops the
+schema URL, unless the registry is that same release. Add the SDK's
+attributes through `resource.WithAttributes(resource.Default().Attributes()...)`
+to keep the registry's schema URL instead.
 
 The zero value of a handle, like the zero `Logger` the [Logger](#logger)
 section describes, records or emits nothing, so a package can hold one before
@@ -572,8 +643,14 @@ or is tied to no schema, when:
   such as `myapp.task.run` and `myapp.task_run`.
 - Two events or refinements in one package render to the same Go identifier,
   such as `myapp.task.finished` and `myapp.task_finished`.
-- `exclude_deprecated` or `stable_only` keeps a metric, span, or event but leaves out
-  one of its required attributes.
+- Two entities or refinements in one package render to the same Go
+  identifier, such as `myapp.host.worker` and `myapp.host_worker`.
+- Two attributes of one entity's identity or description render to the same
+  parameter or option name.
+- A required attribute of an entity renders to a parameter named like one its
+  constructor already declares.
+- `exclude_deprecated` or `stable_only` keeps a metric, span, event, or entity
+  but leaves out one of its required attributes.
 
 ## Tests
 
@@ -588,9 +665,10 @@ or is tied to no schema, when:
 | `root_package_version_segment`        | A version element at the end of `import_path` skipped in the root package name.                                                                                                               |
 | `spans`                               | Derived and typed span names, every kind of option, deprecation, refinements, cross-namespace references, and a tracer with no meter package.                                                 |
 | `events`                              | Required and optional attributes, opt-in and deprecated events, a refinement, cross-namespace references, and a logger with no meter package.                                                 |
+| `entities`                            | Required and optional identity and description attributes, a deprecated opt-in attribute, and a refinement that adds a required attribute.                                                    |
 | `histogram_boundaries_by_unit`        | A histogram's unit resolving to default boundaries, a refinement keeping them, explicit boundaries overriding them, and a unit with none.                                                     |
 | `histogram_boundaries_by_unit_params` | `histogram_boundaries_by_unit` replaced by a param, covering a custom unit and opting a unit out of the built-in default.                                                                     |
-| `no_namespace`                        | A span and an event whose name has a single segment, rendering unprefixed in their own package.                                                                                               |
+| `no_namespace`                        | A span, an event, and an entity whose name or type has a single segment, rendering unprefixed in their own package.                                                                           |
 | `error_*`                             | Each case fails generation with one of the errors above.                                                                                                                                      |
 
 Run them with `mise run weaver:test:templates`, and compile their expected

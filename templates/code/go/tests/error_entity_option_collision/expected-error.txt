@@ -1,0 +1,1 @@
+entity myapp.host has optional attributes that render to the same Go identifier: myapp.host.type and myapp.host_type

@@ -1,0 +1,1 @@
+package myappentity has entities that render to the same Go identifier: myapp.host.worker and myapp.host_worker
