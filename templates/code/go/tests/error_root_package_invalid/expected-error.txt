@@ -1,0 +1,1 @@
+the root package name `my-conv` is not a valid Go package name

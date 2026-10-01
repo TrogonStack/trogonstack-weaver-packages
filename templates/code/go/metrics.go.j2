@@ -28,7 +28,7 @@ import (
 {%- endif %}
 	"go.opentelemetry.io/otel/metric"
 
-	{% if params.import_path.split("/") | last != params.root_package %}{{ params.root_package }} {% endif %}"{{ params.import_path }}"
+	{% if params.import_path.split("/") | last != n.root() %}{{ n.root() }} {% endif %}"{{ params.import_path }}"
 {%- for ns in ctx.attr_namespaces %}
 	"{{ params.import_path }}/{{ ns }}attr"
 {%- endfor %}
@@ -67,7 +67,7 @@ func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
 type {{ name }} struct{ inst metric.{{ instrument }} }
 
 {{ ["New" ~ name ~ " creates the `" ~ def.instrument_name ~ "` instrument from meter.", opt_in, deprecated] | select | join("\n\n") | comment }}
-func New{{ name }}(meter {{ params.root_package }}.Meter) ({{ name }}, error) {
+func New{{ name }}(meter {{ n.root() }}.Meter) ({{ name }}, error) {
 	inst, err := meter.MetricMeter().{{ instrument }}(
 		"{{ def.instrument_name }}",
 		metric.WithDescription({{ def.description | trim | tojson }}),
@@ -142,7 +142,7 @@ type {{ observable }} struct {
 }
 
 {{ ["New" ~ observable ~ " creates the `" ~ def.instrument_name ~ "` instrument from meter and registers callback to observe it on every collection.", opt_in, deprecated] | select | join("\n\n") | comment }}
-func New{{ observable }}(meter {{ params.root_package }}.Meter, callback {{ callback }}) ({{ observable }}, error) {
+func New{{ observable }}(meter {{ n.root() }}.Meter, callback {{ callback }}) ({{ observable }}, error) {
 	if callback == nil {
 		return {{ observable }}{}, fmt.Errorf("create the %s instrument: the callback is nil", "{{ def.instrument_name }}")
 	}

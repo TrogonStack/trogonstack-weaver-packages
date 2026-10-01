@@ -28,9 +28,14 @@ for test_dir in "${PACKAGE_DIR}"/tests/*/; do
     import_path="${override:-${import_path}}"
   fi
 
+  # The module is rooted at the import path's host, so an import path that
+  # ends in an element Go rejects as a module path, such as `v1.2.0`, still
+  # builds as a package inside it.
+  module_path="${import_path%%/*}"
   module_dir="${WORK_DIR}/${test_name}"
-  mkdir -p "${module_dir}"
-  cp -R "${expected}/." "${module_dir}/"
+  package_dir="${module_dir}${import_path#"${module_path}"}"
+  mkdir -p "${package_dir}"
+  cp -R "${expected}/." "${package_dir}/"
 
   unformatted="$(gofmt -l "${module_dir}")"
   if [[ -n "${unformatted}" ]]; then
@@ -41,7 +46,7 @@ for test_dir in "${PACKAGE_DIR}"/tests/*/; do
 
   (
     cd "${module_dir}"
-    go mod init "${import_path}" >/dev/null 2>&1
+    go mod init "${module_path}" >/dev/null 2>&1
     go get "go.opentelemetry.io/otel@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/metric@${OTEL_GO_VERSION}" 2>&1 | grep -v "^go: " || true
     go mod tidy
     go build ./...

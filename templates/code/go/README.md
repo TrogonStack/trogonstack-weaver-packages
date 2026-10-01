@@ -13,7 +13,6 @@ weaver registry generate \
   -r {your registry} \
   -p 'https://github.com/TrogonStack/trogonstack-weaver-packages.git@v{version}[policies/check/go_codegen]' \
   -t 'https://github.com/TrogonStack/trogonstack-weaver-packages.git@v{version}[templates]' \
-  --param root_package=semconv \
   --param import_path=example.com/myservice/internal/semconv \
   code/go \
   internal/semconv
@@ -60,6 +59,18 @@ Supported types are `string`, `int`, `double`, `boolean`, their array forms, and
 enums of those. An enum takes the Go type of its members: `string`, `int64`,
 `float64` when any member is fractional, or `bool`. Template and `any` types are
 not rendered.
+
+### Root package
+
+The root package is named after the last element of `import_path`, as Go
+expects of a package in that directory, so `example.com/acme/acmeconv` declares
+`package acmeconv`. Set `root_package` to name it otherwise.
+
+A version belongs in `import_path`, never in a package name. Elements shaped
+like a version, such as `v2` or `v1.2.0`, are skipped, so
+`example.com/acme/acmeconv/v1.2.0` still declares `package acmeconv`, and two
+versions of a registry can live side by side under one module. A file that needs
+both renames one on import.
 
 ### Schema URL
 
@@ -213,16 +224,16 @@ either, since neither has a Go API counterpart.
 
 ## Parameters
 
-| Param                | Default               | Description                                                                                 |
-| -------------------- | --------------------- | ------------------------------------------------------------------------------------------- |
-| `root_package`       | `semconv`             | Package name declared by the root `doc.go`.                                                 |
-| `root_description`   | `""`                  | Extra paragraph in the root `doc.go` comment. Omitted when empty.                           |
-| `import_path`        | `example.com/semconv` | Import path of the output directory. Metric packages import attribute packages through it.  |
-| `header_source`      | `""`                  | What the code was generated from, shown in the `Code generated` header. Omitted when empty. |
-| `regenerate_command` | `""`                  | Command that regenerates the code, shown under the header. Omitted when empty.              |
-| `vendor_prefixes`    | `[]`                  | Leading segments that are a vendor prefix rather than a namespace, such as `[acme]`.        |
-| `exclude_deprecated` | `false`               | Leave deprecated attributes and metrics out.                                                |
-| `stable_only`        | `false`               | Generate only stable attributes and metrics.                                                |
+| Param                | Default               | Description                                                                                            |
+| -------------------- | --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `root_package`       | `""`                  | Package name declared by the root `doc.go`. When empty, the last non-version element of `import_path`. |
+| `root_description`   | `""`                  | Extra paragraph in the root `doc.go` comment. Omitted when empty.                                      |
+| `import_path`        | `example.com/semconv` | Import path of the output directory. Metric packages import attribute packages through it.             |
+| `header_source`      | `""`                  | What the code was generated from, shown in the `Code generated` header. Omitted when empty.            |
+| `regenerate_command` | `""`                  | Command that regenerates the code, shown under the header. Omitted when empty.                         |
+| `vendor_prefixes`    | `[]`                  | Leading segments that are a vendor prefix rather than a namespace, such as `[acme]`.                   |
+| `exclude_deprecated` | `false`               | Leave deprecated attributes and metrics out.                                                           |
+| `stable_only`        | `false`               | Generate only stable attributes and metrics.                                                           |
 
 Pass them with `--param key=value` or a `--params` file. Acronyms that stay
 upper case in identifiers, such as `ID` and `URL`, are listed in
@@ -233,6 +244,8 @@ upper case in identifiers, such as `ID` and `URL`, are listed in
 Generation stops with an error, rather than writing Go that does not compile
 or is tied to no schema, when:
 
+- The root package name, whether set or taken from `import_path`, is not a
+  valid Go package name, such as `my-conv` or `go`.
 - The registry has no manifest declaring a `schema_url`, or the URL does not
   end in the schema version.
 - Two attribute keys in one package render to the same Go identifier, such as
@@ -257,13 +270,15 @@ or is tied to no schema, when:
 
 ## Tests
 
-| Case         | Covers                                                                                                   |
-| ------------ | -------------------------------------------------------------------------------------------------------- |
-| `attributes` | Every supported type, enums of every member type, notes, deprecated attributes and members.              |
-| `metrics`    | Every instrument, every requirement level, cross-namespace references, bucket boundaries.                |
-| `imported`   | Required and optional attributes imported from a dependency registry, including an enum.                 |
-| `params`     | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`. |
-| `error_*`    | Each case fails generation with one of the errors above.                                                 |
+| Case                            | Covers                                                                                                   |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `attributes`                    | Every supported type, enums of every member type, notes, deprecated attributes and members.              |
+| `metrics`                       | Every instrument, every requirement level, cross-namespace references, bucket boundaries.                |
+| `imported`                      | Required and optional attributes imported from a dependency registry, including an enum.                 |
+| `params`                        | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`. |
+| `root_package_from_import_path` | The root package named after `import_path`.                                                              |
+| `root_package_version_segment`  | A version element at the end of `import_path` skipped in the root package name.                          |
+| `error_*`                       | Each case fails generation with one of the errors above.                                                 |
 
 Run them with `mise run weaver:test:templates`, and compile their expected
 output with `mise run weaver:test:go`.
