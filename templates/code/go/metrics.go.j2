@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 {%- endif %}
 	"go.opentelemetry.io/otel/metric"
-{% for pkg in ctx.imports %}
-	"{{ params.import_path }}/{{ pkg }}"
+{% for imp in ctx.imports %}
+	"{{ imp.path }}"
 {%- endfor %}
 )
 {% for def in ctx.metrics %}

@@ -177,13 +177,27 @@ metrics reference, which can belong to other namespaces, and attribute packages
 never import metric packages.
 
 An attribute imported from a dependency registry, such as `error.type` from the
-OpenTelemetry registry, has no generated package. It is taken as its plain Go
-value instead, with the key filled in, so an imported enum is taken as the Go
-value of its members:
+OpenTelemetry registry, has no generated package by default. It is taken as its
+plain Go value instead, with the key filled in, so an imported enum is taken as
+the Go value of its members:
 
 ```go
 failed.Add(ctx, 1, "timeout", myappattr.NewTaskIDAttr("task_0001"))
 ```
+
+Map its namespace to the Go import path of a dependency registry that was
+itself generated with this template, with `imported_import_paths`, and the
+attribute is taken as the typed value from `<path>/<ns>attr` instead, exactly
+like a local attribute:
+
+```go
+failed.Add(ctx, 1, errorattr.TypeTimeout, myappattr.NewTaskIDAttr("task_0001"))
+```
+
+The map's key is the attribute's namespace as this registry's own
+`vendor_prefixes` computes it, so the dependency must have been generated with
+`vendor_prefixes` that name the same attributes the same way. An attribute
+whose namespace is not in the map keeps the plain-value behavior above.
 
 A metric name always keeps a namespace, unlike a span or event name, so a
 metric with nothing left after its namespace is a registry error rather than
@@ -370,17 +384,18 @@ neither has a Go API counterpart.
 
 ## Parameters
 
-| Param                          | Default                                                                            | Description                                                                                                                 |
-| ------------------------------ | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `root_package`                 | `""`                                                                               | Package name declared by the root `doc.go`. When empty, the last non-version element of `import_path`.                      |
-| `root_description`             | `""`                                                                               | Extra paragraph in the root `doc.go` comment. Omitted when empty.                                                           |
-| `import_path`                  | `example.com/semconv`                                                              | Import path of the output directory. Metric packages import attribute packages through it.                                  |
-| `header_source`                | `""`                                                                               | What the code was generated from, shown in the `Code generated` header. Omitted when empty.                                 |
-| `regenerate_command`           | `""`                                                                               | Command that regenerates the code, shown under the header. Omitted when empty.                                              |
-| `vendor_prefixes`              | `[]`                                                                               | Leading segments that are a vendor prefix rather than a namespace, such as `[acme]`.                                        |
-| `exclude_deprecated`           | `false`                                                                            | Leave deprecated attributes, metrics, spans, and events out.                                                                |
-| `stable_only`                  | `false`                                                                            | Generate only stable attributes, metrics, spans, and events.                                                                |
-| `histogram_boundaries_by_unit` | `{s: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]}` | Default explicit bucket boundaries by unit, for a histogram that sets no `annotations.aggregation`. Set to `{}` to opt out. |
+| Param                          | Default                                                                            | Description                                                                                                                               |
+| ------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `root_package`                 | `""`                                                                               | Package name declared by the root `doc.go`. When empty, the last non-version element of `import_path`.                                    |
+| `root_description`             | `""`                                                                               | Extra paragraph in the root `doc.go` comment. Omitted when empty.                                                                         |
+| `import_path`                  | `example.com/semconv`                                                              | Import path of the output directory. Metric packages import attribute packages through it.                                                |
+| `header_source`                | `""`                                                                               | What the code was generated from, shown in the `Code generated` header. Omitted when empty.                                               |
+| `regenerate_command`           | `""`                                                                               | Command that regenerates the code, shown under the header. Omitted when empty.                                                            |
+| `vendor_prefixes`              | `[]`                                                                               | Leading segments that are a vendor prefix rather than a namespace, such as `[acme]`.                                                      |
+| `imported_import_paths`        | `{}`                                                                               | Attribute namespace to the Go import path of a dependency registry generated with this template, such as `{error: example.com/upstream}`. |
+| `exclude_deprecated`           | `false`                                                                            | Leave deprecated attributes, metrics, spans, and events out.                                                                              |
+| `stable_only`                  | `false`                                                                            | Generate only stable attributes, metrics, spans, and events.                                                                              |
+| `histogram_boundaries_by_unit` | `{s: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]}` | Default explicit bucket boundaries by unit, for a histogram that sets no `annotations.aggregation`. Set to `{}` to opt out.               |
 
 Pass them with `--param key=value` or a `--params` file. Acronyms that stay
 upper case in identifiers, such as `ID` and `URL`, are listed in
@@ -408,7 +423,12 @@ or is tied to no schema, when:
 - An enum mixes member value types, or `exclude_deprecated` or `stable_only`
   leaves it with no members.
 - A metric, span, or event references an imported attribute whose type is not
-  supported.
+  supported, or, for one mapped by `imported_import_paths`, an enum with no
+  members to build a value from.
+- A generated file would import two packages under the same Go package name
+  from different import paths, whether both come from `imported_import_paths`
+  or one is a local package. Generation fails rather than aliasing one, so an
+  import always names the package it resolves to.
 - `annotations.aggregation` is set on an instrument other than a histogram,
   uses a method or parameter other than `explicithistogram` and `boundaries`,
   or its boundaries are not a non-empty list of numbers in strictly increasing
@@ -431,20 +451,21 @@ or is tied to no schema, when:
 
 ## Tests
 
-| Case                                  | Covers                                                                                                                                        |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `attributes`                          | Every supported type, enums of every member type, notes, deprecated attributes and members.                                                   |
-| `metrics`                             | Every instrument, every requirement level, cross-namespace references, bucket boundaries.                                                     |
-| `imported`                            | Required and optional attributes imported from a dependency registry, including an enum, a span named from them, and an event.                |
-| `params`                              | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`.                                      |
-| `root_package_from_import_path`       | The root package named after `import_path`.                                                                                                   |
-| `root_package_version_segment`        | A version element at the end of `import_path` skipped in the root package name.                                                               |
-| `spans`                               | Derived and typed span names, every kind of option, deprecation, refinements, cross-namespace references, and a tracer with no meter package. |
-| `events`                              | Required and optional attributes, opt-in and deprecated events, a refinement, cross-namespace references, and a logger with no meter package. |
-| `histogram_boundaries_by_unit`        | A histogram's unit resolving to default boundaries, a refinement keeping them, explicit boundaries overriding them, and a unit with none.     |
-| `histogram_boundaries_by_unit_params` | `histogram_boundaries_by_unit` replaced by a param, covering a custom unit and opting a unit out of the built-in default.                     |
-| `no_namespace`                        | A span and an event whose name has a single segment, rendering unprefixed in their own package.                                               |
-| `error_*`                             | Each case fails generation with one of the errors above.                                                                                      |
+| Case                                  | Covers                                                                                                                                                                                        |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `attributes`                          | Every supported type, enums of every member type, notes, deprecated attributes and members.                                                                                                   |
+| `metrics`                             | Every instrument, every requirement level, cross-namespace references, bucket boundaries.                                                                                                     |
+| `imported`                            | Required and optional attributes imported from a dependency registry, including an enum, a span named from them, and an event.                                                                |
+| `imported_typed`                      | An imported namespace mapped with `imported_import_paths`, taken as a typed value alongside a local attribute and an unmapped raw one, across a metric, a span named from them, and an event. |
+| `params`                              | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`.                                                                                      |
+| `root_package_from_import_path`       | The root package named after `import_path`.                                                                                                                                                   |
+| `root_package_version_segment`        | A version element at the end of `import_path` skipped in the root package name.                                                                                                               |
+| `spans`                               | Derived and typed span names, every kind of option, deprecation, refinements, cross-namespace references, and a tracer with no meter package.                                                 |
+| `events`                              | Required and optional attributes, opt-in and deprecated events, a refinement, cross-namespace references, and a logger with no meter package.                                                 |
+| `histogram_boundaries_by_unit`        | A histogram's unit resolving to default boundaries, a refinement keeping them, explicit boundaries overriding them, and a unit with none.                                                     |
+| `histogram_boundaries_by_unit_params` | `histogram_boundaries_by_unit` replaced by a param, covering a custom unit and opting a unit out of the built-in default.                                                                     |
+| `no_namespace`                        | A span and an event whose name has a single segment, rendering unprefixed in their own package.                                                                                               |
+| `error_*`                             | Each case fails generation with one of the errors above.                                                                                                                                      |
 
 Run them with `mise run weaver:test:templates`, and compile their expected
 output with `mise run weaver:test:go`.
