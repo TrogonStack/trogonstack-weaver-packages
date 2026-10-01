@@ -125,6 +125,9 @@ templates:
   # identifier of the package that owns it, so a metric can use attributes
   # from other namespaces. An attribute imported from a dependency registry has
   # no generated package, so it is passed as its plain Go value instead.
+  # A metric that exclude_deprecated or stable_only keeps while dropping one
+  # of its required attributes fails generation, since recording it without
+  # that attribute would break the convention.
   - template: metrics.go.j2
     filter: |-
       def ns: split(".") as $s
@@ -134,8 +137,16 @@ templates:
           end;
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key)) as $rendered
+      | (semconv_grouped_metrics({v2: true}) | map(.metrics) | add // []
+         | map({key: .name, value: [(.attributes // [])[] | select(.requirement_level == "required") | .key]})
+         | from_entries) as $declared_required
       | semconv_grouped_metrics($opts)
       | map(.metrics) | add // []
+      | map(.name as $metric
+            | (($declared_required[$metric] // []) - [(.attributes // [])[] | .key]) as $dropped
+            | if ($dropped | length) > 0
+              then error("metric \($metric) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated method could not set them")
+              else . end)
       | map(. + (.name | ns | {namespace, prefix, short_name}))
       | map(if .short_name == ""
             then error("metric \(.name) has no name left after its namespace, so it cannot become a Go identifier")
