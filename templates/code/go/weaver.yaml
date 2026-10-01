@@ -105,9 +105,19 @@ templates:
           then {namespace: $s[1], short_name: ($s[2:] | join("."))}
           else {namespace: $s[0], short_name: ($s[1:] | join("."))}
           end;
+      def enum_value_type($key):
+        .members as $members
+        | if ($members | length) == 0
+          then error("attribute \($key) has no enum members left after exclude_deprecated or stable_only, so no value of it could be built")
+          elif ($members | all(.value | type == "string")) then "string"
+          elif ($members | all(.value | type == "boolean")) then "boolean"
+          elif ($members | all(.value | type == "number" and . == floor)) then "int"
+          elif ($members | all(.value | type == "number")) then "double"
+          else error("attribute \($key) has enum members of more than one value type, which no single Go type can hold")
+          end;
       semconv_grouped_attributes({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
       | map(.attributes) | add // []
-      | map(. + (.key | ns))
+      | map(. + (.key | ns) + {value_type: (.key as $key | .type | if type == "object" then enum_value_type($key) else . end)})
       | map(if .short_name == ""
             then error("attribute \(.key) has no name left after its namespace, so it cannot become a Go identifier")
             else . end)
@@ -141,6 +151,16 @@ templates:
         | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
           then {namespace: $s[1], prefix: ($s[0:2] | join(".")), short_name: ($s[2:] | join(".")), param: ($s[1:] | join("."))}
           else {namespace: $s[0], prefix: $s[0], short_name: ($s[1:] | join(".")), param: ($s | join("."))}
+          end;
+      def enum_value_type($key):
+        .members as $members
+        | if ($members | length) == 0
+          then error("attribute \($key) has no enum members left after exclude_deprecated or stable_only, so no value of it could be built")
+          elif ($members | all(.value | type == "string")) then "string"
+          elif ($members | all(.value | type == "boolean")) then "boolean"
+          elif ($members | all(.value | type == "number" and . == floor)) then "int"
+          elif ($members | all(.value | type == "number")) then "double"
+          else error("attribute \($key) has enum members of more than one value type, which no single Go type can hold")
           end;
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key)) as $rendered
@@ -181,9 +201,7 @@ templates:
                 then . + (.key | ns | {attr_namespace: .namespace, attr_short_name: .short_name, attr_param: .param})
                 else . + {imported: true, attr_short_name: .key, attr_param: .key,
                           attr_type: (if (.type | type) == "object"
-                                      then (if (.type.members | all(.value | type == "number")) then "int"
-                                            elif (.type.members | all(.value | type == "string")) then "string"
-                                            else error("metric \($metric) references imported enum attribute \(.key), whose members are neither all strings nor all ints") end)
+                                      then (.key as $key | .type | enum_value_type($key))
                                       elif ([.type] | inside(["string", "string[]", "int", "int[]", "double", "double[]", "boolean", "boolean[]"]))
                                       then .type
                                       else error("metric \($metric) references imported attribute \(.key) of type \(.type | tostring), which the Go template does not render") end)}

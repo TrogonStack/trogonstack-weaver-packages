@@ -1,0 +1,41 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: 1
+          stability: stable
+          brief: The task is waiting to run.
+        - id: running
+          value: running
+          stability: stable
+          brief: The task is running.
+    stability: stable
+    brief: Current state of the task.
+  - key: myapp.task.preemptible
+    type:
+      members:
+        - id: allowed
+          value: true
+          stability: stable
+          brief: The scheduler may preempt the task.
+        - id: forbidden
+          value: false
+          stability: stable
+          brief: The task runs to completion.
+    stability: stable
+    brief: Whether the scheduler may preempt the task.
+  - key: myapp.task.sample_rate
+    type:
+      members:
+        - id: tenth
+          value: 0.1
+          stability: stable
+          brief: One task in ten is sampled.
+        - id: all
+          value: 1
+          stability: stable
+          brief: Every task is sampled.
+    stability: stable
+    brief: Fraction of tasks whose telemetry is sampled.

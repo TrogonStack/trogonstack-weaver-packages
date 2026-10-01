@@ -76,6 +76,44 @@ func (v TaskIDAttr) KeyValue() attribute.KeyValue {
 	return taskIDKey.String(v.value)
 }
 
+// taskLaneKey is the attribute key of `myapp.task.lane`.
+//
+// Deprecated: Lanes were replaced by priorities.
+const taskLaneKey = attribute.Key("myapp.task.lane")
+
+// TaskLaneAttr is a value of `myapp.task.lane`.
+//
+// Lane the task was scheduled in.
+//
+// Deprecated: Lanes were replaced by priorities.
+type TaskLaneAttr struct{ value string }
+
+// Key is the attribute key, for filters and views that need it.
+func (TaskLaneAttr) Key() attribute.Key {
+	return taskLaneKey
+}
+
+// KeyValue is the `myapp.task.lane` attribute set to this value.
+func (v TaskLaneAttr) KeyValue() attribute.KeyValue {
+	return taskLaneKey.String(v.value)
+}
+
+var (
+	// TaskLaneFast is the "fast" member of `myapp.task.lane`.
+	//
+	// The fast lane.
+	//
+	// Deprecated: Lanes were replaced by priorities.
+	TaskLaneFast = TaskLaneAttr{value: "fast"}
+
+	// TaskLaneSlow is the "slow" member of `myapp.task.lane`.
+	//
+	// The slow lane.
+	//
+	// Deprecated: Every task runs in the fast lane.
+	TaskLaneSlow = TaskLaneAttr{value: "slow"}
+)
+
 // taskOwnerKey is the attribute key of `myapp.task.owner`.
 //
 // Deprecated: Replaced by `auth.user.id`.
@@ -104,6 +142,37 @@ func (TaskOwnerAttr) Key() attribute.Key {
 func (v TaskOwnerAttr) KeyValue() attribute.KeyValue {
 	return taskOwnerKey.String(v.value)
 }
+
+// taskPreemptibleKey is the attribute key of `myapp.task.preemptible`.
+const taskPreemptibleKey = attribute.Key("myapp.task.preemptible")
+
+// TaskPreemptibleAttr is a value of `myapp.task.preemptible`.
+//
+// Whether the scheduler may preempt the task.
+type TaskPreemptibleAttr struct{ value bool }
+
+// Key is the attribute key, for filters and views that need it.
+func (TaskPreemptibleAttr) Key() attribute.Key {
+	return taskPreemptibleKey
+}
+
+// KeyValue is the `myapp.task.preemptible` attribute set to this value.
+func (v TaskPreemptibleAttr) KeyValue() attribute.KeyValue {
+	return taskPreemptibleKey.Bool(v.value)
+}
+
+var (
+	// TaskPreemptibleAllowed is the true member of `myapp.task.preemptible`.
+	//
+	// The scheduler may preempt the task.
+	TaskPreemptibleAllowed = TaskPreemptibleAttr{value: true}
+
+	// TaskPreemptibleForbidden is the false member of
+	// `myapp.task.preemptible`.
+	//
+	// The task runs to completion.
+	TaskPreemptibleForbidden = TaskPreemptibleAttr{value: false}
+)
 
 // taskProgressKey is the attribute key of `myapp.task.progress`.
 const taskProgressKey = attribute.Key("myapp.task.progress")
@@ -150,6 +219,36 @@ func (TaskRetriesAttr) Key() attribute.Key {
 func (v TaskRetriesAttr) KeyValue() attribute.KeyValue {
 	return taskRetriesKey.Int(v.value)
 }
+
+// taskSampleRateKey is the attribute key of `myapp.task.sample_rate`.
+const taskSampleRateKey = attribute.Key("myapp.task.sample_rate")
+
+// TaskSampleRateAttr is a value of `myapp.task.sample_rate`.
+//
+// Fraction of tasks whose telemetry is sampled.
+type TaskSampleRateAttr struct{ value float64 }
+
+// Key is the attribute key, for filters and views that need it.
+func (TaskSampleRateAttr) Key() attribute.Key {
+	return taskSampleRateKey
+}
+
+// KeyValue is the `myapp.task.sample_rate` attribute set to this value.
+func (v TaskSampleRateAttr) KeyValue() attribute.KeyValue {
+	return taskSampleRateKey.Float64(v.value)
+}
+
+var (
+	// TaskSampleRateTenth is the 0.1 member of `myapp.task.sample_rate`.
+	//
+	// One task in ten is sampled.
+	TaskSampleRateTenth = TaskSampleRateAttr{value: 0.1}
+
+	// TaskSampleRateAll is the 1 member of `myapp.task.sample_rate`.
+	//
+	// Every task is sampled.
+	TaskSampleRateAll = TaskSampleRateAttr{value: 1}
+)
 
 // taskShardIdsKey is the attribute key of `myapp.task.shard_ids`.
 const taskShardIdsKey = attribute.Key("myapp.task.shard_ids")

@@ -57,7 +57,9 @@ myappattr.TaskIDAttr{}.Key()
 ```
 
 Supported types are `string`, `int`, `double`, `boolean`, their array forms, and
-enums of those. Template and `any` types are not rendered.
+enums of those. An enum takes the Go type of its members: `string`, `int64`,
+`float64` when any member is fractional, or `bool`. Template and `any` types are
+not rendered.
 
 ### Schema URL
 
@@ -94,8 +96,8 @@ never import metric packages.
 
 An attribute imported from a dependency registry, such as `error.type` from the
 OpenTelemetry registry, has no generated package. It is taken as its plain Go
-value instead, with the key filled in, so an imported enum is taken as its
-`string` or `int` value:
+value instead, with the key filled in, so an imported enum is taken as the Go
+value of its members:
 
 ```go
 failed.Add(ctx, 1, "timeout", myappattr.NewTaskIDAttr("task_0001"))
@@ -144,7 +146,10 @@ metrics:
 ### Deprecation
 
 Deprecated attributes, enum members, and metrics are generated with a
-`Deprecated:` paragraph in their doc comment, which Go tooling recognizes. Set
+`Deprecated:` paragraph in their doc comment, which Go tooling recognizes. The
+members of a deprecated enum carry its paragraph unless they declare their own,
+since the registry does not pass an attribute's deprecation on to its members
+([weaver#878](https://github.com/open-telemetry/weaver/issues/878)). Set
 `exclude_deprecated` to leave them out instead.
 
 ## Parameters
@@ -175,6 +180,8 @@ or is tied to no schema, when:
   `myapp.task.id` and `myapp.task_id`.
 - Two attributes of one metric render to the same parameter or option name.
 - A key has nothing left after its namespace.
+- An enum mixes member value types, or `exclude_deprecated` or `stable_only`
+  leaves it with no members.
 - A metric references an imported attribute whose type is not supported.
 - `annotations.aggregation` is set on an instrument other than a histogram,
   uses a method or parameter other than `explicithistogram` and `boundaries`,
@@ -187,7 +194,7 @@ or is tied to no schema, when:
 
 | Case         | Covers                                                                                                   |
 | ------------ | -------------------------------------------------------------------------------------------------------- |
-| `attributes` | Every supported type, string and int enums, notes, deprecated attributes and members.                    |
+| `attributes` | Every supported type, enums of every member type, notes, deprecated attributes and members.              |
 | `metrics`    | Every instrument, required and optional attributes, cross-namespace references, bucket boundaries.       |
 | `imported`   | Required and optional attributes imported from a dependency registry, including an enum.                 |
 | `params`     | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`. |

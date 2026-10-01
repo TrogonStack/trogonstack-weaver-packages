@@ -39,6 +39,34 @@ deny contains finding if {
 	}
 }
 
+# An enum becomes one Go type, so its members must share a value type. Ints
+# and doubles share one, since an int literal fits a float64 field.
+deny contains finding if {
+	some attr in input.registry.attributes
+	is_object(attr.type)
+	kinds := {enum_member_kind(member.value) | some member in attr.type.members}
+	count(kinds) > 1
+
+	finding := {
+		"id": "go_codegen_mixed_enum_members",
+		"context": {
+			"attribute_key": attr.key,
+			"member_kinds": sort(kinds),
+		},
+		"message": sprintf(
+			"Attribute '%s' has enum members of more than one value type (%s). The Go template gives an enum one Go type, so its members must be all strings, all numbers, or all booleans.",
+			[attr.key, concat(", ", sort(kinds))],
+		),
+		"level": "violation",
+	}
+}
+
+enum_member_kind(value) := "string" if is_string(value)
+
+enum_member_kind(value) := "number" if is_number(value)
+
+enum_member_kind(value) := "boolean" if is_boolean(value)
+
 deny contains finding if {
 	some attr in input.registry.attributes
 	count(split(attr.key, ".")) < 2
