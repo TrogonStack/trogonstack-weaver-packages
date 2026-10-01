@@ -147,3 +147,25 @@ number_list(bounds) if {
 		is_number(bound)
 	}
 }
+
+# The OpenTelemetry schema URL ends in the schema version, and weaver resolves
+# a registry without a manifest to a placeholder URL that names no schema.
+deny contains finding if {
+	schema_url := object.get(input, "schema_url", "")
+	not versioned_schema_url(schema_url)
+
+	finding := {
+		"id": "go_codegen_invalid_schema_url",
+		"context": {"schema_url": schema_url},
+		"message": sprintf(
+			"The registry schema_url '%s' must be declared in the registry manifest and end in the schema version, such as 'https://example.com/schemas/1.0.0'. The Go template ties every instrument to it.",
+			[schema_url],
+		),
+		"level": "violation",
+	}
+}
+
+versioned_schema_url(schema_url) if {
+	schema_url != "https://unknown/unknown"
+	regex.match(`^https?://[^/]+(/[^/]+)*/[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$`, schema_url)
+}
