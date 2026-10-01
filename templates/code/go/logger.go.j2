@@ -1,0 +1,31 @@
+{% import "header.j2" as h -%}
+{% import "names.j2" as n -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
+{{ h.header() }}
+
+package {{ n.root() }}logger
+
+import (
+	"go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/log/noop"
+
+	{% if params.import_path.split("/") | last != n.root() %}{{ n.root() }} {% endif %}"{{ params.import_path }}"
+)
+
+{{ ["Logger is a log.Logger whose instrumentation scope carries " ~ n.root() ~ ".SchemaURL, so every log record it emits is tied to the registry's schema.", "The zero Logger emits log records that go nowhere."] | join("\n\n") | comment }}
+type Logger struct{ logger log.Logger }
+
+{{ ["New returns the logger named name from provider, with " ~ n.root() ~ ".SchemaURL set on its instrumentation scope. A schema URL in opts is replaced."] | join | comment }}
+func New(provider log.LoggerProvider, name string, opts ...log.LoggerOption) Logger {
+	opts = append(opts[:len(opts):len(opts)], log.WithSchemaURL({{ n.root() }}.SchemaURL))
+	return Logger{logger: provider.Logger(name, opts...)}
+}
+
+{{ ["LogLogger returns the underlying log.Logger, or a no-op one for the zero Logger."] | join | comment }}
+func (l Logger) LogLogger() log.Logger {
+	if l.logger == nil {
+		return noop.Logger{}
+	}
+	return l.logger
+}
+{% endfilter %}

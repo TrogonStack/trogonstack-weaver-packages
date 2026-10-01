@@ -1,0 +1,13 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.state
+    type: string
+    stability: stable
+    brief: Current state of the task.
+events:
+  - name: myapp.task.finished
+    stability: development
+    brief: A task reached a final state.
+    attributes:
+      - ref: myapp.task.state
+        requirement_level: required

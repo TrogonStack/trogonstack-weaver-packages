@@ -43,6 +43,7 @@ templates:
                     | map(select(.name as $base | $names | any(. == $base)) | .id));
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | (.registry.spans // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts)) as $registry_spans
+      | (.registry.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts)) as $registry_events
       | [ (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key | ns + {suffix: "attr"})),
           (instrument_names($opts) | map(ns + {suffix: "metric"})) ]
       | add
@@ -51,6 +52,7 @@ templates:
       | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
       | (if any(.[]; .suffix == "metric") then [{handle: "meter", summary: "the Meter every metric instrument is created from"}] else [] end)
         + (if ($registry_spans | length) > 0 then [{handle: "tracer", summary: "the Tracer that starts spans tied to the schema"}] else [] end)
+        + (if ($registry_events | length) > 0 then [{handle: "logger", summary: "the Logger that emits events tied to the schema"}] else [] end)
         + .
     application_mode: single
     file_name: doc.go
@@ -106,6 +108,22 @@ templates:
     filter: *tracer_filter
     application_mode: each
     file_name: "{{ ctx.root }}tracer/tracer.go"
+
+  # The Logger that carries the schema URL into every event, generated when
+  # the registry keeps an event after stability, deprecation, and exclusion.
+  - template: logger_doc.go.j2
+    filter: &logger_filter |-
+      def root: if ($root_package // "") != "" then $root_package
+        else $import_path | sub("(/v[0-9]+(\\.[0-9]+)*)+/*$"; "") | split("/") | last end;
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $o
+      | if (.registry.events // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | length) > 0
+        then [{root: root}] else [] end
+    application_mode: each
+    file_name: "{{ ctx.root }}logger/doc.go"
+  - template: logger.go.j2
+    filter: *logger_filter
+    application_mode: each
+    file_name: "{{ ctx.root }}logger/logger.go"
 
   - template: namespace_doc.go.j2
     filter: |-

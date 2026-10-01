@@ -39,6 +39,8 @@ that carries the registry's schema URL:
 | `<root>meter/meter.go`          | The `Meter` every instrument is created from.                          |
 | `<root>tracer/doc.go`           | Package comment for the tracer package, when the registry has spans.   |
 | `<root>tracer/tracer.go`        | The `Tracer` that starts spans tied to the schema.                     |
+| `<root>logger/doc.go`           | Package comment for the logger package, when the registry has events.  |
+| `<root>logger/logger.go`        | The `Logger` that emits events tied to the schema.                     |
 | `<namespace>attr/doc.go`        | Package comment for the attribute package.                             |
 | `<namespace>attr/attributes.go` | A typed value per attribute, plus enum members as package variables.   |
 | `<namespace>metric/doc.go`      | Package comment for the metric package.                                |
@@ -112,6 +114,19 @@ ctx, span := tracer.TraceTracer().Start(ctx, "run task")
 ```
 
 The zero `Tracer` starts spans that record nothing.
+
+### Logger
+
+When the registry declares an event, `<root>logger` holds a `Logger` built the
+same way, over the OpenTelemetry Logs API, so log records emitted from it are
+tied to the registry's schema:
+
+```go
+logger := semconvlogger.New(provider, "example.com/myservice")
+logger.LogLogger().Emit(ctx, record)
+```
+
+The zero `Logger` emits log records that go nowhere.
 
 ### Metrics
 
@@ -233,7 +248,8 @@ since the registry does not pass an attribute's deprecation on to its members
 ### Not generated
 
 Typed spans, events, and entities are not generated: the package covers
-attributes and metrics, plus the tracer that spans would be started from.
+attributes and metrics, plus the tracer and logger that spans and events would
+be started and emitted from.
 Attribute `examples` and entity associations are not rendered either, since
 neither has a Go API counterpart.
 
@@ -305,6 +321,7 @@ or is tied to no schema, when:
 | `root_package_from_import_path` | The root package named after `import_path`.                                                              |
 | `root_package_version_segment`  | A version element at the end of `import_path` skipped in the root package name.                          |
 | `spans`                         | A registry with a span and no metrics, which gets a tracer package and no meter package.                 |
+| `events`                        | A registry with an event and no metrics, which gets a logger package and no meter package.               |
 | `error_*`                       | Each case fails generation with one of the errors above.                                                 |
 
 Run them with `mise run weaver:test:templates`, and compile their expected

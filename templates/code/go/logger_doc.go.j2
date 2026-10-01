@@ -1,0 +1,8 @@
+{% import "header.j2" as h -%}
+{% import "names.j2" as n -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
+{{ h.header() }}
+
+{{ ["Package " ~ n.root() ~ "logger holds the Logger that emits the registry's events, so every log record it emits is tied to " ~ n.root() ~ ".SchemaURL."] | join | comment }}
+package {{ n.root() }}logger
+{% endfilter %}
