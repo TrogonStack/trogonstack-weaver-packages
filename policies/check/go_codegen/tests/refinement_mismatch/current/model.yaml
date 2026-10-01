@@ -1,0 +1,35 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.duration
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Time a task took from start to finish.
+    annotations:
+      code_generation:
+        metric_value_type: double
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [0.1, 1, 10]
+metric_refinements:
+  - id: myapp.task.retry.duration
+    ref: myapp.task.duration
+    stability: stable
+    brief: Time a retried task took from start to finish.
+    annotations:
+      code_generation:
+        metric_value_type: int
+  - id: myapp.task.batch.duration
+    ref: myapp.task.duration
+    stability: stable
+    brief: Time a batch task took from start to finish.
+    annotations:
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [1, 10]
+  - id: myapp.task.queued.duration
+    ref: myapp.task.duration
+    stability: stable
+    brief: Time a queued task took from start to finish.

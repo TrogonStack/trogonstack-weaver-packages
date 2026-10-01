@@ -35,9 +35,13 @@ templates:
           else {namespace: $s[0], prefix: $s[0]}
           end;
       def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      def instrument_names($o):
+        (semconv_grouped_metrics($o) | map(.metrics) | add // [] | map(.name)) as $names
+        | $names + (.refinements.metrics // [] | map(select(.id != .name)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+                    | map(select(.name as $base | $names | any(. == $base)) | .id));
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | [ (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key | ns + {suffix: "attr"})),
-          (semconv_grouped_metrics($opts) | map(.metrics) | add // [] | map(.name | ns + {suffix: "metric"})) ]
+          (instrument_names($opts) | map(ns + {suffix: "metric"})) ]
       | add
       | group_by(.namespace + "/" + .suffix)
       | map({namespace: .[0].namespace, suffix: .[0].suffix, prefixes: (map(.prefix) | unique)})
@@ -86,9 +90,12 @@ templates:
           else {namespace: $s[0], prefix: $s[0]}
           end;
       def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
-      semconv_grouped_metrics({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
-      | map(.metrics) | add // []
-      | map(.name | ns)
+      def instrument_names($o):
+        (semconv_grouped_metrics($o) | map(.metrics) | add // [] | map(.name)) as $names
+        | $names + (.refinements.metrics // [] | map(select(.id != .name)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+                    | map(select(.name as $base | $names | any(. == $base)) | .id));
+      instrument_names({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
+      | map(ns)
       | group_by(.namespace)
       | map({namespace: .[0].namespace, suffix: "metric", prefixes: (map(.prefix) | unique)})
       | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
@@ -145,6 +152,11 @@ templates:
   # Go cannot enforce a requirement condition, so conditionally required,
   # recommended, and opt-in attributes stay options and carry their level in
   # the option's doc comment.
+  # A metric refinement becomes its own typed instrument, named from its id,
+  # that records under the refined metric's name with that metric's
+  # description, unit, value type, and boundaries, since the SDK treats two
+  # instruments of one name with different descriptions as a conflict. It is
+  # generated only alongside the metric it refines.
   # A metric that exclude_deprecated or stable_only keeps while dropping one
   # of its required attributes fails generation, since recording it without
   # that attribute would break the convention.
@@ -165,13 +177,28 @@ templates:
           elif ($members | all(.value | type == "number")) then "double"
           else error("attribute \($key) has enum members of more than one value type, which no single Go type can hold")
           end;
+      def kept($o):
+        stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+        | map(.attributes = (if .attributes == null then .attributes else .attributes | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) end));
+      def instruments($o):
+        (semconv_grouped_metrics($o) | map(.metrics) | add // []) as $metrics
+        | ($metrics | map(.name)) as $kept_bases
+        | (.registry.metrics // [] | map({key: .name, value: .}) | from_entries) as $bases
+        | $metrics + (.refinements.metrics // [] | map(select(.id != .name)) | kept($o)
+            | map(select(.name as $base | $kept_bases | any(. == $base)))
+            | map(. as $r | $bases[$r.name] as $b
+                  | if ($r.annotations.code_generation.metric_value_type // null) != ($b.annotations.code_generation.metric_value_type // null)
+                    then error("metric refinement \($r.id) sets a different code_generation.metric_value_type than \($r.name), but both record into one instrument")
+                    elif ($r.annotations.aggregation // null) != ($b.annotations.aggregation // null)
+                    then error("metric refinement \($r.id) sets a different annotations.aggregation than \($r.name), but both record into one instrument")
+                    else . + {name: $r.id, refines: $r.name, instrument_name: $r.name, description: $b.brief, unit: $b.unit} end));
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key)) as $rendered
-      | (semconv_grouped_metrics({v2: true}) | map(.metrics) | add // []
+      | (instruments({v2: true})
          | map({key: .name, value: [(.attributes // [])[] | select(.requirement_level == "required") | .key]})
          | from_entries) as $declared_required
-      | semconv_grouped_metrics($opts)
-      | map(.metrics) | add // []
+      | instruments($opts)
+      | map({instrument_name: .name, description: .brief} + .)
       | map(.name as $metric
             | (($declared_required[$metric] // []) - [(.attributes // [])[] | .key]) as $dropped
             | if ($dropped | length) > 0
@@ -230,6 +257,13 @@ templates:
             else . end
         )
       | group_by(.namespace)
+      | map(
+          (group_by((.short_name | gsub("[._]"; "") | ascii_downcase) + "/" + .instrument)
+           | map(select(length > 1) | map(.name) | join(" and "))) as $collisions
+          | if ($collisions | length) > 0
+            then error("package \(.[0].namespace)metric has metrics that render to the same Go identifier: \($collisions | join("; "))")
+            else . end
+        )
       | map({namespace: .[0].namespace, prefix: .[0].prefix, metrics: sort_by(.name),
              uses_attributes: ([.[] | .attributes[]] | length > 0),
              attr_namespaces: ([.[] | .attributes[] | select(.imported | not) | .attr_namespace] | unique)})

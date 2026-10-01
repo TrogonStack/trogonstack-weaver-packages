@@ -145,6 +145,65 @@ func (m TaskDurationHistogram) Record(ctx context.Context, value float64, myappT
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
 
+// TaskRetryDurationHistogramAttr is an attribute `myapp.task.retry.duration`
+// accepts in addition to the ones TaskRetryDurationHistogram.Record
+// requires.
+type TaskRetryDurationHistogramAttr interface {
+	taskRetryDurationHistogramAttr() attribute.KeyValue
+}
+
+type taskRetryDurationHistogramMethod struct{ v authattr.MethodAttr }
+
+func (o taskRetryDurationHistogramMethod) taskRetryDurationHistogramAttr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+// WithTaskRetryDurationHistogramMethod attaches `auth.method` to
+// TaskRetryDurationHistogram.
+//
+// Opt-in: the convention records it only when a user asks for it.
+func WithTaskRetryDurationHistogramMethod(v authattr.MethodAttr) TaskRetryDurationHistogramAttr {
+	return taskRetryDurationHistogramMethod{v: v}
+}
+
+// TaskRetryDurationHistogram is `myapp.task.retry.duration`, a refinement of
+// `myapp.task.duration` that records under that metric's name.
+//
+// Time a retried task took from start to finish.
+//
+// Recorded only for tasks that ran more than once.
+type TaskRetryDurationHistogram struct{ inst metric.Float64Histogram }
+
+// NewTaskRetryDurationHistogram creates the `myapp.task.duration` instrument
+// from meter.
+func NewTaskRetryDurationHistogram(meter semconv.Meter) (TaskRetryDurationHistogram, error) {
+	inst, err := meter.MetricMeter().Float64Histogram(
+		"myapp.task.duration",
+		metric.WithDescription("Time a task took from start to finish."),
+		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries(0, 0.005, 0.01, 0.1, 1, 10),
+	)
+	if err != nil {
+		return TaskRetryDurationHistogram{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.duration", err)
+	}
+	return TaskRetryDurationHistogram{inst: inst}, nil
+}
+
+// Record records one `myapp.task.retry.duration` measurement. The zero
+// TaskRetryDurationHistogram records nothing.
+func (m TaskRetryDurationHistogram) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskIDAttr, myappTaskState myappattr.TaskStateAttr, opts ...TaskRetryDurationHistogramAttr) {
+	if m.inst == nil {
+		return
+	}
+	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
+	kvs = append(kvs, myappTaskID.KeyValue())
+	kvs = append(kvs, myappTaskState.KeyValue())
+	for _, opt := range opts {
+		kvs = append(kvs, opt.taskRetryDurationHistogramAttr())
+	}
+	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+}
+
 // TaskStartedCounterAttr is an attribute `myapp.task.started` accepts in
 // addition to the ones TaskStartedCounter.Add requires.
 type TaskStartedCounterAttr interface {

@@ -18,4 +18,5 @@
 //   - [example.com/semconv/authmetric]: `auth.*` metrics
 //   - [example.com/semconv/myappattr]: `myapp.*` attributes
 //   - [example.com/semconv/myappmetric]: `myapp.*` metrics
+//   - [example.com/semconv/workermetric]: `worker.*` metrics
 package semconv
