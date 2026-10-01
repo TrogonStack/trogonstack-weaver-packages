@@ -6,8 +6,10 @@ set -euo pipefail
 
 OTEL_GO_VERSION="${OTEL_GO_VERSION:-v1.46.0}"
 OTEL_GO_LOG_VERSION="${OTEL_GO_LOG_VERSION:-v0.22.0}"
+WEAVER="${WEAVER:-weaver}"
 ROOT="$(pwd)"
 PACKAGE_DIR="${ROOT}/templates/code/go"
+TEMPLATES_ROOT="$(realpath "${PACKAGE_DIR}/../..")"
 DEFAULT_IMPORT_PATH="$(sed -n 's/^  import_path: *//p' "${PACKAGE_DIR}/weaver.yaml")"
 
 WORK_DIR="$(mktemp -d)"
@@ -37,6 +39,29 @@ for test_dir in "${PACKAGE_DIR}"/tests/*/; do
   package_dir="${module_dir}${import_path#"${module_path}"}"
   mkdir -p "${package_dir}"
   cp -R "${expected}/." "${package_dir}/"
+
+  # A test that maps an attribute namespace to a dependency registry, via
+  # `imported_import_paths`, needs that dependency actually generated into the
+  # module too, so the typed references it emits resolve to a real package.
+  dependency_params="${test_dir}dependency-params.yaml"
+  if [[ -f "${dependency_params}" ]]; then
+    dependency_import_path="$(sed -n 's/^  import_path: *//p' "${dependency_params}")"
+    dependency_dir="${module_dir}${dependency_import_path#"${module_path}"}"
+    dependency_observed="${WORK_DIR}/${test_name}-dependency"
+    mkdir -p "${dependency_dir}" "${dependency_observed}"
+    (
+      cd "${test_dir}"
+      NO_COLOR=1 "${WEAVER}" registry generate \
+        -r dependency \
+        --v2 \
+        --quiet \
+        --params "dependency-params.yaml" \
+        --templates="${TEMPLATES_ROOT}" \
+        code/go \
+        "${dependency_observed}"
+    ) || { echo "  FAIL: ${test_name} could not generate its dependency."; exit 1; }
+    cp -R "${dependency_observed}/." "${dependency_dir}/"
+  fi
 
   unformatted="$(gofmt -l "${module_dir}")"
   if [[ -n "${unformatted}" ]]; then

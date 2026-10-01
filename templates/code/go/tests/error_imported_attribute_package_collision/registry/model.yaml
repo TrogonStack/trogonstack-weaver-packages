@@ -1,0 +1,21 @@
+file_format: definition/2
+attributes:
+  - key: error.code
+    type: int
+    stability: stable
+    brief: Numeric error code, local to this registry.
+    examples: [500]
+metrics:
+  - name: myapp.task.failed
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks that failed.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: error.code
+        requirement_level: required
+      - ref: error.type
+        requirement_level: required
