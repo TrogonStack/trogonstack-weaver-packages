@@ -1,0 +1,1 @@
+span myapp.task.run has optional attributes that render to the same Go identifier: myapp.task.id and queue.task.id

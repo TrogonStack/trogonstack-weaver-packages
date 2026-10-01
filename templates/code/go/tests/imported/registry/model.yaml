@@ -34,3 +34,22 @@ metrics:
         requirement_level: required
       - ref: server.port
         requirement_level: recommended
+spans:
+  - type: edge.upstream.request
+    kind: client
+    requirement_level: recommended
+    stability: stable
+    brief: A request to an upstream server.
+    name:
+      note: "`{server.address}:{server.port}`"
+    attributes:
+      - ref: server.address
+        requirement_level: required
+      - ref: server.port
+        requirement_level: required
+      - ref: error.type
+        requirement_level:
+          conditionally_required: If the request failed.
+        sampling_relevant: true
+      - ref: http.request.method_list
+        requirement_level: recommended

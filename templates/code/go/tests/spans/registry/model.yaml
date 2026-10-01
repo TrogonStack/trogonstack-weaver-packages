@@ -1,16 +1,90 @@
 file_format: definition/2
 attributes:
-  - key: myapp.task.state
+  - key: myapp.task.id
     type: string
     stability: stable
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The task is waiting to run.
+        - id: done
+          value: done
+          stability: stable
+          brief: The task finished.
+    stability: stable
     brief: Current state of the task.
+  - key: myapp.task.attempt
+    type: int
+    stability: stable
+    brief: Number of the attempt, starting at one.
+    examples: 1
+  - key: myapp.queue.name
+    type: string
+    stability: stable
+    brief: Name of the queue the task came from.
+    examples: ["reports"]
+  - key: worker.host.name
+    type: string
+    stability: stable
+    brief: Host name of the worker.
+    examples: ["worker-1"]
+  - key: worker.host.port
+    type: int
+    stability: stable
+    brief: Port the worker listens on.
+    examples: 8080
 spans:
+  - type: myapp.task.dispatch
+    kind: client
+    requirement_level: recommended
+    stability: stable
+    brief: The scheduler handing a task to a worker.
+    note: Ends when the worker accepts the task.
+    name:
+      note: "`dispatch {worker.host.name}:{worker.host.port}`"
+    attributes:
+      - ref: worker.host.name
+        requirement_level: required
+      - ref: worker.host.port
+        requirement_level: required
+      - ref: myapp.task.id
+        requirement_level: recommended
+        sampling_relevant: true
+      - ref: myapp.queue.name
+        requirement_level:
+          recommended: When the task came from a named queue.
+      - ref: myapp.task.attempt
+        requirement_level: opt_in
   - type: myapp.task.run
     kind: internal
-    stability: development
+    requirement_level: recommended
+    stability: stable
     brief: One run of a task.
     name:
-      note: "`run {task}`"
+      note: "`run {myapp.task.id}`"
     attributes:
       - ref: myapp.task.state
+        requirement_level: required
+      - ref: myapp.task.id
+        requirement_level: recommended
+  - type: myapp.queue.drain
+    kind: consumer
+    requirement_level: opt_in
+    stability: development
+    brief: Removing every task from a queue.
+    name:
+      note: "`drain` followed by the queue's name, such as `drain reports`."
+    deprecated:
+      reason: obsoleted
+      note: Drain queues by dispatching their tasks instead.
+span_refinements:
+  - id: worker.task.dispatch
+    ref: myapp.task.dispatch
+    attributes:
+      - ref: myapp.task.attempt
         requirement_level: required

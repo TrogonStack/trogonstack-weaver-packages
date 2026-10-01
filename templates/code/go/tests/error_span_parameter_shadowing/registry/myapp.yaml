@@ -1,0 +1,12 @@
+file_format: definition/2
+spans:
+  - type: myapp.task.run
+    kind: internal
+    name:
+      note: ""
+    requirement_level: recommended
+    stability: stable
+    brief: One run of a task.
+    attributes:
+      - ref: tracer
+        requirement_level: required
