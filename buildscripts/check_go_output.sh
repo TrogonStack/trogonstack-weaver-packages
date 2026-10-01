@@ -15,6 +15,7 @@ trap 'rm -rf "${WORK_DIR}"' EXIT
 for test_dir in "${PACKAGE_DIR}"/tests/*/; do
   test_name="$(basename "${test_dir}")"
   expected="${test_dir}expected"
+  [[ -f "${test_dir}expected-error.txt" ]] && continue
   echo "-> Compiling [${test_name}] ..."
   if [[ ! -d "${expected}" ]]; then
     echo "  SKIPPED: Missing expected directory: ${expected}"

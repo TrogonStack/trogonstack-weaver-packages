@@ -155,6 +155,7 @@ or is tied to no schema, when:
 | `metrics`    | Every instrument, required and optional attributes, cross-namespace references.                          |
 | `imported`   | Required and optional attributes imported from a dependency registry, including an enum.                 |
 | `params`     | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`. |
+| `error_*`    | Each case fails generation with one of the errors above.                                                 |
 
 Run them with `mise run weaver:test:templates`, and compile their expected
 output with `mise run weaver:test:go`.

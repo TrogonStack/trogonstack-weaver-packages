@@ -19,6 +19,8 @@ Create a directory under `templates/{kind}/{name}` with:
 - `tests/{case}/registry/`, a registry that exercises the package.
 - `tests/{case}/params.yaml`, when the case overrides params.
 - `tests/{case}/expected/`, the output the case must produce.
+- `tests/{case}/expected-error.txt` in place of `expected/`, when the case
+  must fail generation. It holds text that one of the diagnostics contains.
 
 Generate `expected/` with `mise run weaver:test:update`, then read every file it
 wrote before committing it.

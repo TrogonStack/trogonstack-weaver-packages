@@ -1,0 +1,27 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]
+  - key: queue.task.id
+    type: string
+    stability: stable
+    brief: Identifier the queue gave the task.
+    examples: ["task_0001"]
+metrics:
+  - name: myapp.task.started
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks started.
+    annotations:
+      go:
+        value_type: int64
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: recommended
+      - ref: queue.task.id
+        requirement_level: recommended

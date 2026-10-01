@@ -1,0 +1,1 @@
+package myappattr has attributes that render to the same Go identifier: myapp.task.id and myapp.task_id

@@ -1,0 +1,1 @@
+the registry has no schema_url
