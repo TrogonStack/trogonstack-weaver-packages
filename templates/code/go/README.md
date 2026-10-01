@@ -37,6 +37,8 @@ that carries the registry's schema URL:
 | `schema.go`                     | `SchemaURL`.                                                           |
 | `<root>meter/doc.go`            | Package comment for the meter package, when the registry has metrics.  |
 | `<root>meter/meter.go`          | The `Meter` every instrument is created from.                          |
+| `<root>tracer/doc.go`           | Package comment for the tracer package, when the registry has spans.   |
+| `<root>tracer/tracer.go`        | The `Tracer` that starts spans tied to the schema.                     |
 | `<namespace>attr/doc.go`        | Package comment for the attribute package.                             |
 | `<namespace>attr/attributes.go` | A typed value per attribute, plus enum members as package variables.   |
 | `<namespace>metric/doc.go`      | Package comment for the metric package.                                |
@@ -96,6 +98,20 @@ only code that records metrics imports the metric API through it.
 
 A schema URL passed in the options is replaced. The zero `Meter` creates
 instruments that record nothing.
+
+### Tracer
+
+When the registry declares a span, `<root>tracer` holds a `Tracer` built the
+same way as the meter, with `SchemaURL` set on its instrumentation scope, so
+spans started from it are tied to the registry's schema even before the spans
+themselves are generated:
+
+```go
+tracer := semconvtracer.New(provider, "example.com/myservice")
+ctx, span := tracer.TraceTracer().Start(ctx, "run task")
+```
+
+The zero `Tracer` starts spans that record nothing.
 
 ### Metrics
 
@@ -216,9 +232,10 @@ since the registry does not pass an attribute's deprecation on to its members
 
 ### Not generated
 
-Spans, events, and entities are not generated: the package covers attributes
-and metrics only. Attribute `examples` and entity associations are not rendered
-either, since neither has a Go API counterpart.
+Typed spans, events, and entities are not generated: the package covers
+attributes and metrics, plus the tracer that spans would be started from.
+Attribute `examples` and entity associations are not rendered either, since
+neither has a Go API counterpart.
 
 ### Known registry caveats
 
@@ -287,6 +304,7 @@ or is tied to no schema, when:
 | `params`                        | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`. |
 | `root_package_from_import_path` | The root package named after `import_path`.                                                              |
 | `root_package_version_segment`  | A version element at the end of `import_path` skipped in the root package name.                          |
+| `spans`                         | A registry with a span and no metrics, which gets a tracer package and no meter package.                 |
 | `error_*`                       | Each case fails generation with one of the errors above.                                                 |
 
 Run them with `mise run weaver:test:templates`, and compile their expected

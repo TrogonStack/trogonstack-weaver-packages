@@ -1,0 +1,16 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.state
+    type: string
+    stability: stable
+    brief: Current state of the task.
+spans:
+  - type: myapp.task.run
+    kind: internal
+    stability: development
+    brief: One run of a task.
+    name:
+      note: "`run {task}`"
+    attributes:
+      - ref: myapp.task.state
+        requirement_level: required
