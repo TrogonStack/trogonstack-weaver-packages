@@ -1,0 +1,36 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]
+metrics:
+  - name: myapp.task.failed
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks that failed.
+    annotations:
+      go:
+        value_type: int64
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+      - ref: error.type
+        requirement_level: required
+      - ref: http.request.method_list
+        requirement_level: recommended
+  - name: edge.upstream.duration
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Time spent waiting on an upstream server.
+    annotations:
+      go:
+        value_type: float64
+    attributes:
+      - ref: server.address
+        requirement_level: required
+      - ref: server.port
+        requirement_level: recommended

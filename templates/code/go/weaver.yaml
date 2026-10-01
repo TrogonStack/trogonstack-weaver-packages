@@ -110,7 +110,8 @@ templates:
 
   # Every attribute a metric references is decorated with the namespace and
   # identifier of the package that owns it, so a metric can use attributes
-  # from other namespaces.
+  # from other namespaces. An attribute imported from a dependency registry has
+  # no generated package, so it is passed as its plain Go value instead.
   - template: metrics.go.j2
     filter: |-
       def ns: split(".") as $s
@@ -130,7 +131,14 @@ templates:
             | .attributes |= ((. // []) | sort_by(.key) | map(
                 if (.key as $k | $rendered | any(. == $k))
                 then . + (.key | ns | {attr_namespace: .namespace, attr_short_name: .short_name, attr_param: .param})
-                else error("metric \($metric) references attribute \(.key), which is not generated with the current exclude_deprecated and stable_only params")
+                else . + {imported: true, attr_short_name: .key, attr_param: .key,
+                          attr_type: (if (.type | type) == "object"
+                                      then (if (.type.members | all(.value | type == "number")) then "int"
+                                            elif (.type.members | all(.value | type == "string")) then "string"
+                                            else error("metric \($metric) references imported enum attribute \(.key), whose members are neither all strings nor all ints") end)
+                                      elif ([.type] | inside(["string", "string[]", "int", "int[]", "double", "double[]", "boolean", "boolean[]"]))
+                                      then .type
+                                      else error("metric \($metric) references imported attribute \(.key) of type \(.type | tostring), which the Go template does not render") end)}
                 end)))
       | map(.required = (.attributes | map(select(.requirement_level == "required"))))
       | map(.optional = (.attributes | map(select(.requirement_level != "required"))))
@@ -149,7 +157,8 @@ templates:
         )
       | group_by(.namespace)
       | map({namespace: .[0].namespace, prefix: .[0].prefix, metrics: sort_by(.name),
-             attr_namespaces: ([.[] | .attributes[] | .attr_namespace] | unique)})
+             uses_attributes: ([.[] | .attributes[]] | length > 0),
+             attr_namespaces: ([.[] | .attributes[] | select(.imported | not) | .attr_namespace] | unique)})
     application_mode: each
     file_name: "{{ ctx.namespace }}metric/metrics.go"
 

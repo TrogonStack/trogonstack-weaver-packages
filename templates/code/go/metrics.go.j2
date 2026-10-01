@@ -1,6 +1,20 @@
 {% import "header.j2" as h -%}
 {% import "deprecation.j2" as d -%}
 {% import "names.j2" as n -%}
+{%- macro attr_type(a) -%}
+{%- if a.imported -%}
+{{ a.attr_type | map_text("attribute_field_type") }}
+{%- else -%}
+{{ a.attr_namespace }}attr.{{ n.exported(a.attr_short_name) }}Attr
+{%- endif -%}
+{%- endmacro -%}
+{%- macro attr_kv(a, v) -%}
+{%- if a.imported -%}
+attribute.{{ a.attr_type | map_text("attribute_type_method") }}({{ a.key | tojson }}, {{ v }})
+{%- else -%}
+{{ v }}.KeyValue()
+{%- endif -%}
+{%- endmacro -%}
 {{ h.header() }}
 
 package {{ ctx.namespace }}metric
@@ -8,12 +22,12 @@ package {{ ctx.namespace }}metric
 import (
 	"context"
 	"fmt"
-{% if ctx.attr_namespaces %}
+{% if ctx.uses_attributes %}
 	"go.opentelemetry.io/otel/attribute"
 {%- endif %}
 	"go.opentelemetry.io/otel/metric"
-{% if ctx.attr_namespaces %}
-{%- for ns in ctx.attr_namespaces %}
+{%- if ctx.attr_namespaces %}
+{% for ns in ctx.attr_namespaces %}
 	"{{ params.import_path }}/{{ ns }}attr"
 {%- endfor %}
 {%- endif %}
@@ -34,14 +48,14 @@ type {{ name }}Attr interface {
 }
 {% for opt in def.optional %}
 {%- set optname = n.exported(opt.attr_short_name) %}
-type {{ private }}{{ optname }} struct{ v {{ opt.attr_namespace }}attr.{{ optname }}Attr }
+type {{ private }}{{ optname }} struct{ v {{ attr_type(opt) }} }
 
 func (o {{ private }}{{ optname }}) {{ private }}Attr() attribute.KeyValue {
-	return o.v.KeyValue()
+	return {{ attr_kv(opt, "o.v") }}
 }
 
 {{ ["With" ~ name ~ optname ~ " attaches `" ~ opt.key ~ "` to " ~ name ~ "."] | join | comment }}
-func With{{ name }}{{ optname }}(v {{ opt.attr_namespace }}attr.{{ optname }}Attr) {{ name }}Attr {
+func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
 	return {{ private }}{{ optname }}{v: v}
 }
 {% endfor %}
@@ -63,14 +77,14 @@ func New{{ name }}(meter metric.Meter) ({{ name }}, error) {
 }
 
 {{ [method ~ " records one `" ~ def.name ~ "` measurement. The zero " ~ name ~ " records nothing."] | join | comment }}
-func (m {{ name }}) {{ method }}(ctx context.Context, {{ arg }} {{ gotype }}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ req.attr_namespace }}attr.{{ n.exported(req.attr_short_name) }}Attr{% endfor %}{% if def.optional %}, opts ...{{ name }}Attr{% endif %}) {
+func (m {{ name }}) {{ method }}(ctx context.Context, {{ arg }} {{ gotype }}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.optional %}, opts ...{{ name }}Attr{% endif %}) {
 	if m.inst == nil {
 		return
 	}
 {%- if def.required or def.optional %}
 	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
 {%- for req in def.required %}
-	kvs = append(kvs, {{ n.unexported(req.attr_param) }}.KeyValue())
+	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
 {%- endfor %}
 {%- if def.optional %}
 	for _, opt := range opts {
