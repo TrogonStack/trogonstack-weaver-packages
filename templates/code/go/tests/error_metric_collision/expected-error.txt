@@ -1,0 +1,1 @@
+package myappmetric has metrics that render to the same Go identifier: myapp.task.started and myapp.task_started

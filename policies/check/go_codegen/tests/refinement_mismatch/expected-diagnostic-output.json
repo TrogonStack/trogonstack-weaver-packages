@@ -1,0 +1,44 @@
+[
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_refinement_changes_instrument, context={\"field\":\"aggregation\",\"refined_metric\":\"myapp.task.duration\"}, message=Metric refinement 'myapp.task.batch.duration' sets a different aggregation than 'myapp.task.duration'. The Go template records a refinement into the instrument of the metric it refines, so both must create it the same way., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"myapp.task.batch.duration\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "field": "aggregation",
+          "refined_metric": "myapp.task.duration"
+        },
+        "id": "go_codegen_refinement_changes_instrument",
+        "level": "violation",
+        "message": "Metric refinement 'myapp.task.batch.duration' sets a different aggregation than 'myapp.task.duration'. The Go template records a refinement into the instrument of the metric it refines, so both must create it the same way.",
+        "signal_name": "myapp.task.batch.duration",
+        "signal_type": "metric",
+        "type": "PolicyFinding"
+      }
+    }
+  },
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_refinement_changes_instrument, context={\"field\":\"metric_value_type\",\"refined_metric\":\"myapp.task.duration\"}, message=Metric refinement 'myapp.task.retry.duration' sets a different metric_value_type than 'myapp.task.duration'. The Go template records a refinement into the instrument of the metric it refines, so both must create it the same way., level=Violation, signal_type=Some(\"metric\"), signal_name=Some(\"myapp.task.retry.duration\"), provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "field": "metric_value_type",
+          "refined_metric": "myapp.task.duration"
+        },
+        "id": "go_codegen_refinement_changes_instrument",
+        "level": "violation",
+        "message": "Metric refinement 'myapp.task.retry.duration' sets a different metric_value_type than 'myapp.task.duration'. The Go template records a refinement into the instrument of the metric it refines, so both must create it the same way.",
+        "signal_name": "myapp.task.retry.duration",
+        "signal_type": "metric",
+        "type": "PolicyFinding"
+      }
+    }
+  }
+]

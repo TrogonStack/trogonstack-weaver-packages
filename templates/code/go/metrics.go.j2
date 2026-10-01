@@ -15,7 +15,7 @@ attribute.{{ a.attr_type | map_text("attribute_type_method") }}({{ a.key | tojso
 {{ v }}.KeyValue()
 {%- endif -%}
 {%- endmacro -%}
-{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
 {{ h.header() }}
 
 package {{ ctx.namespace }}metric
@@ -63,21 +63,21 @@ func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
 }
 {% endfor %}
 {%- endif %}
-{{ [name ~ " is `" ~ def.name ~ "`.", def.brief, def.note, opt_in, deprecated] | select | join("\n\n") | comment }}
+{{ [name ~ " is `" ~ def.name ~ "`" ~ (", a refinement of `" ~ def.refines ~ "` that records under that metric's name" if def.refines else "") ~ ".", def.brief, def.note, opt_in, deprecated] | select | join("\n\n") | comment }}
 type {{ name }} struct{ inst metric.{{ instrument }} }
 
-{{ ["New" ~ name ~ " creates the `" ~ def.name ~ "` instrument from meter.", opt_in, deprecated] | select | join("\n\n") | comment }}
+{{ ["New" ~ name ~ " creates the `" ~ def.instrument_name ~ "` instrument from meter.", opt_in, deprecated] | select | join("\n\n") | comment }}
 func New{{ name }}(meter {{ params.root_package }}.Meter) ({{ name }}, error) {
 	inst, err := meter.MetricMeter().{{ instrument }}(
-		"{{ def.name }}",
-		metric.WithDescription({{ def.brief | trim | tojson }}),
+		"{{ def.instrument_name }}",
+		metric.WithDescription({{ def.description | trim | tojson }}),
 		metric.WithUnit({{ def.unit | tojson }}),
 {%- if def.bucket_boundaries %}
 		metric.WithExplicitBucketBoundaries({{ def.bucket_boundaries | join(", ") }}),
 {%- endif %}
 	)
 	if err != nil {
-		return {{ name }}{}, fmt.Errorf("create the %s instrument: %w", "{{ def.name }}", err)
+		return {{ name }}{}, fmt.Errorf("create the %s instrument: %w", "{{ def.instrument_name }}", err)
 	}
 	return {{ name }}{inst: inst}, nil
 }

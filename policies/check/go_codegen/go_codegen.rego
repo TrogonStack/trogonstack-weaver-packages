@@ -198,3 +198,31 @@ versioned_schema_url(schema_url) if {
 	schema_url != "https://unknown/unknown"
 	regex.match(`^https?://[^/]+(/[^/]+)*/[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$`, schema_url)
 }
+
+# A metric refinement records into the instrument of the metric it refines,
+# so it cannot change how that instrument is created.
+deny contains finding if {
+	some refinement in object.get(input, ["refinements", "metrics"], [])
+	refinement.id != refinement.name
+	some base in input.registry.metrics
+	base.name == refinement.name
+	some field in ["metric_value_type", "aggregation"]
+	object.get(refinement, refinement_field_path[field], null) != object.get(base, refinement_field_path[field], null)
+
+	finding := {
+		"id": "go_codegen_refinement_changes_instrument",
+		"context": {"refined_metric": base.name, "field": field},
+		"message": sprintf(
+			"Metric refinement '%s' sets a different %s than '%s'. The Go template records a refinement into the instrument of the metric it refines, so both must create it the same way.",
+			[refinement.id, field, base.name],
+		),
+		"level": "violation",
+		"signal_type": "metric",
+		"signal_name": refinement.id,
+	}
+}
+
+refinement_field_path := {
+	"metric_value_type": ["annotations", "code_generation", "metric_value_type"],
+	"aggregation": ["annotations", "aggregation"],
+}

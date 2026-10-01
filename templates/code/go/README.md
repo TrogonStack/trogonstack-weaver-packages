@@ -149,6 +149,22 @@ metrics:
           boundaries: [0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10]
 ```
 
+### Metric refinements
+
+Each metric refinement becomes its own typed instrument, named from its id,
+with the attributes and requirement levels the refinement declares. A
+refinement that makes an attribute required therefore makes it a parameter:
+
+```go
+retried, err := myappmetric.NewTaskRetryDurationHistogram(meter)
+retried.Record(ctx, 1.5, myappattr.NewTaskIDAttr("task_0001"), myappattr.TaskStateDone)
+```
+
+It records under the name of the metric it refines, created with that metric's
+description, unit, value type, and bucket boundaries, since the SDK reports two
+instruments of one name with different descriptions as a conflict. A refinement
+is generated only when the metric it refines is.
+
 ### Deprecation
 
 Deprecated attributes, enum members, and metrics are generated with a
@@ -193,6 +209,10 @@ or is tied to no schema, when:
   uses a method or parameter other than `explicithistogram` and `boundaries`,
   or its boundaries are not a non-empty list of numbers in strictly increasing
   order.
+- Two metrics or refinements in one package render to the same Go
+  identifier, such as `myapp.task.started` and `myapp.task_started`.
+- A metric refinement sets a different `code_generation.metric_value_type` or
+  `annotations.aggregation` than the metric it refines.
 - `exclude_deprecated` or `stable_only` keeps a metric but leaves out one of
   its required attributes.
 
