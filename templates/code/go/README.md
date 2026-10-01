@@ -75,6 +75,15 @@ before its meter exists. A metric package imports the attribute packages its
 metrics reference, which can belong to other namespaces, and attribute packages
 never import metric packages.
 
+An attribute imported from a dependency registry, such as `error.type` from the
+OpenTelemetry registry, has no generated package. It is taken as its plain Go
+value instead, with the key filled in, so an imported enum is taken as its
+`string` or `int` value:
+
+```go
+failed.Add(ctx, 1, "timeout", myappattr.NewTaskIDAttr("task_0001"))
+```
+
 The registry schema has no field for an instrument's value type, so every
 metric must carry it as an annotation:
 
@@ -119,8 +128,7 @@ when:
   `myapp.task.id` and `myapp.task_id`.
 - Two attributes of one metric render to the same parameter or option name.
 - A key has nothing left after its namespace.
-- A metric references an attribute that `exclude_deprecated` or `stable_only`
-  left out.
+- A metric references an imported attribute whose type is not supported.
 
 ## Tests
 
@@ -128,6 +136,7 @@ when:
 | ------------ | -------------------------------------------------------------------------------------------------------- |
 | `attributes` | Every supported type, string and int enums, notes, deprecated attributes and members.                    |
 | `metrics`    | Every instrument, required and optional attributes, cross-namespace references.                          |
+| `imported`   | Required and optional attributes imported from a dependency registry, including an enum.                 |
 | `params`     | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`. |
 
 Run them with `mise run weaver:test:templates`, and compile their expected
