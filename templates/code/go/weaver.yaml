@@ -142,6 +142,9 @@ templates:
   # `annotations.aggregation`, which mirrors the metric aggregation field
   # proposed in https://github.com/open-telemetry/weaver/issues/844 until the
   # registry schema has one. Only what the Go API can express is accepted.
+  # Go cannot enforce a requirement condition, so conditionally required,
+  # recommended, and opt-in attributes stay options and carry their level in
+  # the option's doc comment.
   # A metric that exclude_deprecated or stable_only keeps while dropping one
   # of its required attributes fails generation, since recording it without
   # that attribute would break the convention.
@@ -206,6 +209,11 @@ templates:
                                       then .type
                                       else error("metric \($metric) references imported attribute \(.key) of type \(.type | tostring), which the Go template does not render") end)}
                 end)))
+      | map(.attributes |= map(. + {requirement_doc: (.requirement_level
+            | if type == "object" and has("conditionally_required") then "Conditionally required: \(.conditionally_required)"
+              elif type == "object" and has("recommended") then "Recommended: \(.recommended)"
+              elif . == "opt_in" then "Opt-in: the convention records it only when a user asks for it."
+              else null end)}))
       | map(.required = (.attributes | map(select(.requirement_level == "required"))))
       | map(.optional = (.attributes | map(select(.requirement_level != "required"))))
       | map(

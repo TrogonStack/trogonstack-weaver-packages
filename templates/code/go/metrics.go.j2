@@ -42,7 +42,8 @@ import (
 {%- set value_type = def.annotations.code_generation.metric_value_type | map_text("metric_value_type") %}
 {%- set gotype = value_type | lower %}
 {%- set instrument = value_type ~ suffix %}
-{%- set deprecated = d.notice(def) -%}
+{%- set deprecated = d.notice(def) %}
+{%- set opt_in = "Opt-in: the convention records `" ~ def.name ~ "` only when a user asks for it." if def.requirement_level == "opt_in" else none -%}
 {% if def.optional %}
 {{ [name ~ "Attr is an attribute `" ~ def.name ~ "` accepts in addition to the ones " ~ name ~ "." ~ method ~ " requires."] | join | comment }}
 type {{ name }}Attr interface {
@@ -56,16 +57,16 @@ func (o {{ private }}{{ optname }}) {{ private }}Attr() attribute.KeyValue {
 	return {{ attr_kv(opt, "o.v") }}
 }
 
-{{ ["With" ~ name ~ optname ~ " attaches `" ~ opt.key ~ "` to " ~ name ~ "."] | join | comment }}
+{{ ["With" ~ name ~ optname ~ " attaches `" ~ opt.key ~ "` to " ~ name ~ ".", opt.requirement_doc] | select | join("\n\n") | comment }}
 func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
 	return {{ private }}{{ optname }}{v: v}
 }
 {% endfor %}
 {%- endif %}
-{{ [name ~ " is `" ~ def.name ~ "`.", def.brief, def.note, deprecated] | select | join("\n\n") | comment }}
+{{ [name ~ " is `" ~ def.name ~ "`.", def.brief, def.note, opt_in, deprecated] | select | join("\n\n") | comment }}
 type {{ name }} struct{ inst metric.{{ instrument }} }
 
-{{ ["New" ~ name ~ " creates the `" ~ def.name ~ "` instrument from meter.", deprecated] | select | join("\n\n") | comment }}
+{{ ["New" ~ name ~ " creates the `" ~ def.name ~ "` instrument from meter.", opt_in, deprecated] | select | join("\n\n") | comment }}
 func New{{ name }}(meter {{ params.root_package }}.Meter) ({{ name }}, error) {
 	inst, err := meter.MetricMeter().{{ instrument }}(
 		"{{ def.name }}",
