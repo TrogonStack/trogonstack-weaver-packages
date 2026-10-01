@@ -9,14 +9,14 @@
 // It declares only SchemaURL, so importing it pulls in no OpenTelemetry API.
 // The handles that carry it into telemetry, such as a Meter, live in
 // packages of their own. Every name lives in a package scoped by its
-// namespace and the kind of signal it describes: attributes become
-// `<namespace>attr`, holding typed attribute values, metrics become
-// `<namespace>metric`, holding typed instruments, spans become
-// `<namespace>span`, holding typed span starters, and events become
-// `<namespace>event`, holding typed event emitters. Identifiers drop the
-// namespace prefix the package name already carries, and a signal package
-// imports the `<namespace>attr` packages its signals need, never the
-// reverse.
+// namespace and the kind it describes: attributes become `<namespace>attr`,
+// holding typed attribute values, metrics become `<namespace>metric`,
+// holding typed instruments, spans become `<namespace>span`, holding typed
+// span starters, events become `<namespace>event`, holding typed event
+// emitters, and entities become `<namespace>entity`, holding typed entity
+// value types. Identifiers drop the namespace prefix the package name
+// already carries, and a package imports the `<namespace>attr` packages its
+// names need, never the reverse.
 //
 // # Packages
 //

@@ -17,9 +17,6 @@
 //
 // # Packages
 //
-//   - [example.com/semconv/semconvtracer]: the Tracer that starts spans tied to the schema
 //   - [example.com/semconv/myappattr]: `myapp.*` attributes
-//   - [example.com/semconv/myappspan]: `myapp.*` spans
-//   - [example.com/semconv/workerattr]: `worker.*` attributes
-//   - [example.com/semconv/workerspan]: `worker.*` spans
+//   - [example.com/semconv/myappentity]: `myapp.*` entities
 package semconv

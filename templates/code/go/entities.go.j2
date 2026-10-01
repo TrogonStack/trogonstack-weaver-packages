@@ -1,0 +1,91 @@
+{% import "header.j2" as h -%}
+{% import "deprecation.j2" as d -%}
+{% import "names.j2" as n -%}
+{%- macro attr_type(a) -%}
+{%- if a.imported -%}
+{{ a.attr_type | map_text("attribute_field_type") }}
+{%- else -%}
+{{ a.attr_namespace }}attr.{{ n.exported(a.attr_short_name) }}Attr
+{%- endif -%}
+{%- endmacro -%}
+{%- macro attr_kv(a, v) -%}
+{%- if a.imported -%}
+attribute.{{ a.attr_type | map_text("attribute_type_method") }}({{ a.key | tojson }}, {{ v }})
+{%- else -%}
+{{ v }}.KeyValue()
+{%- endif -%}
+{%- endmacro -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
+{{ h.header() }}
+
+package {{ ctx.namespace }}entity
+
+import (
+{%- if ctx.uses_attributes %}
+	"go.opentelemetry.io/otel/attribute"
+{%- endif %}
+	"go.opentelemetry.io/otel/sdk/resource"
+{% for imp in ctx.imports %}
+	"{{ imp.path }}"
+{%- endfor %}
+
+	{% if ctx.root_import_path.split("/") | last != n.root() %}{{ n.root() }} {% endif %}"{{ ctx.root_import_path }}"
+)
+{% for def in ctx.entities %}
+{%- set name = n.exported(def.short_name) %}
+{%- set private = n.unexported(def.short_name) if def.short_name else "bare" %}
+{%- set entity = name ~ "Entity" %}
+{%- set deprecated = d.notice(def) %}
+{%- set opt_in = "Opt-in: the convention records `" ~ def.id ~ "` only when a user asks for it." if def.requirement_level == "opt_in" else none -%}
+{% if def.optional %}
+{{ [entity ~ "Attr is an attribute New" ~ entity ~ " accepts in addition to the ones it requires."] | join | comment }}
+type {{ entity }}Attr interface {
+	{{ private }}EntityAttr() attribute.KeyValue
+}
+{% for opt in def.optional %}
+{%- set optname = n.exported(opt.attr_short_name) %}
+type {{ private }}Entity{{ optname }} struct{ v {{ attr_type(opt) }} }
+
+func (o {{ private }}Entity{{ optname }}) {{ private }}EntityAttr() attribute.KeyValue {
+	return {{ attr_kv(opt, "o.v") }}
+}
+
+{{ ["With" ~ entity ~ optname ~ " sets `" ~ opt.key ~ "` on the entity.", opt.requirement_doc] | select | join("\n\n") | comment }}
+func With{{ entity }}{{ optname }}(v {{ attr_type(opt) }}) {{ entity }}Attr {
+	return {{ private }}Entity{{ optname }}{v: v}
+}
+{% endfor %}
+{%- endif %}
+{{ [entity ~ " is the `" ~ def.id ~ "` entity" ~ (", a refinement of `" ~ def.refines ~ "`" if def.refines else "") ~ ". The zero " ~ entity ~ " has no attributes.", def.brief, def.note, def.identity_doc, def.description_doc, opt_in, deprecated] | select | join("\n\n") | comment }}
+type {{ entity }} struct{ attrs []attribute.KeyValue }
+
+{{ ["New" ~ entity ~ " builds a " ~ entity ~ " from its required attributes and any given options.", opt_in, deprecated] | select | join("\n\n") | comment }}
+func New{{ entity }}({% for req in def.required %}{% if not loop.first %}, {% endif %}{{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.required and def.optional %}, {% endif %}{% if def.optional %}opts ...{{ entity }}Attr{% endif %}) {{ entity }} {
+{%- if def.required or def.optional %}
+	attrs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
+{%- for req in def.required %}
+	attrs = append(attrs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
+{%- endfor %}
+{%- if def.optional %}
+	for _, opt := range opts {
+		attrs = append(attrs, opt.{{ private }}EntityAttr())
+	}
+{%- endif %}
+	return {{ entity }}{attrs: attrs}
+{%- else %}
+	return {{ entity }}{}
+{%- endif %}
+}
+
+{{ ["Attributes returns a copy of the entity's attributes. The zero " ~ entity ~ " returns none."] | join | comment }}
+func (e {{ entity }}) Attributes() []attribute.KeyValue {
+	out := make([]attribute.KeyValue, len(e.attrs))
+	copy(out, e.attrs)
+	return out
+}
+
+{{ ["Resource returns a *resource.Resource built from the entity's attributes, tied to " ~ n.root() ~ ".SchemaURL."] | join | comment }}
+func (e {{ entity }}) Resource() *resource.Resource {
+	return resource.NewWithAttributes({{ n.root() }}.SchemaURL, e.attrs...)
+}
+{% endfor %}{% endfilter %}

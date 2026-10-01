@@ -1,0 +1,1 @@
+entity myapp.host has required attributes that render to the same Go parameter: myapp.host.id and myapp.host_id

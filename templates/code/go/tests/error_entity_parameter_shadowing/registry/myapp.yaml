@@ -1,0 +1,15 @@
+file_format: definition/2
+attributes:
+  - key: opts
+    type: string
+    stability: stable
+    brief: Name collides with the options parameter name.
+    examples: ["x"]
+entities:
+  - type: myapp.host
+    requirement_level: recommended
+    stability: stable
+    brief: A host.
+    identity:
+      - ref: opts
+        requirement_level: required

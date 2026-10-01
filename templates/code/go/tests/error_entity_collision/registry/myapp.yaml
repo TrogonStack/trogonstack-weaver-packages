@@ -1,0 +1,22 @@
+file_format: definition/2
+attributes:
+  - key: myapp.host.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the host.
+    examples: ["h-1"]
+entities:
+  - type: myapp.host.worker
+    requirement_level: recommended
+    stability: stable
+    brief: A worker host.
+    identity:
+      - ref: myapp.host.id
+        requirement_level: required
+  - type: myapp.host_worker
+    requirement_level: recommended
+    stability: stable
+    brief: A worker host, under another name.
+    identity:
+      - ref: myapp.host.id
+        requirement_level: required

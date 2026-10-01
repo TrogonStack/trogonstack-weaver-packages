@@ -1,0 +1,1 @@
+entity myapp.host has required attributes whose Go parameter would shadow a name its constructor declares: opts
