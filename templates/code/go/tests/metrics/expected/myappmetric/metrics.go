@@ -45,6 +45,51 @@ func (m QueueDepthGauge) Record(ctx context.Context, value int64) {
 	m.inst.Record(ctx, value)
 }
 
+// QueueDepthGaugeObserver records `myapp.queue.depth` observations from the
+// callback of a QueueDepthObservableGauge. The zero QueueDepthGaugeObserver
+// records nothing.
+type QueueDepthGaugeObserver struct {
+	o metric.Int64Observer
+}
+
+// Observe records one `myapp.queue.depth` observation.
+func (o QueueDepthGaugeObserver) Observe(value int64) {
+	if o.o == nil {
+		return
+	}
+	o.o.Observe(value)
+}
+
+// QueueDepthObservableGauge is the asynchronous form of QueueDepthGauge,
+// observed through the callback it was created with.
+//
+// Deprecated: Replaced by `myapp.task.active`.
+type QueueDepthObservableGauge struct {
+	inst metric.Int64ObservableGauge
+}
+
+// NewQueueDepthObservableGauge creates the `myapp.queue.depth` instrument
+// from meter and registers callback to observe it on every collection.
+//
+// Deprecated: Replaced by `myapp.task.active`.
+func NewQueueDepthObservableGauge(meter semconv.Meter, callback func(context.Context, QueueDepthGaugeObserver) error) (QueueDepthObservableGauge, error) {
+	if callback == nil {
+		return QueueDepthObservableGauge{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.queue.depth")
+	}
+	inst, err := meter.MetricMeter().Int64ObservableGauge(
+		"myapp.queue.depth",
+		metric.WithDescription("Number of tasks waiting in the queue."),
+		metric.WithUnit("{task}"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			return callback(ctx, QueueDepthGaugeObserver{o: o})
+		}),
+	)
+	if err != nil {
+		return QueueDepthObservableGauge{}, fmt.Errorf("create the %s instrument: %w", "myapp.queue.depth", err)
+	}
+	return QueueDepthObservableGauge{inst: inst}, nil
+}
+
 // TaskActiveUpDownCounter is `myapp.task.active`.
 //
 // Number of tasks currently running.
@@ -73,6 +118,51 @@ func (m TaskActiveUpDownCounter) Add(ctx context.Context, incr int64, myappTaskS
 	kvs := make([]attribute.KeyValue, 0, 1)
 	kvs = append(kvs, myappTaskState.KeyValue())
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
+}
+
+// TaskActiveUpDownCounterObserver records `myapp.task.active` observations
+// from the callback of a TaskActiveObservableUpDownCounter. The zero
+// TaskActiveUpDownCounterObserver records nothing.
+type TaskActiveUpDownCounterObserver struct {
+	o metric.Int64Observer
+}
+
+// Observe records one `myapp.task.active` observation.
+func (o TaskActiveUpDownCounterObserver) Observe(value int64, myappTaskState myappattr.TaskStateAttr) {
+	if o.o == nil {
+		return
+	}
+	kvs := make([]attribute.KeyValue, 0, 1)
+	kvs = append(kvs, myappTaskState.KeyValue())
+	o.o.Observe(value, metric.WithAttributes(kvs...))
+}
+
+// TaskActiveObservableUpDownCounter is the asynchronous form of
+// TaskActiveUpDownCounter, observed through the callback it was created
+// with.
+type TaskActiveObservableUpDownCounter struct {
+	inst metric.Int64ObservableUpDownCounter
+}
+
+// NewTaskActiveObservableUpDownCounter creates the `myapp.task.active`
+// instrument from meter and registers callback to observe it on every
+// collection.
+func NewTaskActiveObservableUpDownCounter(meter semconv.Meter, callback func(context.Context, TaskActiveUpDownCounterObserver) error) (TaskActiveObservableUpDownCounter, error) {
+	if callback == nil {
+		return TaskActiveObservableUpDownCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.active")
+	}
+	inst, err := meter.MetricMeter().Int64ObservableUpDownCounter(
+		"myapp.task.active",
+		metric.WithDescription("Number of tasks currently running."),
+		metric.WithUnit("{task}"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			return callback(ctx, TaskActiveUpDownCounterObserver{o: o})
+		}),
+	)
+	if err != nil {
+		return TaskActiveObservableUpDownCounter{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.active", err)
+	}
+	return TaskActiveObservableUpDownCounter{inst: inst}, nil
 }
 
 // TaskDurationHistogramAttr is an attribute `myapp.task.duration` accepts in
@@ -260,4 +350,56 @@ func (m TaskStartedCounter) Add(ctx context.Context, incr int64, opts ...TaskSta
 		kvs = append(kvs, opt.taskStartedCounterAttr())
 	}
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
+}
+
+// TaskStartedCounterObserver records `myapp.task.started` observations from
+// the callback of a TaskStartedObservableCounter. The zero
+// TaskStartedCounterObserver records nothing.
+type TaskStartedCounterObserver struct {
+	o metric.Int64Observer
+}
+
+// Observe records one `myapp.task.started` observation.
+func (o TaskStartedCounterObserver) Observe(value int64, opts ...TaskStartedCounterAttr) {
+	if o.o == nil {
+		return
+	}
+	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
+	for _, opt := range opts {
+		kvs = append(kvs, opt.taskStartedCounterAttr())
+	}
+	o.o.Observe(value, metric.WithAttributes(kvs...))
+}
+
+// TaskStartedObservableCounter is the asynchronous form of
+// TaskStartedCounter, observed through the callback it was created with.
+//
+// Opt-in: the convention records `myapp.task.started` only when a user asks
+// for it.
+type TaskStartedObservableCounter struct {
+	inst metric.Int64ObservableCounter
+}
+
+// NewTaskStartedObservableCounter creates the `myapp.task.started`
+// instrument from meter and registers callback to observe it on every
+// collection.
+//
+// Opt-in: the convention records `myapp.task.started` only when a user asks
+// for it.
+func NewTaskStartedObservableCounter(meter semconv.Meter, callback func(context.Context, TaskStartedCounterObserver) error) (TaskStartedObservableCounter, error) {
+	if callback == nil {
+		return TaskStartedObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.started")
+	}
+	inst, err := meter.MetricMeter().Int64ObservableCounter(
+		"myapp.task.started",
+		metric.WithDescription("Number of tasks started."),
+		metric.WithUnit("{task}"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			return callback(ctx, TaskStartedCounterObserver{o: o})
+		}),
+	)
+	if err != nil {
+		return TaskStartedObservableCounter{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.started", err)
+	}
+	return TaskStartedObservableCounter{inst: inst}, nil
 }
