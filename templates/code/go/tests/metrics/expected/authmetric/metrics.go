@@ -42,3 +42,54 @@ func (m AttemptsCounter) Add(ctx context.Context, incr int64, authMethod authatt
 	kvs = append(kvs, authSuccess.KeyValue())
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
+
+// AttemptsCounterObserver records `auth.attempts` observations from the
+// callback of a AttemptsObservableCounter. The zero AttemptsCounterObserver
+// records nothing.
+type AttemptsCounterObserver struct {
+	o metric.Int64Observer
+}
+
+// Observe records one `auth.attempts` observation.
+func (o AttemptsCounterObserver) Observe(value int64, authMethod authattr.MethodAttr, authSuccess authattr.SuccessAttr) {
+	if o.o == nil {
+		return
+	}
+	kvs := make([]attribute.KeyValue, 0, 2)
+	kvs = append(kvs, authMethod.KeyValue())
+	kvs = append(kvs, authSuccess.KeyValue())
+	o.o.Observe(value, metric.WithAttributes(kvs...))
+}
+
+// AttemptsCounterCallback observes `auth.attempts` through o on every
+// collection of a AttemptsObservableCounter.
+//
+// An error it returns is returned by the collection that ran it, and the
+// observations made before it returned are still recorded.
+type AttemptsCounterCallback func(ctx context.Context, o AttemptsCounterObserver) error
+
+// AttemptsObservableCounter is the asynchronous form of AttemptsCounter,
+// observed through the callback it was created with.
+type AttemptsObservableCounter struct {
+	inst metric.Int64ObservableCounter
+}
+
+// NewAttemptsObservableCounter creates the `auth.attempts` instrument from
+// meter and registers callback to observe it on every collection.
+func NewAttemptsObservableCounter(meter semconv.Meter, callback AttemptsCounterCallback) (AttemptsObservableCounter, error) {
+	if callback == nil {
+		return AttemptsObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "auth.attempts")
+	}
+	inst, err := meter.MetricMeter().Int64ObservableCounter(
+		"auth.attempts",
+		metric.WithDescription("Number of authentication attempts."),
+		metric.WithUnit("{attempt}"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			return callback(ctx, AttemptsCounterObserver{o: o})
+		}),
+	)
+	if err != nil {
+		return AttemptsObservableCounter{}, fmt.Errorf("create the %s instrument: %w", "auth.attempts", err)
+	}
+	return AttemptsObservableCounter{inst: inst}, nil
+}

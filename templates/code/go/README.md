@@ -32,14 +32,14 @@ before each run, or files for conventions you removed stay behind.
 One package per namespace and signal kind, below a root package that carries
 the registry's schema URL:
 
-| Path                            | Contents                                                             |
-| ------------------------------- | -------------------------------------------------------------------- |
-| `doc.go`                        | Package `{root_package}`, listing every generated package.           |
-| `schema.go`                     | `SchemaURL`, plus the `Meter` type when the registry has metrics.    |
-| `<namespace>attr/doc.go`        | Package comment for the attribute package.                           |
-| `<namespace>attr/attributes.go` | A typed value per attribute, plus enum members as package variables. |
-| `<namespace>metric/doc.go`      | Package comment for the metric package.                              |
-| `<namespace>metric/metrics.go`  | A typed instrument per metric.                                       |
+| Path                            | Contents                                                               |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| `doc.go`                        | Package `{root_package}`, listing every generated package.             |
+| `schema.go`                     | `SchemaURL`, plus the `Meter` type when the registry has metrics.      |
+| `<namespace>attr/doc.go`        | Package comment for the attribute package.                             |
+| `<namespace>attr/attributes.go` | A typed value per attribute, plus enum members as package variables.   |
+| `<namespace>metric/doc.go`      | Package comment for the metric package.                                |
+| `<namespace>metric/metrics.go`  | A typed instrument per metric and refinement, plus asynchronous forms. |
 
 The namespace is the first segment of a name, or the second when the first is
 listed in `vendor_prefixes`. Identifiers drop that prefix, so `myapp.task.id`
@@ -88,6 +88,26 @@ duration, err := myappmetric.NewTaskDurationHistogram(meter)
 duration.Record(ctx, 1.5, myappattr.NewTaskIDAttr("task_0001"),
 	myappmetric.WithTaskDurationHistogramTaskState(myappattr.TaskStateRunning))
 ```
+
+Counters, up-down counters, and gauges also get an asynchronous form, built
+with `New<Name>Observable<Instrument>(meter, callback)`. The callback receives a
+typed observer whose `Observe` takes the same parameters and options as the
+synchronous method, so an observation cannot skip a required attribute or
+attach one the convention does not declare:
+
+```go
+_, err := myappmetric.NewTaskActiveObservableUpDownCounter(meter,
+	func(ctx context.Context, o myappmetric.TaskActiveUpDownCounterObserver) error {
+		o.Observe(int64(queue.Len()), myappattr.TaskStateQueued)
+		return nil
+	})
+```
+
+The callback has its own type, `<Name><Instrument>Callback`, so it can be
+declared ahead of the constructor. It is registered when the instrument is
+created and runs on every collection. An error it returns is returned by that
+collection, and the observations made before it are still recorded. Histograms have no asynchronous form in OpenTelemetry, so they get
+none.
 
 Go cannot check a requirement condition, so conditionally required,
 recommended, and opt-in attributes are all options. The option's doc comment
@@ -210,7 +230,9 @@ or is tied to no schema, when:
   or its boundaries are not a non-empty list of numbers in strictly increasing
   order.
 - Two metrics or refinements in one package render to the same Go
-  identifier, such as `myapp.task.started` and `myapp.task_started`.
+  identifier, such as `myapp.task.started` and `myapp.task_started`, or the
+  observable form of one is named like the other, such as
+  `myapp.task.started` and `myapp.task.started.observable`.
 - A metric refinement sets a different `code_generation.metric_value_type` or
   `annotations.aggregation` than the metric it refines.
 - `exclude_deprecated` or `stable_only` keeps a metric but leaves out one of

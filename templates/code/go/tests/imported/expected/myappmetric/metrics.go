@@ -64,3 +64,57 @@ func (m TaskFailedCounter) Add(ctx context.Context, incr int64, errorType string
 	}
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
+
+// TaskFailedCounterObserver records `myapp.task.failed` observations from
+// the callback of a TaskFailedObservableCounter. The zero
+// TaskFailedCounterObserver records nothing.
+type TaskFailedCounterObserver struct {
+	o metric.Int64Observer
+}
+
+// Observe records one `myapp.task.failed` observation.
+func (o TaskFailedCounterObserver) Observe(value int64, errorType string, myappTaskID myappattr.TaskIDAttr, opts ...TaskFailedCounterAttr) {
+	if o.o == nil {
+		return
+	}
+	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
+	kvs = append(kvs, attribute.String("error.type", errorType))
+	kvs = append(kvs, myappTaskID.KeyValue())
+	for _, opt := range opts {
+		kvs = append(kvs, opt.taskFailedCounterAttr())
+	}
+	o.o.Observe(value, metric.WithAttributes(kvs...))
+}
+
+// TaskFailedCounterCallback observes `myapp.task.failed` through o on every
+// collection of a TaskFailedObservableCounter.
+//
+// An error it returns is returned by the collection that ran it, and the
+// observations made before it returned are still recorded.
+type TaskFailedCounterCallback func(ctx context.Context, o TaskFailedCounterObserver) error
+
+// TaskFailedObservableCounter is the asynchronous form of TaskFailedCounter,
+// observed through the callback it was created with.
+type TaskFailedObservableCounter struct {
+	inst metric.Int64ObservableCounter
+}
+
+// NewTaskFailedObservableCounter creates the `myapp.task.failed` instrument
+// from meter and registers callback to observe it on every collection.
+func NewTaskFailedObservableCounter(meter semconv.Meter, callback TaskFailedCounterCallback) (TaskFailedObservableCounter, error) {
+	if callback == nil {
+		return TaskFailedObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.failed")
+	}
+	inst, err := meter.MetricMeter().Int64ObservableCounter(
+		"myapp.task.failed",
+		metric.WithDescription("Number of tasks that failed."),
+		metric.WithUnit("{task}"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			return callback(ctx, TaskFailedCounterObserver{o: o})
+		}),
+	)
+	if err != nil {
+		return TaskFailedObservableCounter{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.failed", err)
+	}
+	return TaskFailedObservableCounter{inst: inst}, nil
+}

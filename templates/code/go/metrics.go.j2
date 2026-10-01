@@ -102,4 +102,62 @@ func (m {{ name }}) {{ method }}(ctx context.Context, {{ arg }} {{ gotype }}{% f
 	m.inst.{{ method }}(ctx, {{ arg }})
 {%- endif %}
 }
+{%- if def.instrument != "histogram" %}
+{%- set observable = n.exported(def.short_name) ~ "Observable" ~ suffix %}
+{%- set observer = name ~ "Observer" %}
+{%- set callback = name ~ "Callback" %}
+
+{{ [observer ~ " records `" ~ def.name ~ "` observations from the callback of a " ~ observable ~ ". The zero " ~ observer ~ " records nothing."] | join | comment }}
+type {{ observer }} struct {
+	o metric.{{ value_type }}Observer
+}
+
+{{ ["Observe records one `" ~ def.name ~ "` observation."] | join | comment }}
+func (o {{ observer }}) Observe(value {{ gotype }}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.optional %}, opts ...{{ name }}Attr{% endif %}) {
+	if o.o == nil {
+		return
+	}
+{%- if def.required or def.optional %}
+	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
+{%- for req in def.required %}
+	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
+{%- endfor %}
+{%- if def.optional %}
+	for _, opt := range opts {
+		kvs = append(kvs, opt.{{ private }}Attr())
+	}
+{%- endif %}
+	o.o.Observe(value, metric.WithAttributes(kvs...))
+{%- else %}
+	o.o.Observe(value)
+{%- endif %}
+}
+
+{{ [callback ~ " observes `" ~ def.name ~ "` through o on every collection of a " ~ observable ~ ".", "An error it returns is returned by the collection that ran it, and the observations made before it returned are still recorded.", deprecated] | select | join("\n\n") | comment }}
+type {{ callback }} func(ctx context.Context, o {{ observer }}) error
+
+{{ [observable ~ " is the asynchronous form of " ~ name ~ ", observed through the callback it was created with.", opt_in, deprecated] | select | join("\n\n") | comment }}
+type {{ observable }} struct {
+	inst metric.{{ value_type }}Observable{{ suffix }}
+}
+
+{{ ["New" ~ observable ~ " creates the `" ~ def.instrument_name ~ "` instrument from meter and registers callback to observe it on every collection.", opt_in, deprecated] | select | join("\n\n") | comment }}
+func New{{ observable }}(meter {{ params.root_package }}.Meter, callback {{ callback }}) ({{ observable }}, error) {
+	if callback == nil {
+		return {{ observable }}{}, fmt.Errorf("create the %s instrument: the callback is nil", "{{ def.instrument_name }}")
+	}
+	inst, err := meter.MetricMeter().{{ value_type }}Observable{{ suffix }}(
+		"{{ def.instrument_name }}",
+		metric.WithDescription({{ def.description | trim | tojson }}),
+		metric.WithUnit({{ def.unit | tojson }}),
+		metric.With{{ value_type }}Callback(func(ctx context.Context, o metric.{{ value_type }}Observer) error {
+			return callback(ctx, {{ observer }}{o: o})
+		}),
+	)
+	if err != nil {
+		return {{ observable }}{}, fmt.Errorf("create the %s instrument: %w", "{{ def.instrument_name }}", err)
+	}
+	return {{ observable }}{inst: inst}, nil
+}
+{%- endif %}
 {% endfor %}{% endfilter %}
