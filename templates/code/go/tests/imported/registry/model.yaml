@@ -12,8 +12,8 @@ metrics:
     stability: stable
     brief: Number of tasks that failed.
     annotations:
-      go:
-        value_type: int64
+      code_generation:
+        metric_value_type: int
     attributes:
       - ref: myapp.task.id
         requirement_level: required
@@ -27,8 +27,8 @@ metrics:
     stability: stable
     brief: Time spent waiting on an upstream server.
     annotations:
-      go:
-        value_type: float64
+      code_generation:
+        metric_value_type: double
     attributes:
       - ref: server.address
         requirement_level: required

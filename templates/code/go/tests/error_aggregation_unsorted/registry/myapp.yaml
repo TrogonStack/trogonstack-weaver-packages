@@ -7,8 +7,8 @@ metrics:
     stability: stable
     brief: Time a task took from start to finish.
     annotations:
-      go:
-        value_type: float64
+      code_generation:
+        metric_value_type: double
       aggregation:
         method: explicithistogram
         parameters:

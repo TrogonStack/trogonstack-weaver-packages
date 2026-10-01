@@ -14,8 +14,8 @@ renderable_types := {
 }
 
 renderable_value_types := {
-	"int64",
-	"float64",
+	"int",
+	"double",
 }
 
 # Enums arrive as an object with members, which the template renders; every
@@ -71,18 +71,19 @@ deny contains finding if {
 	}
 }
 
-# The registry schema has no field for an instrument's value type, so it
-# travels as an annotation; a missing and a misspelled one fail the same way.
+# The value type follows the code_generation.metric_value_type annotation the
+# OpenTelemetry semantic conventions use; a missing and a misspelled one fail
+# the same way.
 deny contains finding if {
 	some metric in input.registry.metrics
-	value_type := object.get(metric, ["annotations", "go", "value_type"], "")
+	value_type := object.get(metric, ["annotations", "code_generation", "metric_value_type"], "")
 	not value_type in renderable_value_types
 
 	finding := {
 		"id": "go_codegen_invalid_metric_value_type",
-		"context": {"value_type": value_type},
+		"context": {"metric_value_type": value_type},
 		"message": sprintf(
-			"Metric '%s' must set annotations.go.value_type to one of: %s. The Go template reads the instrument's value type from it.",
+			"Metric '%s' must set annotations.code_generation.metric_value_type to one of: %s. The Go template reads the instrument's value type from it.",
 			[metric.name, concat(", ", sort(renderable_value_types))],
 		),
 		"level": "violation",

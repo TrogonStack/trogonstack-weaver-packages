@@ -274,8 +274,8 @@ text_maps:
     histogram: value
     gauge: value
   metric_value_type:
-    int64: Int64
-    float64: Float64
+    int: Int64
+    double: Float64
 
 # Words kept upper case when a name segment becomes part of a Go identifier.
 acronyms:

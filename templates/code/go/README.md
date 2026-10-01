@@ -101,16 +101,18 @@ value instead, with the key filled in, so an imported enum is taken as its
 failed.Add(ctx, 1, "timeout", myappattr.NewTaskIDAttr("task_0001"))
 ```
 
-The registry schema has no field for an instrument's value type, so every
-metric must carry it as an annotation:
+Every metric must set its value type with the
+`code_generation.metric_value_type` annotation that the OpenTelemetry semantic
+conventions use, either `int` for an `Int64` instrument or `double` for a
+`Float64` one:
 
 ```yaml
 metrics:
   - name: myapp.task.duration
     instrument: histogram
     annotations:
-      go:
-        value_type: float64 # or int64
+      code_generation:
+        metric_value_type: double
 ```
 
 A histogram can also set the bucket boundaries its constructor passes to
@@ -131,8 +133,8 @@ metrics:
     instrument: histogram
     unit: s
     annotations:
-      go:
-        value_type: float64
+      code_generation:
+        metric_value_type: double
       aggregation:
         method: explicithistogram
         parameters:
