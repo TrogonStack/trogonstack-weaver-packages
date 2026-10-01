@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"example.com/semconv"
 	"example.com/semconv/authattr"
 	"example.com/semconv/myappattr"
 )
@@ -23,8 +24,8 @@ type QueueDepthGauge struct{ inst metric.Int64Gauge }
 // NewQueueDepthGauge creates the `myapp.queue.depth` instrument from meter.
 //
 // Deprecated: Replaced by `myapp.task.active`.
-func NewQueueDepthGauge(meter metric.Meter) (QueueDepthGauge, error) {
-	inst, err := meter.Int64Gauge(
+func NewQueueDepthGauge(meter semconv.Meter) (QueueDepthGauge, error) {
+	inst, err := meter.MetricMeter().Int64Gauge(
 		"myapp.queue.depth",
 		metric.WithDescription("Number of tasks waiting in the queue."),
 		metric.WithUnit("{task}"),
@@ -51,8 +52,8 @@ type TaskActiveUpDownCounter struct{ inst metric.Int64UpDownCounter }
 
 // NewTaskActiveUpDownCounter creates the `myapp.task.active` instrument from
 // meter.
-func NewTaskActiveUpDownCounter(meter metric.Meter) (TaskActiveUpDownCounter, error) {
-	inst, err := meter.Int64UpDownCounter(
+func NewTaskActiveUpDownCounter(meter semconv.Meter) (TaskActiveUpDownCounter, error) {
+	inst, err := meter.MetricMeter().Int64UpDownCounter(
 		"myapp.task.active",
 		metric.WithDescription("Number of tasks currently running."),
 		metric.WithUnit("{task}"),
@@ -113,8 +114,8 @@ type TaskDurationHistogram struct{ inst metric.Float64Histogram }
 
 // NewTaskDurationHistogram creates the `myapp.task.duration` instrument from
 // meter.
-func NewTaskDurationHistogram(meter metric.Meter) (TaskDurationHistogram, error) {
-	inst, err := meter.Float64Histogram(
+func NewTaskDurationHistogram(meter semconv.Meter) (TaskDurationHistogram, error) {
+	inst, err := meter.MetricMeter().Float64Histogram(
 		"myapp.task.duration",
 		metric.WithDescription("Time a task took from start to finish."),
 		metric.WithUnit("s"),
@@ -146,8 +147,8 @@ type TaskStartedCounter struct{ inst metric.Int64Counter }
 
 // NewTaskStartedCounter creates the `myapp.task.started` instrument from
 // meter.
-func NewTaskStartedCounter(meter metric.Meter) (TaskStartedCounter, error) {
-	inst, err := meter.Int64Counter(
+func NewTaskStartedCounter(meter semconv.Meter) (TaskStartedCounter, error) {
+	inst, err := meter.MetricMeter().Int64Counter(
 		"myapp.task.started",
 		metric.WithDescription("Number of tasks started."),
 		metric.WithUnit("{task}"),

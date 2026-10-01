@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"example.com/semconv"
 	"example.com/semconv/authattr"
 )
 
@@ -18,8 +19,8 @@ import (
 type AttemptsCounter struct{ inst metric.Int64Counter }
 
 // NewAttemptsCounter creates the `auth.attempts` instrument from meter.
-func NewAttemptsCounter(meter metric.Meter) (AttemptsCounter, error) {
-	inst, err := meter.Int64Counter(
+func NewAttemptsCounter(meter semconv.Meter) (AttemptsCounter, error) {
+	inst, err := meter.MetricMeter().Int64Counter(
 		"auth.attempts",
 		metric.WithDescription("Number of authentication attempts."),
 		metric.WithUnit("{attempt}"),

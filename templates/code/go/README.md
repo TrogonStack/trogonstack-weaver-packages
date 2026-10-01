@@ -29,12 +29,13 @@ before each run, or files for conventions you removed stay behind.
 
 ## What it generates
 
-One package per namespace and signal kind, below a root package that only
-carries documentation:
+One package per namespace and signal kind, below a root package that carries
+the registry's schema URL:
 
 | Path                            | Contents                                                             |
 | ------------------------------- | -------------------------------------------------------------------- |
 | `doc.go`                        | Package `{root_package}`, listing every generated package.           |
+| `schema.go`                     | `SchemaURL`, plus the `Meter` type when the registry has metrics.    |
 | `<namespace>attr/doc.go`        | Package comment for the attribute package.                           |
 | `<namespace>attr/attributes.go` | A typed value per attribute, plus enum members as package variables. |
 | `<namespace>metric/doc.go`      | Package comment for the metric package.                              |
@@ -57,6 +58,21 @@ myappattr.TaskIDAttr{}.Key()
 
 Supported types are `string`, `int`, `double`, `boolean`, their array forms, and
 enums of those. Template and `any` types are not rendered.
+
+### Schema URL
+
+`SchemaURL` is the `schema_url` from the registry manifest. Instruments are
+created from a `{root_package}.Meter` rather than a `metric.Meter`, and the only
+way to build one is `NewMeter`, which sets `SchemaURL` on the meter's
+instrumentation scope. Telemetry recorded through the generated instruments is
+therefore always tied to the registry's schema:
+
+```go
+meter := semconv.NewMeter(provider, "example.com/myservice")
+```
+
+A schema URL passed in the options is replaced. The zero `Meter` creates
+instruments that record nothing.
 
 ### Metrics
 
@@ -121,9 +137,10 @@ upper case in identifiers, such as `ID` and `URL`, are listed in
 
 ## Generation errors
 
-Generation stops with an error, rather than writing Go that does not compile,
-when:
+Generation stops with an error, rather than writing Go that does not compile
+or is tied to no schema, when:
 
+- The registry has no manifest declaring a `schema_url`.
 - Two attribute keys in one package render to the same Go identifier, such as
   `myapp.task.id` and `myapp.task_id`.
 - Two attributes of one metric render to the same parameter or option name.

@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+
+	"example.com/semconv"
 )
 
 // UpstreamDurationHistogramAttr is an attribute `edge.upstream.duration`
@@ -35,8 +37,8 @@ type UpstreamDurationHistogram struct{ inst metric.Float64Histogram }
 
 // NewUpstreamDurationHistogram creates the `edge.upstream.duration`
 // instrument from meter.
-func NewUpstreamDurationHistogram(meter metric.Meter) (UpstreamDurationHistogram, error) {
-	inst, err := meter.Float64Histogram(
+func NewUpstreamDurationHistogram(meter semconv.Meter) (UpstreamDurationHistogram, error) {
+	inst, err := meter.MetricMeter().Float64Histogram(
 		"edge.upstream.duration",
 		metric.WithDescription("Time spent waiting on an upstream server."),
 		metric.WithUnit("s"),

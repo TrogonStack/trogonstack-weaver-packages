@@ -3,11 +3,12 @@
 // Package semconv is the root of the Go form of a semantic convention
 // registry.
 //
-// It declares nothing itself. Every name lives in a package scoped by its
-// namespace and the kind of signal it describes: attributes become
-// `<namespace>attr`, holding typed attribute values, and metrics become
-// `<namespace>metric`, holding typed instruments. Identifiers drop the
-// namespace prefix the package name already carries, and a
+// It declares only SchemaURL and, when the registry has metrics, the Meter
+// that carries it into every instrument. Every name lives in a package
+// scoped by its namespace and the kind of signal it describes: attributes
+// become `<namespace>attr`, holding typed attribute values, and metrics
+// become `<namespace>metric`, holding typed instruments. Identifiers drop
+// the namespace prefix the package name already carries, and a
 // `<namespace>metric` package imports the `<namespace>attr` packages its
 // metrics need, never the reverse.
 //
