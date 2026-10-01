@@ -1,0 +1,1 @@
+attribute myapp.task.state has no enum members left after exclude_deprecated or stable_only

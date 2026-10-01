@@ -1,4 +1,5 @@
 {% import "header.j2" as h -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") -%}
 {{ h.header() }}
 
 package {{ params.root_package }}
@@ -30,4 +31,4 @@ func (m Meter) MetricMeter() metric.Meter {
 	return m.meter
 }
 {%- endif %}
-
+{% endfilter %}

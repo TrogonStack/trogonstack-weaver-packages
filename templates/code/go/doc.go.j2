@@ -1,4 +1,5 @@
 {% import "header.j2" as h -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") -%}
 {{ h.header() }}
 
 {{ ["Package " ~ params.root_package ~ " is the root of the Go form of a semantic convention registry.",
@@ -11,4 +12,4 @@
 //   - [{{ params.import_path }}/{{ entry.namespace }}{{ entry.suffix }}]: {{ entry.patterns }} {% if entry.suffix == "attr" %}attributes{% else %}metrics{% endif %}
 {%- endfor %}
 package {{ params.root_package }}
-
+{% endfilter %}

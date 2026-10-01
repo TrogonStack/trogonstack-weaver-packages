@@ -1,0 +1,11 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: development
+          brief: The task is waiting to run.
+    stability: stable
+    brief: Current state of the task.

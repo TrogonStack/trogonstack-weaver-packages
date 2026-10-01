@@ -1,0 +1,26 @@
+[
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_mixed_enum_members, context={\"attribute_key\":\"myapp.task.state\",\"member_kinds\":[\"number\",\"string\"]}, message=Attribute 'myapp.task.state' has enum members of more than one value type (number, string). The Go template gives an enum one Go type, so its members must be all strings, all numbers, or all booleans., level=Violation, signal_type=None, signal_name=None, provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "attribute_key": "myapp.task.state",
+          "member_kinds": [
+            "number",
+            "string"
+          ]
+        },
+        "id": "go_codegen_mixed_enum_members",
+        "level": "violation",
+        "message": "Attribute 'myapp.task.state' has enum members of more than one value type (number, string). The Go template gives an enum one Go type, so its members must be all strings, all numbers, or all booleans.",
+        "signal_name": null,
+        "signal_type": null,
+        "type": "PolicyFinding"
+      }
+    }
+  }
+]

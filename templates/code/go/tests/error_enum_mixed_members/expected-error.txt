@@ -1,0 +1,1 @@
+attribute myapp.task.state has enum members of more than one value type
