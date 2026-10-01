@@ -275,6 +275,8 @@ templates:
     application_mode: each
     file_name: "{{ ctx.namespace }}metric/metrics.go"
 
+# Weaver's word wrap can start a line with the punctuation or space that
+# follows an inline code span, so every template rejoins those lines.
 comment_formats:
   go:
     format: markdown
@@ -321,8 +323,7 @@ text_maps:
     boolean: bool
     boolean[]: "[]bool"
   # Registry instrument to the suffix of the otel constructor name. The prefix
-  # comes from `annotations.go.value_type` on the metric, since the registry
-  # schema has no field for it.
+  # comes from the metric's `code_generation.metric_value_type` annotation.
   metric_instrument:
     counter: Counter
     updowncounter: UpDownCounter

@@ -194,6 +194,23 @@ since the registry does not pass an attribute's deprecation on to its members
 ([weaver#878](https://github.com/open-telemetry/weaver/issues/878)). Set
 `exclude_deprecated` to leave them out instead.
 
+### Not generated
+
+Spans, events, and entities are not generated: the package covers attributes
+and metrics only. Attribute `examples` and entity associations are not rendered
+either, since neither has a Go API counterpart.
+
+### Known registry caveats
+
+- Annotations set on an attribute reference replace the attribute's own rather
+  than merging with them
+  ([weaver#1705](https://github.com/open-telemetry/weaver/issues/1705)), so a
+  reference that sets any annotation drops an inherited
+  `code_generation.exclude`. Repeat it on the reference.
+- Enum members do not inherit their attribute's deprecation
+  ([weaver#878](https://github.com/open-telemetry/weaver/issues/878)). The
+  template carries it over, see [Deprecation](#deprecation).
+
 ## Parameters
 
 | Param                | Default               | Description                                                                                 |
