@@ -185,6 +185,10 @@ value of its members:
 failed.Add(ctx, 1, "timeout", myappattr.NewTaskIDAttr("task_0001"))
 ```
 
+A metric name always keeps a namespace, unlike a span or event name, so a
+metric with nothing left after its namespace is a registry error rather than
+a package of its own: see [Generation errors](#generation-errors).
+
 Every metric must set its value type with the
 `code_generation.metric_value_type` annotation that the OpenTelemetry semantic
 conventions use, either `int` for an `Int64` instrument or `double` for a
@@ -285,6 +289,15 @@ Each span refinement becomes its own starter, named from its id, with the
 kind, name, attributes, and requirement levels the refinement resolves to. A
 refinement is generated only when the span it refines is.
 
+A span whose name has a single segment, such as a vendor-prefix-only name,
+has nothing left after its namespace. Rather than failing, it renders
+unprefixed, in its own `<name>span` package:
+
+```go
+ctx, span := heartbeatspan.Start(ctx, tracer, heartbeatattr.NewSequenceAttr(1))
+defer span.End()
+```
+
 ### Events
 
 Each event becomes an `Emit<Name>` function that emits it as a log record
@@ -308,6 +321,16 @@ Each event refinement becomes its own `Emit` function, named from its id. Weaver
 resolves a refinement's event name to its id and keeps no link to the event it
 refines, so the record carries the refinement's id as its event name and the
 refinement is generated on its own stability and deprecation.
+
+An event whose name has a single segment, such as the upstream `exception`
+event, has nothing left after its namespace. Rather than failing, it renders
+unprefixed, in its own `<name>event` package:
+
+```go
+exceptionevent.Emit(ctx, logger, exceptionattr.NewTypeAttr("ValueError"),
+	exceptionevent.WithMessage(exceptionattr.NewMessageAttr("division by zero")),
+)
+```
 
 ### Deprecation
 
@@ -373,8 +396,7 @@ or is tied to no schema, when:
   `tracer` or `logger`.
 - An optional attribute of an event renders to an option named like its
   severity or timestamp option, such as `myapp.severity`.
-- A key, metric name, span type, or event name has nothing left after its
-  namespace.
+- An attribute key or metric name has nothing left after its namespace.
 - An enum mixes member value types, or `exclude_deprecated` or `stable_only`
   leaves it with no members.
 - A metric, span, or event references an imported attribute whose type is not
@@ -408,6 +430,7 @@ or is tied to no schema, when:
 | `root_package_version_segment`  | A version element at the end of `import_path` skipped in the root package name.                                                               |
 | `spans`                         | Derived and typed span names, every kind of option, deprecation, refinements, cross-namespace references, and a tracer with no meter package. |
 | `events`                        | Required and optional attributes, opt-in and deprecated events, a refinement, cross-namespace references, and a logger with no meter package. |
+| `no_namespace`                  | A span and an event whose name has a single segment, rendering unprefixed in their own package.                                               |
 | `error_*`                       | Each case fails generation with one of the errors above.                                                                                      |
 
 Run them with `mise run weaver:test:templates`, and compile their expected

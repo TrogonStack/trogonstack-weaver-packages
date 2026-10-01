@@ -1,0 +1,1 @@
+metric heartbeat has no name left after its namespace, so it cannot become a Go identifier

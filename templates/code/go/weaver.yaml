@@ -33,10 +33,19 @@ templates:
     filter: |-
       def ns: split(".") as $s
         | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
-          then {namespace: $s[1], prefix: ($s[0:2] | join("."))}
-          else {namespace: $s[0], prefix: $s[0]}
+          then {namespace: $s[1], prefix: ($s[0:2] | join(".")), short_name: ($s[2:] | join("."))}
+          else {namespace: $s[0], prefix: $s[0], short_name: ($s[1:] | join("."))}
           end;
       def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      # A span or event can have nothing left after its namespace,
+      # so a prefix that is itself a complete name, with no dotted sibling in
+      # the group, is quoted on its own rather than as a `prefix.*` glob.
+      def prefix_phrase($items; $glob):
+        ($items | map(.prefix) | unique) as $prefixes
+        | $prefixes | map(. as $p
+            | if ($items | any(.prefix == $p and .short_name != ""))
+              then "`\($p)\($glob)`"
+              else "`\($p)`" end);
       def instrument_names($o):
         (semconv_grouped_metrics($o) | map(.metrics) | add // [] | map(.name)) as $names
         | $names + (.refinements.metrics // [] | map(select(.id != .name)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
@@ -59,8 +68,10 @@ templates:
           (event_ids($opts) | map(ns + {suffix: "event"})) ]
       | add
       | group_by(.namespace + "/" + .suffix)
-      | map({namespace: .[0].namespace, suffix: .[0].suffix, prefixes: (map(.prefix) | unique)})
-      | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
+      | map(. as $items
+            | {namespace: $items[0].namespace, suffix: $items[0].suffix,
+               patterns: (prefix_phrase($items; ".*") | english("and")),
+               prefix_note: (prefix_phrase($items; ".") | english("or"))})
       | (if any(.[]; .suffix == "metric") then [{handle: "meter", summary: "the Meter every metric instrument is created from"}] else [] end)
         + (if ($registry_spans | length) > 0 then [{handle: "tracer", summary: "the Tracer that starts spans tied to the schema"}] else [] end)
         + (if ($registry_events | length) > 0 then [{handle: "logger", summary: "the Logger that emits events tied to the schema"}] else [] end)
@@ -140,16 +151,24 @@ templates:
     filter: |-
       def ns: split(".") as $s
         | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
-          then {namespace: $s[1], prefix: ($s[0:2] | join("."))}
-          else {namespace: $s[0], prefix: $s[0]}
+          then {namespace: $s[1], prefix: ($s[0:2] | join(".")), short_name: ($s[2:] | join("."))}
+          else {namespace: $s[0], prefix: $s[0], short_name: ($s[1:] | join("."))}
           end;
       def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      def prefix_phrase($items; $glob):
+        ($items | map(.prefix) | unique) as $prefixes
+        | $prefixes | map(. as $p
+            | if ($items | any(.prefix == $p and .short_name != ""))
+              then "`\($p)\($glob)`"
+              else "`\($p)`" end);
       semconv_grouped_attributes({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
       | map(.attributes) | add // []
       | map(.key | ns)
       | group_by(.namespace)
-      | map({namespace: .[0].namespace, suffix: "attr", prefixes: (map(.prefix) | unique)})
-      | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
+      | map(. as $items
+            | {namespace: $items[0].namespace, suffix: "attr",
+               patterns: (prefix_phrase($items; ".*") | english("and")),
+               prefix_note: (prefix_phrase($items; ".") | english("or"))})
     application_mode: each
     file_name: "{{ ctx.namespace }}attr/doc.go"
 
@@ -157,10 +176,16 @@ templates:
     filter: |-
       def ns: split(".") as $s
         | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
-          then {namespace: $s[1], prefix: ($s[0:2] | join("."))}
-          else {namespace: $s[0], prefix: $s[0]}
+          then {namespace: $s[1], prefix: ($s[0:2] | join(".")), short_name: ($s[2:] | join("."))}
+          else {namespace: $s[0], prefix: $s[0], short_name: ($s[1:] | join("."))}
           end;
       def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      def prefix_phrase($items; $glob):
+        ($items | map(.prefix) | unique) as $prefixes
+        | $prefixes | map(. as $p
+            | if ($items | any(.prefix == $p and .short_name != ""))
+              then "`\($p)\($glob)`"
+              else "`\($p)`" end);
       def instrument_names($o):
         (semconv_grouped_metrics($o) | map(.metrics) | add // [] | map(.name)) as $names
         | $names + (.refinements.metrics // [] | map(select(.id != .name)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
@@ -168,8 +193,10 @@ templates:
       instrument_names({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
       | map(ns)
       | group_by(.namespace)
-      | map({namespace: .[0].namespace, suffix: "metric", prefixes: (map(.prefix) | unique)})
-      | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
+      | map(. as $items
+            | {namespace: $items[0].namespace, suffix: "metric",
+               patterns: (prefix_phrase($items; ".*") | english("and")),
+               prefix_note: (prefix_phrase($items; ".") | english("or"))})
     application_mode: each
     file_name: "{{ ctx.namespace }}metric/doc.go"
 
@@ -177,10 +204,16 @@ templates:
     filter: |-
       def ns: split(".") as $s
         | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
-          then {namespace: $s[1], prefix: ($s[0:2] | join("."))}
-          else {namespace: $s[0], prefix: $s[0]}
+          then {namespace: $s[1], prefix: ($s[0:2] | join(".")), short_name: ($s[2:] | join("."))}
+          else {namespace: $s[0], prefix: $s[0], short_name: ($s[1:] | join("."))}
           end;
       def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      def prefix_phrase($items; $glob):
+        ($items | map(.prefix) | unique) as $prefixes
+        | $prefixes | map(. as $p
+            | if ($items | any(.prefix == $p and .short_name != ""))
+              then "`\($p)\($glob)`"
+              else "`\($p)`" end);
       def span_ids($o):
         (.registry.spans // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | map(.type)) as $types
         | $types + (.refinements.spans // [] | map(select(.id != .type)) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
@@ -188,8 +221,10 @@ templates:
       span_ids({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
       | map(ns)
       | group_by(.namespace)
-      | map({namespace: .[0].namespace, suffix: "span", prefixes: (map(.prefix) | unique)})
-      | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
+      | map(. as $items
+            | {namespace: $items[0].namespace, suffix: "span",
+               patterns: (prefix_phrase($items; ".*") | english("and")),
+               prefix_note: (prefix_phrase($items; ".") | english("or"))})
     application_mode: each
     file_name: "{{ ctx.namespace }}span/doc.go"
 
@@ -197,10 +232,16 @@ templates:
     filter: |-
       def ns: split(".") as $s
         | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
-          then {namespace: $s[1], prefix: ($s[0:2] | join("."))}
-          else {namespace: $s[0], prefix: $s[0]}
+          then {namespace: $s[1], prefix: ($s[0:2] | join(".")), short_name: ($s[2:] | join("."))}
+          else {namespace: $s[0], prefix: $s[0], short_name: ($s[1:] | join("."))}
           end;
       def english($word): if length > 1 then (.[:-1] | join(", ")) + " \($word) " + .[-1] else .[0] end;
+      def prefix_phrase($items; $glob):
+        ($items | map(.prefix) | unique) as $prefixes
+        | $prefixes | map(. as $p
+            | if ($items | any(.prefix == $p and .short_name != ""))
+              then "`\($p)\($glob)`"
+              else "`\($p)`" end);
       def event_ids($o):
         [.registry.events // [] | .[].name] as $bases
         | (.registry.events // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | map(.name))
@@ -209,8 +250,10 @@ templates:
       event_ids({v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only})
       | map(ns)
       | group_by(.namespace)
-      | map({namespace: .[0].namespace, suffix: "event", prefixes: (map(.prefix) | unique)})
-      | map(. + {patterns: (.prefixes | map("`\(.).*`") | english("and")), prefix_note: (.prefixes | map("`\(.).`") | english("or"))})
+      | map(. as $items
+            | {namespace: $items[0].namespace, suffix: "event",
+               patterns: (prefix_phrase($items; ".*") | english("and")),
+               prefix_note: (prefix_phrase($items; ".") | english("or"))})
     application_mode: each
     file_name: "{{ ctx.namespace }}event/doc.go"
 
@@ -397,6 +440,9 @@ templates:
   # least one `{placeholder}`, each the key of an attribute the span requires.
   # Such a span is named from those attributes, and any other span takes a
   # typed name, since Go cannot check prose.
+  # A span whose name has a single segment, such as a vendor-prefix-only name,
+  # has nothing left after its namespace. Rather than failing, it renders
+  # unprefixed: `Start`, `Span`, `Name`, and so on, in `<name>span`.
   - template: spans.go.j2
     filter: |-
       def ns: split(".") as $s
@@ -453,9 +499,6 @@ templates:
               then error("span \($span) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated starter could not set them")
               else . end)
       | map(. + (.id | ns | {namespace, prefix, short_name}))
-      | map(if .short_name == ""
-            then error("span \(.id) has no name left after its namespace, so it cannot become a Go identifier")
-            else . end)
       | map(.id as $span
             | .attributes |= ((. // []) | sort_by(.key) | map(
                 if (.key as $k | $rendered | any(. == $k))
@@ -522,6 +565,13 @@ templates:
   # generated on its own stability and deprecation. Severity and
   # timestamp share the event's option type, so an attribute that would render
   # to either name fails.
+  # An event whose name has a single segment, such as the upstream `exception`
+  # event, has nothing left after its namespace. Rather than failing, it
+  # renders unprefixed: `Emit`, `Option`, `WithSeverity`, and so on, in
+  # `<name>event`. A metric keeps erroring on a single-segment name: a bare
+  # `Counter` or `Histogram` reads too close to the OpenTelemetry metric API
+  # types it wraps, and semantic convention metric names always carry a
+  # namespace in practice, unlike span and event names.
   - template: events.go.j2
     filter: |-
       def ns: split(".") as $s
@@ -561,9 +611,6 @@ templates:
               then error("event \($event) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated Emit function could not set them")
               else . end)
       | map(. + (.id | ns | {namespace, prefix, short_name}))
-      | map(if .short_name == ""
-            then error("event \(.id) has no name left after its namespace, so it cannot become a Go identifier")
-            else . end)
       | map(.id as $event
             | .attributes |= ((. // []) | sort_by(.key) | map(
                 if (.key as $k | $rendered | any(. == $k))

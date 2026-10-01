@@ -1,0 +1,45 @@
+file_format: definition/2
+attributes:
+  - key: exception.type
+    type: string
+    stability: stable
+    brief: The type of the exception.
+    examples: ["ValueError"]
+  - key: exception.message
+    type: string
+    stability: stable
+    brief: The exception message.
+    examples: ["division by zero"]
+  - key: heartbeat.sequence
+    type: int
+    stability: stable
+    brief: Sequence number of the heartbeat.
+    examples: 1
+  - key: heartbeat.source
+    type: string
+    stability: stable
+    brief: Name of the component that sent the heartbeat.
+    examples: ["worker-1"]
+events:
+  - name: exception
+    requirement_level: recommended
+    stability: stable
+    brief: A noteworthy exception occurred.
+    attributes:
+      - ref: exception.type
+        requirement_level: required
+      - ref: exception.message
+        requirement_level: recommended
+spans:
+  - type: heartbeat
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A periodic liveness signal.
+    name:
+      note: "`heartbeat`"
+    attributes:
+      - ref: heartbeat.sequence
+        requirement_level: required
+      - ref: heartbeat.source
+        requirement_level: recommended
