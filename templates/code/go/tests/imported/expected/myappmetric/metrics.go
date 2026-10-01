@@ -86,6 +86,13 @@ func (o TaskFailedCounterObserver) Observe(value int64, errorType string, myappT
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 
+// TaskFailedCounterCallback observes `myapp.task.failed` through o on every
+// collection of a TaskFailedObservableCounter.
+//
+// An error it returns is returned by the collection that ran it, and the
+// observations made before it returned are still recorded.
+type TaskFailedCounterCallback func(ctx context.Context, o TaskFailedCounterObserver) error
+
 // TaskFailedObservableCounter is the asynchronous form of TaskFailedCounter,
 // observed through the callback it was created with.
 type TaskFailedObservableCounter struct {
@@ -94,7 +101,7 @@ type TaskFailedObservableCounter struct {
 
 // NewTaskFailedObservableCounter creates the `myapp.task.failed` instrument
 // from meter and registers callback to observe it on every collection.
-func NewTaskFailedObservableCounter(meter semconv.Meter, callback func(context.Context, TaskFailedCounterObserver) error) (TaskFailedObservableCounter, error) {
+func NewTaskFailedObservableCounter(meter semconv.Meter, callback TaskFailedCounterCallback) (TaskFailedObservableCounter, error) {
 	if callback == nil {
 		return TaskFailedObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.failed")
 	}

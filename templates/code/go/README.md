@@ -103,8 +103,10 @@ _, err := myappmetric.NewTaskActiveObservableUpDownCounter(meter,
 	})
 ```
 
-The callback is registered when the instrument is created and runs on every
-collection. Histograms have no asynchronous form in OpenTelemetry, so they get
+The callback has its own type, `<Name><Instrument>Callback`, so it can be
+declared ahead of the constructor. It is registered when the instrument is
+created and runs on every collection. An error it returns is returned by that
+collection, and the observations made before it are still recorded. Histograms have no asynchronous form in OpenTelemetry, so they get
 none.
 
 Go cannot check a requirement condition, so conditionally required,

@@ -61,6 +61,13 @@ func (o AttemptsCounterObserver) Observe(value int64, authMethod authattr.Method
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 
+// AttemptsCounterCallback observes `auth.attempts` through o on every
+// collection of a AttemptsObservableCounter.
+//
+// An error it returns is returned by the collection that ran it, and the
+// observations made before it returned are still recorded.
+type AttemptsCounterCallback func(ctx context.Context, o AttemptsCounterObserver) error
+
 // AttemptsObservableCounter is the asynchronous form of AttemptsCounter,
 // observed through the callback it was created with.
 type AttemptsObservableCounter struct {
@@ -69,7 +76,7 @@ type AttemptsObservableCounter struct {
 
 // NewAttemptsObservableCounter creates the `auth.attempts` instrument from
 // meter and registers callback to observe it on every collection.
-func NewAttemptsObservableCounter(meter semconv.Meter, callback func(context.Context, AttemptsCounterObserver) error) (AttemptsObservableCounter, error) {
+func NewAttemptsObservableCounter(meter semconv.Meter, callback AttemptsCounterCallback) (AttemptsObservableCounter, error) {
 	if callback == nil {
 		return AttemptsObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "auth.attempts")
 	}

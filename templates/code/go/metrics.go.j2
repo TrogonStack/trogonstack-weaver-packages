@@ -105,6 +105,7 @@ func (m {{ name }}) {{ method }}(ctx context.Context, {{ arg }} {{ gotype }}{% f
 {%- if def.instrument != "histogram" %}
 {%- set observable = n.exported(def.short_name) ~ "Observable" ~ suffix %}
 {%- set observer = name ~ "Observer" %}
+{%- set callback = name ~ "Callback" %}
 
 {{ [observer ~ " records `" ~ def.name ~ "` observations from the callback of a " ~ observable ~ ". The zero " ~ observer ~ " records nothing."] | join | comment }}
 type {{ observer }} struct {
@@ -132,13 +133,16 @@ func (o {{ observer }}) Observe(value {{ gotype }}{% for req in def.required %},
 {%- endif %}
 }
 
+{{ [callback ~ " observes `" ~ def.name ~ "` through o on every collection of a " ~ observable ~ ".", "An error it returns is returned by the collection that ran it, and the observations made before it returned are still recorded.", deprecated] | select | join("\n\n") | comment }}
+type {{ callback }} func(ctx context.Context, o {{ observer }}) error
+
 {{ [observable ~ " is the asynchronous form of " ~ name ~ ", observed through the callback it was created with.", opt_in, deprecated] | select | join("\n\n") | comment }}
 type {{ observable }} struct {
 	inst metric.{{ value_type }}Observable{{ suffix }}
 }
 
 {{ ["New" ~ observable ~ " creates the `" ~ def.instrument_name ~ "` instrument from meter and registers callback to observe it on every collection.", opt_in, deprecated] | select | join("\n\n") | comment }}
-func New{{ observable }}(meter {{ params.root_package }}.Meter, callback func(context.Context, {{ observer }}) error) ({{ observable }}, error) {
+func New{{ observable }}(meter {{ params.root_package }}.Meter, callback {{ callback }}) ({{ observable }}, error) {
 	if callback == nil {
 		return {{ observable }}{}, fmt.Errorf("create the %s instrument: the callback is nil", "{{ def.instrument_name }}")
 	}

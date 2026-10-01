@@ -259,7 +259,7 @@ templates:
       | group_by(.namespace)
       | map(
           ([.[] | .name as $metric | (.short_name | gsub("[._]"; "") | ascii_downcase) as $short | .instrument as $kind
-            | ([$short + $kind, $short + $kind + "attr", $short + $kind + "observer"]
+            | ([$short + $kind, $short + $kind + "attr", $short + $kind + "observer", $short + $kind + "callback"]
                + (if $kind == "histogram" then [] else [$short + "observable" + $kind] end))[]
             | {identifier: ., name: $metric}]
            | group_by(.identifier)

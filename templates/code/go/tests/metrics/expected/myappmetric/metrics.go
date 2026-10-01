@@ -60,6 +60,15 @@ func (o QueueDepthGaugeObserver) Observe(value int64) {
 	o.o.Observe(value)
 }
 
+// QueueDepthGaugeCallback observes `myapp.queue.depth` through o on every
+// collection of a QueueDepthObservableGauge.
+//
+// An error it returns is returned by the collection that ran it, and the
+// observations made before it returned are still recorded.
+//
+// Deprecated: Replaced by `myapp.task.active`.
+type QueueDepthGaugeCallback func(ctx context.Context, o QueueDepthGaugeObserver) error
+
 // QueueDepthObservableGauge is the asynchronous form of QueueDepthGauge,
 // observed through the callback it was created with.
 //
@@ -72,7 +81,7 @@ type QueueDepthObservableGauge struct {
 // from meter and registers callback to observe it on every collection.
 //
 // Deprecated: Replaced by `myapp.task.active`.
-func NewQueueDepthObservableGauge(meter semconv.Meter, callback func(context.Context, QueueDepthGaugeObserver) error) (QueueDepthObservableGauge, error) {
+func NewQueueDepthObservableGauge(meter semconv.Meter, callback QueueDepthGaugeCallback) (QueueDepthObservableGauge, error) {
 	if callback == nil {
 		return QueueDepthObservableGauge{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.queue.depth")
 	}
@@ -137,6 +146,13 @@ func (o TaskActiveUpDownCounterObserver) Observe(value int64, myappTaskState mya
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 
+// TaskActiveUpDownCounterCallback observes `myapp.task.active` through o on
+// every collection of a TaskActiveObservableUpDownCounter.
+//
+// An error it returns is returned by the collection that ran it, and the
+// observations made before it returned are still recorded.
+type TaskActiveUpDownCounterCallback func(ctx context.Context, o TaskActiveUpDownCounterObserver) error
+
 // TaskActiveObservableUpDownCounter is the asynchronous form of
 // TaskActiveUpDownCounter, observed through the callback it was created
 // with.
@@ -147,7 +163,7 @@ type TaskActiveObservableUpDownCounter struct {
 // NewTaskActiveObservableUpDownCounter creates the `myapp.task.active`
 // instrument from meter and registers callback to observe it on every
 // collection.
-func NewTaskActiveObservableUpDownCounter(meter semconv.Meter, callback func(context.Context, TaskActiveUpDownCounterObserver) error) (TaskActiveObservableUpDownCounter, error) {
+func NewTaskActiveObservableUpDownCounter(meter semconv.Meter, callback TaskActiveUpDownCounterCallback) (TaskActiveObservableUpDownCounter, error) {
 	if callback == nil {
 		return TaskActiveObservableUpDownCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.active")
 	}
@@ -371,6 +387,13 @@ func (o TaskStartedCounterObserver) Observe(value int64, opts ...TaskStartedCoun
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 
+// TaskStartedCounterCallback observes `myapp.task.started` through o on
+// every collection of a TaskStartedObservableCounter.
+//
+// An error it returns is returned by the collection that ran it, and the
+// observations made before it returned are still recorded.
+type TaskStartedCounterCallback func(ctx context.Context, o TaskStartedCounterObserver) error
+
 // TaskStartedObservableCounter is the asynchronous form of
 // TaskStartedCounter, observed through the callback it was created with.
 //
@@ -386,7 +409,7 @@ type TaskStartedObservableCounter struct {
 //
 // Opt-in: the convention records `myapp.task.started` only when a user asks
 // for it.
-func NewTaskStartedObservableCounter(meter semconv.Meter, callback func(context.Context, TaskStartedCounterObserver) error) (TaskStartedObservableCounter, error) {
+func NewTaskStartedObservableCounter(meter semconv.Meter, callback TaskStartedCounterCallback) (TaskStartedObservableCounter, error) {
 	if callback == nil {
 		return TaskStartedObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.started")
 	}
