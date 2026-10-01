@@ -28,6 +28,15 @@ params:
   exclude_deprecated: false
   stable_only: false
 
+  # Default `explicithistogram` boundaries for a histogram whose unit matches
+  # and sets no `annotations.aggregation` of its own. Validated the same way
+  # as explicit boundaries: non-empty, numbers, strictly increasing. The
+  # default covers `s`, the semconv unit for durations, with the boundaries
+  # the OpenTelemetry semantic conventions advise for a duration histogram in
+  # seconds. Set to `{}` to opt out, or replace it to cover other units.
+  histogram_boundaries_by_unit:
+    s: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]
+
 templates:
   - template: doc.go.j2
     filter: |-
@@ -304,6 +313,8 @@ templates:
   # `annotations.aggregation`, which mirrors the metric aggregation field
   # proposed in https://github.com/open-telemetry/weaver/issues/844 until the
   # registry schema has one. Only what the Go API can express is accepted.
+  # Without it, a histogram whose unit is a key of histogram_boundaries_by_unit
+  # falls back to that default, validated the same way.
   # Go cannot enforce a requirement condition, so conditionally required,
   # recommended, and opt-in attributes stay options and carry their level in
   # the option's doc comment.
@@ -362,22 +373,31 @@ templates:
               then error("metric \($metric) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated method could not set them")
               else . end)
       | map(.name as $metric
+            | .unit as $unit
             | (.annotations.aggregation // null) as $aggregation
             | ($aggregation | if type == "object" and (.parameters | type) == "object" then .parameters.boundaries else null end) as $bounds
-            | if $aggregation == null then .
-              elif .instrument != "histogram"
-              then error("metric \($metric) sets annotations.aggregation, which the Go template supports only on a histogram")
-              elif ($aggregation | type) != "object" or ($aggregation.parameters // {} | type) != "object"
-              then error("metric \($metric) must set annotations.aggregation to an object with a method and parameters")
-              elif $aggregation.method != "explicithistogram"
-              then error("metric \($metric) sets annotations.aggregation.method to \($aggregation.method | tostring), but the Go template supports only explicithistogram")
-              elif (($aggregation | keys) - ["method", "parameters"] | length) > 0 or (($aggregation.parameters // {} | keys) - ["boundaries"] | length) > 0
-              then error("metric \($metric) sets annotations.aggregation fields other than method and parameters.boundaries, which the Go API cannot express")
-              elif ($bounds | type) != "array" or ($bounds | length) == 0 or ($bounds | any(type != "number"))
-              then error("metric \($metric) must set annotations.aggregation.parameters.boundaries to a non-empty list of numbers")
-              elif ([range(1; $bounds | length) | select($bounds[.] <= $bounds[. - 1])] | length) > 0
-              then error("metric \($metric) must list annotations.aggregation.parameters.boundaries in strictly increasing order")
-              else . + {bucket_boundaries: $bounds} end)
+            | if $aggregation != null then
+                if .instrument != "histogram"
+                then error("metric \($metric) sets annotations.aggregation, which the Go template supports only on a histogram")
+                elif ($aggregation | type) != "object" or ($aggregation.parameters // {} | type) != "object"
+                then error("metric \($metric) must set annotations.aggregation to an object with a method and parameters")
+                elif $aggregation.method != "explicithistogram"
+                then error("metric \($metric) sets annotations.aggregation.method to \($aggregation.method | tostring), but the Go template supports only explicithistogram")
+                elif (($aggregation | keys) - ["method", "parameters"] | length) > 0 or (($aggregation.parameters // {} | keys) - ["boundaries"] | length) > 0
+                then error("metric \($metric) sets annotations.aggregation fields other than method and parameters.boundaries, which the Go API cannot express")
+                elif ($bounds | type) != "array" or ($bounds | length) == 0 or ($bounds | any(type != "number"))
+                then error("metric \($metric) must set annotations.aggregation.parameters.boundaries to a non-empty list of numbers")
+                elif ([range(1; $bounds | length) | select($bounds[.] <= $bounds[. - 1])] | length) > 0
+                then error("metric \($metric) must list annotations.aggregation.parameters.boundaries in strictly increasing order")
+                else . + {bucket_boundaries: $bounds} end
+              elif .instrument == "histogram" and ($unit | type) == "string" and ($histogram_boundaries_by_unit | has($unit)) then
+                ($histogram_boundaries_by_unit[$unit]) as $default_bounds
+                | if ($default_bounds | type) != "array" or ($default_bounds | length) == 0 or ($default_bounds | any(type != "number"))
+                  then error("metric \($metric) resolves histogram_boundaries_by_unit for unit \($unit) to boundaries that are not a non-empty list of numbers")
+                  elif ([range(1; $default_bounds | length) | select($default_bounds[.] <= $default_bounds[. - 1])] | length) > 0
+                  then error("metric \($metric) resolves histogram_boundaries_by_unit for unit \($unit) to boundaries that are not in strictly increasing order")
+                  else . + {bucket_boundaries: $default_bounds} end
+              else . end)
       | map(. + (.name | ns | {namespace, prefix, short_name}))
       | map(if .short_name == ""
             then error("metric \(.name) has no name left after its namespace, so it cannot become a Go identifier")
