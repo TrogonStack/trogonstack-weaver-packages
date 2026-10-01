@@ -8,7 +8,7 @@
 package {{ ctx.namespace }}attr
 {%- else -%}
 {{ ["Package " ~ ctx.namespace ~ "metric is the Go form of the metrics named " ~ ctx.patterns ~ ".",
-    "Each metric is an instrument type built from a metric.Meter by its New constructor, and recorded through the method its instrument kind gives it. Required attributes are typed parameters and the rest are trailing options. Identifiers omit the namespace prefix " ~ ctx.prefix_note ~ ", because the package name already carries it."] | join("\n\n") | comment }}
+    "Each metric and metric refinement is an instrument type built from a " ~ params.root_package ~ ".Meter by its New constructor, and recorded through the method its instrument kind gives it. Counters, up-down counters, and gauges also have an Observable form, observed from a callback. Required attributes are typed parameters and the rest are trailing options. Identifiers omit the namespace prefix " ~ ctx.prefix_note ~ ", because the package name already carries it."] | join("\n\n") | comment }}
 package {{ ctx.namespace }}metric
 {%- endif %}
 {% endfilter %}
