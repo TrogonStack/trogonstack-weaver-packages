@@ -28,13 +28,15 @@ before each run, or files for conventions you removed stay behind.
 
 ## What it generates
 
-One package per namespace and signal kind, below a root package that carries
-the registry's schema URL:
+One package per namespace and signal kind, below a root package, `<root>`,
+that carries the registry's schema URL:
 
 | Path                            | Contents                                                               |
 | ------------------------------- | ---------------------------------------------------------------------- |
-| `doc.go`                        | Package `{root_package}`, listing every generated package.             |
-| `schema.go`                     | `SchemaURL`, plus the `Meter` type when the registry has metrics.      |
+| `doc.go`                        | The root package, listing every generated package.                     |
+| `schema.go`                     | `SchemaURL`.                                                           |
+| `<root>meter/doc.go`            | Package comment for the meter package, when the registry has metrics.  |
+| `<root>meter/meter.go`          | The `Meter` every instrument is created from.                          |
 | `<namespace>attr/doc.go`        | Package comment for the attribute package.                             |
 | `<namespace>attr/attributes.go` | A typed value per attribute, plus enum members as package variables.   |
 | `<namespace>metric/doc.go`      | Package comment for the metric package.                                |
@@ -75,15 +77,22 @@ both renames one on import.
 ### Schema URL
 
 `SchemaURL` is the `schema_url` from the registry manifest, which must end in
-the schema version, such as `https://example.com/schemas/1.0.0`. Instruments are
-created from a `{root_package}.Meter` rather than a `metric.Meter`, and the only
-way to build one is `NewMeter`, which sets `SchemaURL` on the meter's
-instrumentation scope. Telemetry recorded through the generated instruments is
-therefore always tied to the registry's schema:
+the schema version, such as `https://example.com/schemas/1.0.0`. The root
+package declares nothing else, so code that only needs the URL imports no
+OpenTelemetry API.
+
+Instruments are created from a `<root>meter.Meter` rather than a
+`metric.Meter`, and the only way to build one is `<root>meter.New`, which sets
+`SchemaURL` on the meter's instrumentation scope. Telemetry recorded through the
+generated instruments is therefore always tied to the registry's schema:
 
 ```go
-meter := semconv.NewMeter(provider, "example.com/myservice")
+meter := semconvmeter.New(provider, "example.com/myservice")
 ```
+
+The meter lives in its own package, named after the root package so that it
+never clashes with the OpenTelemetry `metric` package imported beside it, and
+only code that records metrics imports the metric API through it.
 
 A schema URL passed in the options is replaced. The zero `Meter` creates
 instruments that record nothing.
@@ -117,8 +126,8 @@ _, err := myappmetric.NewTaskActiveObservableUpDownCounter(meter,
 The callback has its own type, `<Name><Instrument>Callback`, so it can be
 declared ahead of the constructor. It is registered when the instrument is
 created and runs on every collection. An error it returns is returned by that
-collection, and the observations made before it are still recorded. Histograms have no asynchronous form in OpenTelemetry, so they get
-none.
+collection, and the observations made before it are still recorded. Histograms
+have no asynchronous form in OpenTelemetry, so they get none.
 
 Go cannot check a requirement condition, so conditionally required,
 recommended, and opt-in attributes are all options. The option's doc comment

@@ -9,9 +9,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"example.com/semconv"
 	"example.com/semconv/authattr"
 	"example.com/semconv/myappattr"
+	"example.com/semconv/semconvmeter"
 )
 
 // TaskDurationHistogramAttr is an attribute `worker.task.duration` accepts
@@ -58,7 +58,7 @@ type TaskDurationHistogram struct{ inst metric.Float64Histogram }
 
 // NewTaskDurationHistogram creates the `myapp.task.duration` instrument from
 // meter.
-func NewTaskDurationHistogram(meter semconv.Meter) (TaskDurationHistogram, error) {
+func NewTaskDurationHistogram(meter semconvmeter.Meter) (TaskDurationHistogram, error) {
 	inst, err := meter.MetricMeter().Float64Histogram(
 		"myapp.task.duration",
 		metric.WithDescription("Time a task took from start to finish."),

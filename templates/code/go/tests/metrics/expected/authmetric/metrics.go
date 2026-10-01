@@ -9,8 +9,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"example.com/semconv"
 	"example.com/semconv/authattr"
+	"example.com/semconv/semconvmeter"
 )
 
 // AttemptsCounter is `auth.attempts`.
@@ -19,7 +19,7 @@ import (
 type AttemptsCounter struct{ inst metric.Int64Counter }
 
 // NewAttemptsCounter creates the `auth.attempts` instrument from meter.
-func NewAttemptsCounter(meter semconv.Meter) (AttemptsCounter, error) {
+func NewAttemptsCounter(meter semconvmeter.Meter) (AttemptsCounter, error) {
 	inst, err := meter.MetricMeter().Int64Counter(
 		"auth.attempts",
 		metric.WithDescription("Number of authentication attempts."),
@@ -76,7 +76,7 @@ type AttemptsObservableCounter struct {
 
 // NewAttemptsObservableCounter creates the `auth.attempts` instrument from
 // meter and registers callback to observe it on every collection.
-func NewAttemptsObservableCounter(meter semconv.Meter, callback AttemptsCounterCallback) (AttemptsObservableCounter, error) {
+func NewAttemptsObservableCounter(meter semconvmeter.Meter, callback AttemptsCounterCallback) (AttemptsObservableCounter, error) {
 	if callback == nil {
 		return AttemptsObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "auth.attempts")
 	}

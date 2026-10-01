@@ -3,34 +3,6 @@
 
 package acmesemconv
 
-import (
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
-)
-
 // SchemaURL is the schema URL of the registry these packages are generated
 // from.
 const SchemaURL = "https://example.com/schemas/params/1.0.0"
-
-// Meter is a metric.Meter whose instrumentation scope carries SchemaURL.
-// Every instrument in this registry is created from one, so everything it
-// records is tied to the registry's schema.
-//
-// The zero Meter creates instruments that record nothing.
-type Meter struct{ meter metric.Meter }
-
-// NewMeter returns the meter named name from provider, with SchemaURL set on
-// its instrumentation scope. A schema URL in opts is replaced.
-func NewMeter(provider metric.MeterProvider, name string, opts ...metric.MeterOption) Meter {
-	opts = append(opts[:len(opts):len(opts)], metric.WithSchemaURL(SchemaURL))
-	return Meter{meter: provider.Meter(name, opts...)}
-}
-
-// MetricMeter returns the underlying metric.Meter, or a no-op one for the
-// zero Meter.
-func (m Meter) MetricMeter() metric.Meter {
-	if m.meter == nil {
-		return noop.Meter{}
-	}
-	return m.meter
-}
