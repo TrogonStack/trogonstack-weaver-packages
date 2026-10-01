@@ -1,0 +1,5 @@
+params:
+  import_path: example.com
+  root_package: myapp
+  imported_import_paths:
+    error: example.com/upstream
