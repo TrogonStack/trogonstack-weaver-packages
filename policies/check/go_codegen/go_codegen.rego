@@ -90,3 +90,60 @@ deny contains finding if {
 		"signal_name": metric.name,
 	}
 }
+
+# Experimental: annotations.aggregation mirrors the metric aggregation field
+# proposed in https://github.com/open-telemetry/weaver/issues/844 until the
+# registry schema has one. The Go template accepts only what the Go API can
+# express, which is explicit bucket boundaries on a histogram.
+deny contains finding if {
+	some metric in input.registry.metrics
+	aggregation := metric.annotations.aggregation
+	problem := aggregation_problem(metric.instrument, aggregation)
+
+	finding := {
+		"id": "go_codegen_invalid_aggregation",
+		"context": {"aggregation": aggregation},
+		"message": sprintf(
+			"Metric '%s' sets annotations.aggregation, but %s.",
+			[metric.name, problem],
+		),
+		"level": "violation",
+		"signal_type": "metric",
+		"signal_name": metric.name,
+	}
+}
+
+aggregation_problem(instrument, aggregation) := "the Go template supports it only on a histogram" if {
+	instrument != "histogram"
+} else := "it must be an object with a method and parameters" if {
+	not is_object(aggregation)
+} else := "the Go template supports only the explicithistogram method" if {
+	object.get(aggregation, "method", "") != "explicithistogram"
+} else := "the Go API can express only parameters.boundaries" if {
+	not only_boundaries(aggregation)
+} else := "parameters.boundaries must be a non-empty list of numbers" if {
+	not number_list(aggregation.parameters.boundaries)
+} else := "parameters.boundaries must be in strictly increasing order" if {
+	bounds := aggregation.parameters.boundaries
+	some i, bound in bounds
+	i > 0
+	bound <= bounds[i - 1]
+}
+
+only_boundaries(aggregation) if {
+	every key, _ in aggregation {
+		key in {"method", "parameters"}
+	}
+	is_object(aggregation.parameters)
+	every key, _ in aggregation.parameters {
+		key == "boundaries"
+	}
+}
+
+number_list(bounds) if {
+	is_array(bounds)
+	count(bounds) > 0
+	every bound in bounds {
+		is_number(bound)
+	}
+}

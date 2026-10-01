@@ -1,0 +1,1 @@
+metric myapp.task.started sets annotations.aggregation, which the Go template supports only on a histogram

@@ -1,0 +1,1 @@
+metric myapp.task.duration sets annotations.aggregation.method to histogram, but the Go template supports only explicithistogram

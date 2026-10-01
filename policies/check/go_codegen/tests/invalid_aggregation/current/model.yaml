@@ -1,0 +1,79 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.duration
+    instrument: histogram
+    unit: s
+    stability: stable
+    requirement_level: recommended
+    brief: Time a task took from start to finish.
+    annotations:
+      go:
+        value_type: float64
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [0.1, 1, 1, 0.5]
+  - name: myapp.task.wait
+    instrument: histogram
+    unit: s
+    stability: stable
+    requirement_level: recommended
+    brief: Time a task waited before it started.
+    annotations:
+      go:
+        value_type: float64
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: ["fast", "slow"]
+  - name: myapp.task.started
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    requirement_level: recommended
+    brief: Number of tasks started.
+    annotations:
+      go:
+        value_type: int64
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [1, 10]
+  - name: myapp.task.size
+    instrument: histogram
+    unit: By
+    stability: stable
+    requirement_level: recommended
+    brief: Size of a task's payload.
+    annotations:
+      go:
+        value_type: int64
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [0, 1024, 65536]
+  - name: myapp.task.latency
+    instrument: histogram
+    unit: s
+    stability: stable
+    requirement_level: recommended
+    brief: Time between a task being queued and finishing.
+    annotations:
+      go:
+        value_type: float64
+      aggregation:
+        method: histogram
+  - name: myapp.task.retry.wait
+    instrument: histogram
+    unit: s
+    stability: stable
+    requirement_level: recommended
+    brief: Time a task waited before a retry.
+    annotations:
+      go:
+        value_type: float64
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [0.1, 1]
+          recordminmax: false

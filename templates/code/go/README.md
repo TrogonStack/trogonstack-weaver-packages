@@ -112,6 +112,32 @@ metrics:
         value_type: float64 # or int64
 ```
 
+A histogram can also set the bucket boundaries its constructor passes to
+`metric.WithExplicitBucketBoundaries`, in strictly increasing order. Without
+them the SDK's default boundaries apply, which suit milliseconds rather than a
+unit such as `s` or `By`.
+
+This is experimental. The registry schema has no field for it yet, so it is
+read from `annotations.aggregation`, which mirrors the metric aggregation field
+proposed in [weaver#844](https://github.com/open-telemetry/weaver/issues/844)
+and will follow that proposal as it changes. Only `method: explicithistogram`
+with `parameters.boundaries` is accepted, since that is all the Go API can
+express:
+
+```yaml
+metrics:
+  - name: myapp.task.duration
+    instrument: histogram
+    unit: s
+    annotations:
+      go:
+        value_type: float64
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10]
+```
+
 ### Deprecation
 
 Deprecated attributes, enum members, and metrics are generated with a
@@ -146,6 +172,10 @@ or is tied to no schema, when:
 - Two attributes of one metric render to the same parameter or option name.
 - A key has nothing left after its namespace.
 - A metric references an imported attribute whose type is not supported.
+- `annotations.aggregation` is set on an instrument other than a histogram,
+  uses a method or parameter other than `explicithistogram` and `boundaries`,
+  or its boundaries are not a non-empty list of numbers in strictly increasing
+  order.
 - `exclude_deprecated` or `stable_only` keeps a metric but leaves out one of
   its required attributes.
 
@@ -154,7 +184,7 @@ or is tied to no schema, when:
 | Case         | Covers                                                                                                   |
 | ------------ | -------------------------------------------------------------------------------------------------------- |
 | `attributes` | Every supported type, string and int enums, notes, deprecated attributes and members.                    |
-| `metrics`    | Every instrument, required and optional attributes, cross-namespace references.                          |
+| `metrics`    | Every instrument, required and optional attributes, cross-namespace references, bucket boundaries.       |
 | `imported`   | Required and optional attributes imported from a dependency registry, including an enum.                 |
 | `params`     | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`. |
 | `error_*`    | Each case fails generation with one of the errors above.                                                 |

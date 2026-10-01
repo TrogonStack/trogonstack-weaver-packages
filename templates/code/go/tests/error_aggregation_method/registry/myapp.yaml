@@ -1,0 +1,13 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.duration
+    requirement_level: recommended
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Time a task took from start to finish.
+    annotations:
+      go:
+        value_type: float64
+      aggregation:
+        method: histogram

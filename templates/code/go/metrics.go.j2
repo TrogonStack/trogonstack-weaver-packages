@@ -69,6 +69,9 @@ func New{{ name }}(meter {{ params.root_package }}.Meter) ({{ name }}, error) {
 		"{{ def.name }}",
 		metric.WithDescription({{ def.brief | trim | tojson }}),
 		metric.WithUnit({{ def.unit | tojson }}),
+{%- if def.bucket_boundaries %}
+		metric.WithExplicitBucketBoundaries({{ def.bucket_boundaries | join(", ") }}),
+{%- endif %}
 	)
 	if err != nil {
 		return {{ name }}{}, fmt.Errorf("create the %s instrument: %w", "{{ def.name }}", err)

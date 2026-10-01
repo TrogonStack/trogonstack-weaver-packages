@@ -47,6 +47,10 @@ metrics:
     annotations:
       go:
         value_type: float64
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [0, 0.005, 0.01, 0.1, 1, 10]
     attributes:
       - ref: myapp.task.id
         requirement_level: required
