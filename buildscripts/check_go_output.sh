@@ -5,6 +5,7 @@
 set -euo pipefail
 
 OTEL_GO_VERSION="${OTEL_GO_VERSION:-v1.46.0}"
+OTEL_GO_LOG_VERSION="${OTEL_GO_LOG_VERSION:-v0.22.0}"
 ROOT="$(pwd)"
 PACKAGE_DIR="${ROOT}/templates/code/go"
 DEFAULT_IMPORT_PATH="$(sed -n 's/^  import_path: *//p' "${PACKAGE_DIR}/weaver.yaml")"
@@ -47,7 +48,7 @@ for test_dir in "${PACKAGE_DIR}"/tests/*/; do
   (
     cd "${module_dir}"
     go mod init "${module_path}" >/dev/null 2>&1
-    go get "go.opentelemetry.io/otel@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/metric@${OTEL_GO_VERSION}" 2>&1 | grep -v "^go: " || true
+    go get "go.opentelemetry.io/otel@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/metric@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/trace@${OTEL_GO_VERSION}" 2>&1 | grep -v "^go: " || true
     go mod tidy
     go build ./...
     go vet ./...

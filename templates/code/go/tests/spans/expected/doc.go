@@ -15,10 +15,6 @@
 //
 // # Packages
 //
-//   - [example.com/semconv/semconvmeter]: the Meter every metric instrument is created from
-//   - [example.com/semconv/authattr]: `auth.*` attributes
-//   - [example.com/semconv/authmetric]: `auth.*` metrics
+//   - [example.com/semconv/semconvtracer]: the Tracer that starts spans tied to the schema
 //   - [example.com/semconv/myappattr]: `myapp.*` attributes
-//   - [example.com/semconv/myappmetric]: `myapp.*` metrics
-//   - [example.com/semconv/workermetric]: `worker.*` metrics
 package semconv
