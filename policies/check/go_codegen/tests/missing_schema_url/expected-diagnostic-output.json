@@ -1,0 +1,22 @@
+[
+  {
+    "diagnostic": {
+      "message": "Policy violation: id=go_codegen_invalid_schema_url, context={\"schema_url\":\"https://unknown/unknown\"}, message=The registry schema_url 'https://unknown/unknown' must be declared in the registry manifest and end in the schema version, such as 'https://example.com/schemas/1.0.0'. The Go template ties every instrument to it., level=Violation, signal_type=None, signal_name=None, provenance: current"
+    },
+    "error": {
+      "provenance": "current",
+      "type": "policy_violation",
+      "violation": {
+        "context": {
+          "schema_url": "https://unknown/unknown"
+        },
+        "id": "go_codegen_invalid_schema_url",
+        "level": "violation",
+        "message": "The registry schema_url 'https://unknown/unknown' must be declared in the registry manifest and end in the schema version, such as 'https://example.com/schemas/1.0.0'. The Go template ties every instrument to it.",
+        "signal_name": null,
+        "signal_type": null,
+        "type": "PolicyFinding"
+      }
+    }
+  }
+]

@@ -1,0 +1,7 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]

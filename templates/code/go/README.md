@@ -61,7 +61,8 @@ enums of those. Template and `any` types are not rendered.
 
 ### Schema URL
 
-`SchemaURL` is the `schema_url` from the registry manifest. Instruments are
+`SchemaURL` is the `schema_url` from the registry manifest, which must end in
+the schema version, such as `https://example.com/schemas/1.0.0`. Instruments are
 created from a `{root_package}.Meter` rather than a `metric.Meter`, and the only
 way to build one is `NewMeter`, which sets `SchemaURL` on the meter's
 instrumentation scope. Telemetry recorded through the generated instruments is
@@ -166,7 +167,8 @@ upper case in identifiers, such as `ID` and `URL`, are listed in
 Generation stops with an error, rather than writing Go that does not compile
 or is tied to no schema, when:
 
-- The registry has no manifest declaring a `schema_url`.
+- The registry has no manifest declaring a `schema_url`, or the URL does not
+  end in the schema version.
 - Two attribute keys in one package render to the same Go identifier, such as
   `myapp.task.id` and `myapp.task_id`.
 - Two attributes of one metric render to the same parameter or option name.

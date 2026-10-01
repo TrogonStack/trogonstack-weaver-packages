@@ -1,0 +1,1 @@
+the registry schema_url https://example.com/schemas/myapp does not end in the schema version
