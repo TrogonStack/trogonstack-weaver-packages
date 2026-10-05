@@ -14,7 +14,20 @@ impl BoundaryAttr {
 }
 
 #[allow(deprecated)]
+impl ::std::fmt::Display for BoundaryAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        let value: i64 = match self {
+            BoundaryAttr::Minimum => -9223372036854775808,
+            BoundaryAttr::Maximum => 9223372036854775807,
+        };
+        ::std::fmt::Display::fmt(&value, formatter)
+    }
+}
+
+#[allow(deprecated)]
 impl From<BoundaryAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: BoundaryAttr) -> Self {
         let value: i64 = match value {
             BoundaryAttr::Minimum => -9223372036854775808,

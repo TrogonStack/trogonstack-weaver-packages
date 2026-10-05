@@ -19,20 +19,22 @@ pub enum {{ name }}Option {
 }
 {{ (h.docs(def) ~ "\n" ~ h.deprecated(def)) | trim }}
 pub fn {{ h.ident('emit.' ~ def.short_name) }}<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}, options: impl IntoIterator<Item = {{ name }}Option>) {
-    let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let {% if def.optional %}mut {% endif %}attributes: Vec<::opentelemetry::KeyValue> = vec![{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
+{% if def.optional %}
+    let mut attributes = ::smallvec::SmallVec::<[{{ name }}Option; {{ [def.optional | length, 8] | min }}]>::new();
+{% endif %}
     for option in options {
         match option {
             {{ name }}Option::Severity(value) => severity = value,
             {{ name }}Option::Timestamp(value) => timestamp = Some(value),
-{% for opt in def.optional %}
-            {{ name }}Option::{{ h.exported(opt.attr_short_name) }}(value) => attributes.push({{ h.attr_kv(opt, 'value') }}),
-{% endfor %}
+{% if def.optional %}
+            attribute => attributes.push(attribute),
+{% endif %}
         }
     }
     if !logger.inner().event_enabled(severity, "", Some({{ h.literal(def.name) }})) { return; }
+    let _context_guard = context.clone().attach();
     let mut record = logger.inner().create_log_record();
     record.set_event_name({{ h.literal(def.name) }});
     record.set_severity_number(severity);
@@ -41,7 +43,21 @@ pub fn {{ h.ident('emit.' ~ def.short_name) }}<L: ::opentelemetry::logs::Logger>
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    for attribute in attributes { record.add_attribute(attribute.key, super::logger::log_value(attribute.value)); }
+{% for req in def.required %}
+    let attribute = {{ h.attr_kv(req, h.ident(req.attr_param)) }};
+    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+{% endfor %}
+{% if def.optional %}
+    for option in attributes {
+        let attribute = match option {
+{% for opt in def.optional %}
+            {{ name }}Option::{{ h.exported(opt.attr_short_name) }}(value) => {{ h.attr_kv(opt, 'value') }},
+{% endfor %}
+            {{ name }}Option::Severity(_) | {{ name }}Option::Timestamp(_) => continue,
+        };
+        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    }
+{% endif %}
     logger.inner().emit(record);
 }
 {% endfor %}

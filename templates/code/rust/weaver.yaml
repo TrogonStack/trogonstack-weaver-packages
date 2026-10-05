@@ -599,8 +599,14 @@ templates:
     file_name: tracer.rs
   - template: logger.rs.j2
     filter: |-
+      def kept($o):
+        stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+        | map(.attributes = ((.attributes // []) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)));
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $o
-      | if ((.registry.events // []) + (.refinements.events // []) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | length) > 0 then [{}] else [] end
+      | [.registry.events // [] | .[].name] as $bases
+      | ((.registry.events // [] | kept($o))
+         + (.refinements.events // [] | map(select(.id as $id | $bases | any(. == $id) | not)) | kept($o)))
+      | if length > 0 then [{has_attributes: any((.attributes | length) > 0)}] else [] end
     application_mode: each
     file_name: logger.rs
 

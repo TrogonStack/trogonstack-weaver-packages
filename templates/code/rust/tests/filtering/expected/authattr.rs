@@ -14,18 +14,38 @@ impl MethodAttr {
 }
 
 #[allow(deprecated)]
+impl AsRef<str> for MethodAttr {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        match self {
+            MethodAttr::Password => "password",
+            MethodAttr::Token => "token",
+        }
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for MethodAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str(self.as_ref())
+    }
+}
+
+#[allow(deprecated)]
 impl From<MethodAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: MethodAttr) -> Self {
-        let value: String = match value {
-            MethodAttr::Password => "password".into(),
-            MethodAttr::Token => "token".into(),
+        let value: &'static str = match value {
+            MethodAttr::Password => "password",
+            MethodAttr::Token => "token",
         };
         ::opentelemetry::KeyValue::new(MethodAttr::KEY, value)
     }
 }
 /// Identifier of the authenticated user.
 #[derive(Debug, Clone, PartialEq)]
-pub struct UserIdAttr(String);
+pub struct UserIdAttr(::opentelemetry::StringValue);
 
 #[allow(deprecated)]
 impl UserIdAttr {
@@ -33,20 +53,47 @@ impl UserIdAttr {
 }
 
 #[allow(deprecated)]
-impl From<String> for UserIdAttr {
-    fn from(value: String) -> Self {
+impl From<::opentelemetry::StringValue> for UserIdAttr {
+    #[inline]
+    fn from(value: ::opentelemetry::StringValue) -> Self {
         Self(value)
     }
 }
 #[allow(deprecated)]
-impl From<&str> for UserIdAttr {
-    fn from(value: &str) -> Self {
-        Self(value.to_owned())
+impl From<String> for UserIdAttr {
+    #[inline]
+    fn from(value: String) -> Self {
+        Self(value.into())
+    }
+}
+
+#[allow(deprecated)]
+impl From<&'static str> for UserIdAttr {
+    #[inline]
+    fn from(value: &'static str) -> Self {
+        Self(value.into())
+    }
+}
+
+#[allow(deprecated)]
+impl AsRef<str> for UserIdAttr {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for UserIdAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str(self.as_ref())
     }
 }
 
 #[allow(deprecated)]
 impl From<UserIdAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: UserIdAttr) -> Self {
         ::opentelemetry::KeyValue::new(UserIdAttr::KEY, value.0)
     }

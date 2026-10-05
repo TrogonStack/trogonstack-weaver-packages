@@ -19,23 +19,18 @@ pub enum TaskFinishedOption {
 ///
 /// Emitted once per task, after its last attempt.
 pub fn r#emit_task_finished<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#myapp_task_state: super::myappattr::TaskStateAttr, options: impl IntoIterator<Item = TaskFinishedOption>) {
-    let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let mut attributes: Vec<::opentelemetry::KeyValue> = vec![::opentelemetry::KeyValue::from(r#myapp_task_state)];
+    let mut attributes = ::smallvec::SmallVec::<[TaskFinishedOption; 6]>::new();
     for option in options {
         match option {
             TaskFinishedOption::Severity(value) => severity = value,
             TaskFinishedOption::Timestamp(value) => timestamp = Some(value),
-            TaskFinishedOption::BoolValues(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
-            TaskFinishedOption::DoubleValues(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
-            TaskFinishedOption::IntValues(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
-            TaskFinishedOption::StringValues(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
-            TaskFinishedOption::TaskAttempt(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
-            TaskFinishedOption::HostName(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
+            attribute => attributes.push(attribute),
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("myapp.task.finished")) { return; }
+    let _context_guard = context.clone().attach();
     let mut record = logger.inner().create_log_record();
     record.set_event_name("myapp.task.finished");
     record.set_severity_number(severity);
@@ -44,7 +39,20 @@ pub fn r#emit_task_finished<L: ::opentelemetry::logs::Logger>(context: &::opente
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    for attribute in attributes { record.add_attribute(attribute.key, super::logger::log_value(attribute.value)); }
+    let attribute = ::opentelemetry::KeyValue::from(r#myapp_task_state);
+    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    for option in attributes {
+        let attribute = match option {
+            TaskFinishedOption::BoolValues(value) => ::opentelemetry::KeyValue::from(value),
+            TaskFinishedOption::DoubleValues(value) => ::opentelemetry::KeyValue::from(value),
+            TaskFinishedOption::IntValues(value) => ::opentelemetry::KeyValue::from(value),
+            TaskFinishedOption::StringValues(value) => ::opentelemetry::KeyValue::from(value),
+            TaskFinishedOption::TaskAttempt(value) => ::opentelemetry::KeyValue::from(value),
+            TaskFinishedOption::HostName(value) => ::opentelemetry::KeyValue::from(value),
+            TaskFinishedOption::Severity(_) | TaskFinishedOption::Timestamp(_) => continue,
+        };
+        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    }
     logger.inner().emit(record);
 }
 #[derive(Clone, Debug)]
@@ -56,10 +64,8 @@ pub enum TaskRetriedOption {
 /// Opt-in: record only when the user requests it.
 #[deprecated(note = "Read the attempt from `myapp.task.finished` instead.")]
 pub fn r#emit_task_retried<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#myapp_task_attempt: super::myappattr::TaskAttemptAttr, options: impl IntoIterator<Item = TaskRetriedOption>) {
-    let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let attributes: Vec<::opentelemetry::KeyValue> = vec![::opentelemetry::KeyValue::from(r#myapp_task_attempt)];
     for option in options {
         match option {
             TaskRetriedOption::Severity(value) => severity = value,
@@ -67,6 +73,7 @@ pub fn r#emit_task_retried<L: ::opentelemetry::logs::Logger>(context: &::opentel
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("myapp.task.retried")) { return; }
+    let _context_guard = context.clone().attach();
     let mut record = logger.inner().create_log_record();
     record.set_event_name("myapp.task.retried");
     record.set_severity_number(severity);
@@ -75,6 +82,7 @@ pub fn r#emit_task_retried<L: ::opentelemetry::logs::Logger>(context: &::opentel
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    for attribute in attributes { record.add_attribute(attribute.key, super::logger::log_value(attribute.value)); }
+    let attribute = ::opentelemetry::KeyValue::from(r#myapp_task_attempt);
+    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
     logger.inner().emit(record);
 }

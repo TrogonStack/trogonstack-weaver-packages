@@ -4,13 +4,14 @@
 pub struct AttemptsCounter { instrument: ::opentelemetry::metrics::Counter<u64> }
 impl AttemptsCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
-        Self { instrument: meter.inner().u64_counter("auth.attempts")
+        let instrument = meter.inner().u64_counter("auth.attempts")
             .with_description("Number of authentication attempts.")
             .with_unit("{attempt}")
-            .build() }
+            .build();
+        Self { instrument }
     }
     pub fn add(&self, value: u64, r#auth_method: super::authattr::MethodAttr, r#auth_success: super::authattr::SuccessAttr) {
-        let attributes = vec![::opentelemetry::KeyValue::from(r#auth_method), ::opentelemetry::KeyValue::from(r#auth_success)];
+        let attributes = [::opentelemetry::KeyValue::from(r#auth_method), ::opentelemetry::KeyValue::from(r#auth_success)];
         self.instrument.add(value, &attributes);
     }
 }
@@ -20,7 +21,7 @@ impl Default for AttemptsCounter {
 pub struct AttemptsCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
 impl AttemptsCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#auth_method: super::authattr::MethodAttr, r#auth_success: super::authattr::SuccessAttr) {
-        let attributes = vec![::opentelemetry::KeyValue::from(r#auth_method), ::opentelemetry::KeyValue::from(r#auth_success)];
+        let attributes = [::opentelemetry::KeyValue::from(r#auth_method), ::opentelemetry::KeyValue::from(r#auth_success)];
         self.observer.observe(value, &attributes);
     }
 }
@@ -29,11 +30,12 @@ impl AttemptsCounterObserver<'_> {
 pub struct AttemptsObservableCounter { _instrument: ::opentelemetry::metrics::ObservableCounter<u64> }
 impl AttemptsObservableCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(AttemptsCounterObserver<'_>) + Send + Sync + 'static) -> Self {
-        Self { _instrument: meter.inner().u64_observable_counter("auth.attempts")
+        let instrument = meter.inner().u64_observable_counter("auth.attempts")
             .with_description("Number of authentication attempts.")
             .with_unit("{attempt}")
             .with_callback(move |observer| callback(AttemptsCounterObserver { observer }))
-            .build() }
+            .build();
+        Self { _instrument: instrument }
     }
 }
 impl Default for AttemptsObservableCounter {

@@ -3,7 +3,7 @@
 ///
 /// The scheduler sets it on every task it passes along to `myapp.task.state`. Workers never set it themselves.
 #[derive(Debug, Clone, PartialEq)]
-pub struct TaskAssignedByAttr(String);
+pub struct TaskAssignedByAttr(::opentelemetry::StringValue);
 
 #[allow(deprecated)]
 impl TaskAssignedByAttr {
@@ -11,26 +11,53 @@ impl TaskAssignedByAttr {
 }
 
 #[allow(deprecated)]
-impl From<String> for TaskAssignedByAttr {
-    fn from(value: String) -> Self {
+impl From<::opentelemetry::StringValue> for TaskAssignedByAttr {
+    #[inline]
+    fn from(value: ::opentelemetry::StringValue) -> Self {
         Self(value)
     }
 }
 #[allow(deprecated)]
-impl From<&str> for TaskAssignedByAttr {
-    fn from(value: &str) -> Self {
-        Self(value.to_owned())
+impl From<String> for TaskAssignedByAttr {
+    #[inline]
+    fn from(value: String) -> Self {
+        Self(value.into())
+    }
+}
+
+#[allow(deprecated)]
+impl From<&'static str> for TaskAssignedByAttr {
+    #[inline]
+    fn from(value: &'static str) -> Self {
+        Self(value.into())
+    }
+}
+
+#[allow(deprecated)]
+impl AsRef<str> for TaskAssignedByAttr {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for TaskAssignedByAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str(self.as_ref())
     }
 }
 
 #[allow(deprecated)]
 impl From<TaskAssignedByAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskAssignedByAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskAssignedByAttr::KEY, value.0)
     }
 }
 /// Whether the task was cancelled.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskCancelledAttr(bool);
 
 #[allow(deprecated)]
@@ -40,13 +67,23 @@ impl TaskCancelledAttr {
 
 #[allow(deprecated)]
 impl From<bool> for TaskCancelledAttr {
+    #[inline]
     fn from(value: bool) -> Self {
         Self(value)
     }
 }
 
 #[allow(deprecated)]
+impl ::std::fmt::Display for TaskCancelledAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self.0, formatter)
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskCancelledAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskCancelledAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskCancelledAttr::KEY, value.0)
     }
@@ -64,10 +101,29 @@ impl TaskEscapedAttr {
 }
 
 #[allow(deprecated)]
+impl AsRef<str> for TaskEscapedAttr {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        match self {
+            TaskEscapedAttr::Quoted => "quote\" slash\\ newline\n tab\t backspace\u{0008} formfeed\u{000c} null\u{0000} snowman☃",
+        }
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for TaskEscapedAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str(self.as_ref())
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskEscapedAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskEscapedAttr) -> Self {
-        let value: String = match value {
-            TaskEscapedAttr::Quoted => "quote\" slash\\ newline\n tab\t backspace\u{0008} formfeed\u{000c} null\u{0000} snowman☃".into(),
+        let value: &'static str = match value {
+            TaskEscapedAttr::Quoted => "quote\" slash\\ newline\n tab\t backspace\u{0008} formfeed\u{000c} null\u{0000} snowman☃",
         };
         ::opentelemetry::KeyValue::new(TaskEscapedAttr::KEY, value)
     }
@@ -83,13 +139,37 @@ impl TaskFlagsAttr {
 
 #[allow(deprecated)]
 impl From<Vec<bool>> for TaskFlagsAttr {
+    #[inline]
     fn from(value: Vec<bool>) -> Self {
         Self(value)
     }
 }
 
 #[allow(deprecated)]
+impl AsRef<[bool]> for TaskFlagsAttr {
+    #[inline]
+    fn as_ref(&self) -> &[bool] {
+        &self.0
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for TaskFlagsAttr {
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str("[")?;
+        for (index, value) in self.0.iter().enumerate() {
+            if index != 0 {
+                formatter.write_str(",")?;
+            }
+            ::std::fmt::Display::fmt(value, formatter)?;
+        }
+        formatter.write_str("]")
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskFlagsAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskFlagsAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskFlagsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::Bool(value.0)))
     }
@@ -98,7 +178,7 @@ impl From<TaskFlagsAttr> for ::opentelemetry::KeyValue {
 ///
 /// The identifier is assigned by the scheduler and stays stable across retries.
 #[derive(Debug, Clone, PartialEq)]
-pub struct TaskIdAttr(String);
+pub struct TaskIdAttr(::opentelemetry::StringValue);
 
 #[allow(deprecated)]
 impl TaskIdAttr {
@@ -106,20 +186,47 @@ impl TaskIdAttr {
 }
 
 #[allow(deprecated)]
-impl From<String> for TaskIdAttr {
-    fn from(value: String) -> Self {
+impl From<::opentelemetry::StringValue> for TaskIdAttr {
+    #[inline]
+    fn from(value: ::opentelemetry::StringValue) -> Self {
         Self(value)
     }
 }
 #[allow(deprecated)]
-impl From<&str> for TaskIdAttr {
-    fn from(value: &str) -> Self {
-        Self(value.to_owned())
+impl From<String> for TaskIdAttr {
+    #[inline]
+    fn from(value: String) -> Self {
+        Self(value.into())
+    }
+}
+
+#[allow(deprecated)]
+impl From<&'static str> for TaskIdAttr {
+    #[inline]
+    fn from(value: &'static str) -> Self {
+        Self(value.into())
+    }
+}
+
+#[allow(deprecated)]
+impl AsRef<str> for TaskIdAttr {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for TaskIdAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str(self.as_ref())
     }
 }
 
 #[allow(deprecated)]
 impl From<TaskIdAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskIdAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskIdAttr::KEY, value.0)
     }
@@ -142,11 +249,31 @@ impl TaskLaneAttr {
 }
 
 #[allow(deprecated)]
+impl AsRef<str> for TaskLaneAttr {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        match self {
+            TaskLaneAttr::Fast => "fast",
+            TaskLaneAttr::Slow => "slow",
+        }
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for TaskLaneAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str(self.as_ref())
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskLaneAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskLaneAttr) -> Self {
-        let value: String = match value {
-            TaskLaneAttr::Fast => "fast".into(),
-            TaskLaneAttr::Slow => "slow".into(),
+        let value: &'static str = match value {
+            TaskLaneAttr::Fast => "fast",
+            TaskLaneAttr::Slow => "slow",
         };
         ::opentelemetry::KeyValue::new(TaskLaneAttr::KEY, value)
     }
@@ -154,7 +281,7 @@ impl From<TaskLaneAttr> for ::opentelemetry::KeyValue {
 /// Owner of the task.
 #[deprecated(note = "Replaced by `auth.user.id`.")]
 #[derive(Debug, Clone, PartialEq)]
-pub struct TaskOwnerAttr(String);
+pub struct TaskOwnerAttr(::opentelemetry::StringValue);
 
 #[allow(deprecated)]
 impl TaskOwnerAttr {
@@ -162,20 +289,47 @@ impl TaskOwnerAttr {
 }
 
 #[allow(deprecated)]
-impl From<String> for TaskOwnerAttr {
-    fn from(value: String) -> Self {
+impl From<::opentelemetry::StringValue> for TaskOwnerAttr {
+    #[inline]
+    fn from(value: ::opentelemetry::StringValue) -> Self {
         Self(value)
     }
 }
 #[allow(deprecated)]
-impl From<&str> for TaskOwnerAttr {
-    fn from(value: &str) -> Self {
-        Self(value.to_owned())
+impl From<String> for TaskOwnerAttr {
+    #[inline]
+    fn from(value: String) -> Self {
+        Self(value.into())
+    }
+}
+
+#[allow(deprecated)]
+impl From<&'static str> for TaskOwnerAttr {
+    #[inline]
+    fn from(value: &'static str) -> Self {
+        Self(value.into())
+    }
+}
+
+#[allow(deprecated)]
+impl AsRef<str> for TaskOwnerAttr {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for TaskOwnerAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str(self.as_ref())
     }
 }
 
 #[allow(deprecated)]
 impl From<TaskOwnerAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskOwnerAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskOwnerAttr::KEY, value.0)
     }
@@ -195,7 +349,20 @@ impl TaskPreemptibleAttr {
 }
 
 #[allow(deprecated)]
+impl ::std::fmt::Display for TaskPreemptibleAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        let value: bool = match self {
+            TaskPreemptibleAttr::Allowed => true,
+            TaskPreemptibleAttr::Forbidden => false,
+        };
+        ::std::fmt::Display::fmt(&value, formatter)
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskPreemptibleAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskPreemptibleAttr) -> Self {
         let value: bool = match value {
             TaskPreemptibleAttr::Allowed => true,
@@ -205,7 +372,7 @@ impl From<TaskPreemptibleAttr> for ::opentelemetry::KeyValue {
     }
 }
 /// Fraction of the task that has completed, between 0 and 1.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskProgressAttr(f64);
 
 #[allow(deprecated)]
@@ -215,19 +382,29 @@ impl TaskProgressAttr {
 
 #[allow(deprecated)]
 impl From<f64> for TaskProgressAttr {
+    #[inline]
     fn from(value: f64) -> Self {
         Self(value)
     }
 }
 
 #[allow(deprecated)]
+impl ::std::fmt::Display for TaskProgressAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self.0, formatter)
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskProgressAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskProgressAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskProgressAttr::KEY, value.0)
     }
 }
 /// Number of times the task was retried.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskRetriesAttr(i64);
 
 #[allow(deprecated)]
@@ -237,13 +414,23 @@ impl TaskRetriesAttr {
 
 #[allow(deprecated)]
 impl From<i64> for TaskRetriesAttr {
+    #[inline]
     fn from(value: i64) -> Self {
         Self(value)
     }
 }
 
 #[allow(deprecated)]
+impl ::std::fmt::Display for TaskRetriesAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self.0, formatter)
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskRetriesAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskRetriesAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskRetriesAttr::KEY, value.0)
     }
@@ -263,7 +450,20 @@ impl TaskSampleRateAttr {
 }
 
 #[allow(deprecated)]
+impl ::std::fmt::Display for TaskSampleRateAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        let value: f64 = match self {
+            TaskSampleRateAttr::Tenth => 0.1_f64,
+            TaskSampleRateAttr::All => 1_f64,
+        };
+        ::std::fmt::Display::fmt(&value, formatter)
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskSampleRateAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskSampleRateAttr) -> Self {
         let value: f64 = match value {
             TaskSampleRateAttr::Tenth => 0.1_f64,
@@ -283,13 +483,37 @@ impl TaskShardIdsAttr {
 
 #[allow(deprecated)]
 impl From<Vec<i64>> for TaskShardIdsAttr {
+    #[inline]
     fn from(value: Vec<i64>) -> Self {
         Self(value)
     }
 }
 
 #[allow(deprecated)]
+impl AsRef<[i64]> for TaskShardIdsAttr {
+    #[inline]
+    fn as_ref(&self) -> &[i64] {
+        &self.0
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for TaskShardIdsAttr {
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str("[")?;
+        for (index, value) in self.0.iter().enumerate() {
+            if index != 0 {
+                formatter.write_str(",")?;
+            }
+            ::std::fmt::Display::fmt(value, formatter)?;
+        }
+        formatter.write_str("]")
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskShardIdsAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskShardIdsAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskShardIdsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::I64(value.0)))
     }
@@ -314,19 +538,40 @@ impl TaskStateAttr {
 }
 
 #[allow(deprecated)]
+impl AsRef<str> for TaskStateAttr {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        match self {
+            TaskStateAttr::Queued => "queued",
+            TaskStateAttr::Running => "running",
+            TaskStateAttr::Paused => "paused",
+        }
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for TaskStateAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str(self.as_ref())
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskStateAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskStateAttr) -> Self {
-        let value: String = match value {
-            TaskStateAttr::Queued => "queued".into(),
-            TaskStateAttr::Running => "running".into(),
-            TaskStateAttr::Paused => "paused".into(),
+        let value: &'static str = match value {
+            TaskStateAttr::Queued => "queued",
+            TaskStateAttr::Running => "running",
+            TaskStateAttr::Paused => "paused",
         };
         ::opentelemetry::KeyValue::new(TaskStateAttr::KEY, value)
     }
 }
 /// Tags attached to the task.
 #[derive(Debug, Clone, PartialEq)]
-pub struct TaskTagsAttr(Vec<String>);
+pub struct TaskTagsAttr(Vec<::opentelemetry::StringValue>);
 
 #[allow(deprecated)]
 impl TaskTagsAttr {
@@ -334,16 +579,46 @@ impl TaskTagsAttr {
 }
 
 #[allow(deprecated)]
+impl From<Vec<::opentelemetry::StringValue>> for TaskTagsAttr {
+    #[inline]
+    fn from(value: Vec<::opentelemetry::StringValue>) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
 impl From<Vec<String>> for TaskTagsAttr {
     fn from(value: Vec<String>) -> Self {
-        Self(value)
+        Self(value.into_iter().map(Into::into).collect())
+    }
+}
+
+#[allow(deprecated)]
+impl AsRef<[::opentelemetry::StringValue]> for TaskTagsAttr {
+    #[inline]
+    fn as_ref(&self) -> &[::opentelemetry::StringValue] {
+        &self.0
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for TaskTagsAttr {
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str("[")?;
+        for (index, value) in self.0.iter().enumerate() {
+            if index != 0 {
+                formatter.write_str(",")?;
+            }
+            write!(formatter, "\"{value}\"")?;
+        }
+        formatter.write_str("]")
     }
 }
 
 #[allow(deprecated)]
 impl From<TaskTagsAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskTagsAttr) -> Self {
-        ::opentelemetry::KeyValue::new(TaskTagsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::String(value.0.into_iter().map(Into::into).collect())))
+        ::opentelemetry::KeyValue::new(TaskTagsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::String(value.0)))
     }
 }
 /// Scheduling weights applied to the task.
@@ -357,13 +632,37 @@ impl TaskWeightsAttr {
 
 #[allow(deprecated)]
 impl From<Vec<f64>> for TaskWeightsAttr {
+    #[inline]
     fn from(value: Vec<f64>) -> Self {
         Self(value)
     }
 }
 
 #[allow(deprecated)]
+impl AsRef<[f64]> for TaskWeightsAttr {
+    #[inline]
+    fn as_ref(&self) -> &[f64] {
+        &self.0
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for TaskWeightsAttr {
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str("[")?;
+        for (index, value) in self.0.iter().enumerate() {
+            if index != 0 {
+                formatter.write_str(",")?;
+            }
+            ::std::fmt::Display::fmt(value, formatter)?;
+        }
+        formatter.write_str("]")
+    }
+}
+
+#[allow(deprecated)]
 impl From<TaskWeightsAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: TaskWeightsAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskWeightsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::F64(value.0)))
     }

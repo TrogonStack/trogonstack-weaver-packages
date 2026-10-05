@@ -53,6 +53,16 @@ spans:
         sampling_relevant: true
       - ref: http.request.method_list
         requirement_level: recommended
+  - type: edge.upstream.methods
+    kind: client
+    requirement_level: recommended
+    stability: stable
+    brief: A request named from attempted methods.
+    name:
+      note: "`{http.request.method_list}`"
+    attributes:
+      - ref: http.request.method_list
+        requirement_level: required
 events:
   - name: edge.upstream.failed
     requirement_level: recommended

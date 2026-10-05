@@ -5,7 +5,7 @@ use opentelemetry::{Array, Value};
 pub struct Logger<L: opentelemetry::logs::Logger = <opentelemetry::logs::NoopLoggerProvider as opentelemetry::logs::LoggerProvider>::Logger>(L);
 impl<L: opentelemetry::logs::Logger> Logger<L> {
     pub fn new<P: opentelemetry::logs::LoggerProvider<Logger = L>>(provider: &P, scope: impl Into<std::borrow::Cow<'static, str>>) -> Self {
-        Self::new_with_scope(provider, opentelemetry::InstrumentationScope::builder(scope).build())
+        Self(provider.logger_with_scope(opentelemetry::InstrumentationScope::builder(scope).with_schema_url(super::SCHEMA_URL).build()))
     }
     pub fn new_with_scope<P: opentelemetry::logs::LoggerProvider<Logger = L>>(provider: &P, scope: opentelemetry::InstrumentationScope) -> Self {
         Self(provider.logger_with_scope(registry_scope(scope)))
@@ -33,6 +33,7 @@ pub(crate) fn log_value(value: opentelemetry::Value) -> opentelemetry::logs::Any
 }
 
 fn registry_scope(scope: opentelemetry::InstrumentationScope) -> opentelemetry::InstrumentationScope {
+    if scope.schema_url() == Some(super::SCHEMA_URL) { return scope; }
     let mut builder = opentelemetry::InstrumentationScope::builder(scope.name().to_owned())
         .with_schema_url(super::SCHEMA_URL)
         .with_attributes(scope.attributes().cloned());

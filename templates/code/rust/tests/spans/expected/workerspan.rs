@@ -1,5 +1,6 @@
 #![allow(deprecated)]
 use ::opentelemetry::trace::{TraceContextExt, Tracer};
+use ::std::fmt::Write;
 
 #[derive(Clone, Debug)]
 pub enum TaskDispatchStartAttr {
@@ -29,12 +30,14 @@ impl From<TaskDispatchAttr> for TaskDispatchStartAttr {
 /// The scheduler handing a task to a worker.
 ///
 /// Ends when the worker accepts the task.
-pub struct TaskDispatchSpan { span: ::opentelemetry::global::BoxedSpan }
-impl TaskDispatchSpan {
-    pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
+pub struct TaskDispatchSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+impl<S: ::opentelemetry::trace::Span> TaskDispatchSpan<S> {
+    pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
+    where S: Send + Sync + 'static,
+    {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
+    pub fn span(&mut self) -> &mut S { &mut self.span }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
@@ -49,17 +52,16 @@ impl Default for TaskDispatchSpan {
     }
 }
 
-pub fn r#start_task_dispatch(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#myapp_task_attempt: super::myappattr::TaskAttemptAttr, r#worker_host_name: super::workerattr::HostNameAttr, r#worker_host_port: super::workerattr::HostPortAttr, options: impl IntoIterator<Item = TaskDispatchStartAttr>) -> TaskDispatchSpan {
-    let mut name = String::new();
+pub fn r#start_task_dispatch<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#myapp_task_attempt: super::myappattr::TaskAttemptAttr, r#worker_host_name: super::workerattr::HostNameAttr, r#worker_host_port: super::workerattr::HostPortAttr, options: impl IntoIterator<Item = TaskDispatchStartAttr>) -> TaskDispatchSpan<T::Span> {
+    let mut name = String::with_capacity("dispatch ".len() + ::std::convert::AsRef::<str>::as_ref(&r#worker_host_name).len() + ":".len() + 20);
     name.push_str("dispatch ");
-    name.push_str(&::opentelemetry::KeyValue::from(r#worker_host_name.clone()).value.to_string());
+    write!(&mut name, "{}", r#worker_host_name).expect("writing a span name to String cannot fail");
     name.push(':');
-    name.push_str(&::opentelemetry::KeyValue::from(r#worker_host_port.clone()).value.to_string());
-    let mut attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_attempt), ::opentelemetry::KeyValue::from(r#worker_host_name), ::opentelemetry::KeyValue::from(r#worker_host_port)];
-    attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
+    write!(&mut name, "{}", r#worker_host_port).expect("writing a span name to String cannot fail");
+    let attributes: [::opentelemetry::KeyValue; 3] = [::opentelemetry::KeyValue::from(r#myapp_task_attempt), ::opentelemetry::KeyValue::from(r#worker_host_name), ::opentelemetry::KeyValue::from(r#worker_host_port)];
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Client)
-        .with_attributes(attributes)
+        .with_attributes(attributes.into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)))
         .start_with_context(tracer.inner(), context);
     TaskDispatchSpan { span }
 }

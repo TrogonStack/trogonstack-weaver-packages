@@ -14,17 +14,37 @@ impl MethodAttr {
 }
 
 #[allow(deprecated)]
+impl AsRef<str> for MethodAttr {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        match self {
+            MethodAttr::Password => "password",
+            MethodAttr::Token => "token",
+        }
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for MethodAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str(self.as_ref())
+    }
+}
+
+#[allow(deprecated)]
 impl From<MethodAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: MethodAttr) -> Self {
-        let value: String = match value {
-            MethodAttr::Password => "password".into(),
-            MethodAttr::Token => "token".into(),
+        let value: &'static str = match value {
+            MethodAttr::Password => "password",
+            MethodAttr::Token => "token",
         };
         ::opentelemetry::KeyValue::new(MethodAttr::KEY, value)
     }
 }
 /// Whether the attempt succeeded.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub struct SuccessAttr(bool);
 
 #[allow(deprecated)]
@@ -34,13 +54,23 @@ impl SuccessAttr {
 
 #[allow(deprecated)]
 impl From<bool> for SuccessAttr {
+    #[inline]
     fn from(value: bool) -> Self {
         Self(value)
     }
 }
 
 #[allow(deprecated)]
+impl ::std::fmt::Display for SuccessAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self.0, formatter)
+    }
+}
+
+#[allow(deprecated)]
 impl From<SuccessAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: SuccessAttr) -> Self {
         ::opentelemetry::KeyValue::new(SuccessAttr::KEY, value.0)
     }

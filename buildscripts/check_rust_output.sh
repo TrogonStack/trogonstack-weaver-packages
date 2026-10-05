@@ -10,7 +10,7 @@ TEMPLATES_ROOT="$(realpath "${PACKAGE_DIR}/../..")"
 
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/weaver-rust.XXXXXX")"
 trap 'rm -rf "${WORK_DIR}"' EXIT
-export CARGO_TARGET_DIR="${WORK_DIR}/target"
+export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-${WORK_DIR}/target}"
 
 for test_dir in "${PACKAGE_DIR}"/tests/*/; do
   test_name="$(basename "${test_dir}")"
@@ -45,6 +45,7 @@ publish = false
 [dependencies]
 opentelemetry = { version = "=${OTEL_RUST_VERSION}", features = ["logs", "metrics", "trace"] }
 opentelemetry_sdk = { version = "=${OTEL_RUST_VERSION}", features = ["logs", "metrics", "trace", "testing"] }
+smallvec = { version = "=1.16.2", features = ["const_generics"] }
 EOF
 
   if [[ -f "${test_dir}dependency-params.yaml" ]]; then
@@ -67,6 +68,7 @@ publish = false
 [dependencies]
 opentelemetry = "=${OTEL_RUST_VERSION}"
 opentelemetry_sdk = "=${OTEL_RUST_VERSION}"
+smallvec = { version = "=1.16.2", features = ["const_generics"] }
 EOF
     printf '\nupstream = { path = "upstream" }\n' >>"${crate_dir}/Cargo.toml"
     (
@@ -81,7 +83,11 @@ EOF
     cd "${crate_dir}"
     cargo fmt --all || exit 1
     cargo fmt --all --check || exit 1
-    cargo test || exit 1
+    if [[ "${test_name}" == allocations || -f "${test_dir}tests/allocations.rs" ]]; then
+      cargo test --release -- --nocapture || exit 1
+    else
+      cargo test || exit 1
+    fi
     cargo clippy --all-targets -- -D warnings || exit 1
     for invalid_consumer in "${test_dir}"compile-fail/*.rs; do
       [[ -f "${invalid_consumer}" ]] || continue

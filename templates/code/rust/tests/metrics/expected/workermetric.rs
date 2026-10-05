@@ -21,14 +21,16 @@ impl From<TaskDurationHistogramAttr> for ::opentelemetry::KeyValue {
 pub struct TaskDurationHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
 impl TaskDurationHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
-        Self { instrument: meter.inner().f64_histogram("myapp.task.duration")
+        let instrument = meter.inner().f64_histogram("myapp.task.duration")
             .with_description("Time a task took from start to finish.")
             .with_unit("s")
             .with_boundaries(vec![0_f64, 0.005_f64, 0.01_f64, 0.1_f64, 1_f64, 10_f64])
-            .build() }
+            .build();
+        Self { instrument }
     }
     pub fn record(&self, value: f64, r#myapp_task_id: super::myappattr::TaskIdAttr, options: impl IntoIterator<Item = TaskDurationHistogramAttr>) {
-        let mut attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; 3]>::new();
+        attributes.extend([::opentelemetry::KeyValue::from(r#myapp_task_id)]);
         attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.record(value, &attributes);
     }

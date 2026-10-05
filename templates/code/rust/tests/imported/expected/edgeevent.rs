@@ -6,22 +6,22 @@ use ::opentelemetry::trace::TraceContextExt;
 pub enum UpstreamFailedOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
-    ServerAddress(String),
+    ServerAddress(::opentelemetry::StringValue),
 }
 /// A request to an upstream server failed.
-pub fn r#emit_upstream_failed<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#error_type: String, options: impl IntoIterator<Item = UpstreamFailedOption>) {
-    let _context_guard = context.clone().attach();
+pub fn r#emit_upstream_failed<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#error_type: ::opentelemetry::StringValue, options: impl IntoIterator<Item = UpstreamFailedOption>) {
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let mut attributes: Vec<::opentelemetry::KeyValue> = vec![::opentelemetry::KeyValue::new("error.type", r#error_type)];
+    let mut attributes = ::smallvec::SmallVec::<[UpstreamFailedOption; 1]>::new();
     for option in options {
         match option {
             UpstreamFailedOption::Severity(value) => severity = value,
             UpstreamFailedOption::Timestamp(value) => timestamp = Some(value),
-            UpstreamFailedOption::ServerAddress(value) => attributes.push(::opentelemetry::KeyValue::new("server.address", value)),
+            attribute => attributes.push(attribute),
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("edge.upstream.failed")) { return; }
+    let _context_guard = context.clone().attach();
     let mut record = logger.inner().create_log_record();
     record.set_event_name("edge.upstream.failed");
     record.set_severity_number(severity);
@@ -30,6 +30,14 @@ pub fn r#emit_upstream_failed<L: ::opentelemetry::logs::Logger>(context: &::open
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    for attribute in attributes { record.add_attribute(attribute.key, super::logger::log_value(attribute.value)); }
+    let attribute = ::opentelemetry::KeyValue::new("error.type", r#error_type);
+    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    for option in attributes {
+        let attribute = match option {
+            UpstreamFailedOption::ServerAddress(value) => ::opentelemetry::KeyValue::new("server.address", value),
+            UpstreamFailedOption::Severity(_) | UpstreamFailedOption::Timestamp(_) => continue,
+        };
+        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    }
     logger.inner().emit(record);
 }

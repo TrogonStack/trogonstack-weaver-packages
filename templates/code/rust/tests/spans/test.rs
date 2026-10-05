@@ -16,7 +16,8 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
             .with_attributes([opentelemetry::KeyValue::new("scope.kind", "test")])
             .build(),
     );
-    let parent = myappspan::start_task_dispatch(
+    let _: &opentelemetry_sdk::trace::SdkTracer = tracer.inner();
+    let mut parent = myappspan::start_task_dispatch(
         &opentelemetry::Context::new(),
         &tracer,
         workerattr::HostNameAttr::from("worker-1"),
@@ -25,11 +26,12 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
             myappattr::TaskIdAttr::from("task-1"),
         )],
     );
+    let _: &mut opentelemetry_sdk::trace::Span = parent.span();
     let context = parent.into_context(&opentelemetry::Context::new());
     let mut child = myappspan::start_task_run(
         &context,
         &tracer,
-        myappspan::TaskRunName::new("run task-1"),
+        myappspan::TaskRunName::from("run task-1"),
         myappattr::TaskStateAttr::Done,
         [],
     );
@@ -80,9 +82,36 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         workerattr::HostPortAttr::from(1),
     )
     .end();
+    for value in [f64::MAX, -f64::from_bits(1)] {
+        myappspan::start_name_float(
+            &opentelemetry::Context::new(),
+            &tracer,
+            myappattr::NumberValueAttr::from(value),
+        )
+        .end();
+    }
+    myappspan::start_name_arrays(
+        &opentelemetry::Context::new(),
+        &tracer,
+        myappattr::ArrayFlagsAttr::from(vec![true, false]),
+        myappattr::ArrayIndicesAttr::from(vec![-1, 2]),
+        myappattr::ArraySamplesAttr::from(vec![1.5, 2.5]),
+        myappattr::ArrayTagsAttr::from(vec![
+            opentelemetry::StringValue::from("a"),
+            opentelemetry::StringValue::from("b"),
+        ]),
+    )
+    .end();
+    for name in [
+        myappspan::NameStaticName::default(),
+        myappspan::NameStaticName::from("explicit static"),
+        myappspan::NameStaticName::from(String::from("owned dynamic")),
+    ] {
+        myappspan::start_name_static(&opentelemetry::Context::new(), &tracer, name).end();
+    }
     provider.force_flush().unwrap();
     let spans = exporter.get_finished_spans().unwrap();
-    assert_eq!(spans.len(), 8);
+    assert_eq!(spans.len(), 14);
     let child = spans.iter().find(|span| span.name == "run task-1").unwrap();
     let parent = spans
         .iter()
@@ -113,6 +142,16 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
             && kv.value == opentelemetry::Value::I64(3)));
     assert!(spans.iter().any(|span| span.name == "myapp.task.run"));
     for name in ["'1", "\\1", "é1", "\u{0008}1"] {
+        assert!(spans.iter().any(|span| span.name == name));
+    }
+    for value in [f64::MAX, -f64::from_bits(1)] {
+        assert!(value.to_string().len() <= 328);
+        assert!(spans.iter().any(|span| span.name == value.to_string()));
+    }
+    assert!(spans
+        .iter()
+        .any(|span| span.name == "[\"a\",\"b\"]:[-1,2]:[1.5,2.5]:[true,false]"));
+    for name in ["myapp.name.static", "explicit static", "owned dynamic"] {
         assert!(spans.iter().any(|span| span.name == name));
     }
     let mut noop = myappspan::TaskRunSpan::default();

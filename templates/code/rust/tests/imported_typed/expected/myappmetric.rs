@@ -15,13 +15,15 @@ impl From<TaskFailedCounterAttr> for ::opentelemetry::KeyValue {
 pub struct TaskFailedCounter { instrument: ::opentelemetry::metrics::Counter<u64> }
 impl TaskFailedCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
-        Self { instrument: meter.inner().u64_counter("myapp.task.failed")
+        let instrument = meter.inner().u64_counter("myapp.task.failed")
             .with_description("Number of tasks that failed.")
             .with_unit("{task}")
-            .build() }
+            .build();
+        Self { instrument }
     }
     pub fn add(&self, value: u64, r#error_type: upstream::errorattr::TypeAttr, r#myapp_task_id: super::myappattr::TaskIdAttr, options: impl IntoIterator<Item = TaskFailedCounterAttr>) {
-        let mut attributes = vec![::opentelemetry::KeyValue::from(r#error_type), ::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; 3]>::new();
+        attributes.extend([::opentelemetry::KeyValue::from(r#error_type), ::opentelemetry::KeyValue::from(r#myapp_task_id)]);
         attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.add(value, &attributes);
     }
@@ -32,7 +34,8 @@ impl Default for TaskFailedCounter {
 pub struct TaskFailedCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
 impl TaskFailedCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#error_type: upstream::errorattr::TypeAttr, r#myapp_task_id: super::myappattr::TaskIdAttr, options: impl IntoIterator<Item = TaskFailedCounterAttr>) {
-        let mut attributes = vec![::opentelemetry::KeyValue::from(r#error_type), ::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; 3]>::new();
+        attributes.extend([::opentelemetry::KeyValue::from(r#error_type), ::opentelemetry::KeyValue::from(r#myapp_task_id)]);
         attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.observer.observe(value, &attributes);
     }
@@ -42,11 +45,12 @@ impl TaskFailedCounterObserver<'_> {
 pub struct TaskFailedObservableCounter { _instrument: ::opentelemetry::metrics::ObservableCounter<u64> }
 impl TaskFailedObservableCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(TaskFailedCounterObserver<'_>) + Send + Sync + 'static) -> Self {
-        Self { _instrument: meter.inner().u64_observable_counter("myapp.task.failed")
+        let instrument = meter.inner().u64_observable_counter("myapp.task.failed")
             .with_description("Number of tasks that failed.")
             .with_unit("{task}")
             .with_callback(move |observer| callback(TaskFailedCounterObserver { observer }))
-            .build() }
+            .build();
+        Self { _instrument: instrument }
     }
 }
 impl Default for TaskFailedObservableCounter {

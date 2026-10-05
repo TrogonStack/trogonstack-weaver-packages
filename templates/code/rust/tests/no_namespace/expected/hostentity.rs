@@ -15,27 +15,34 @@ impl From<EntityAttr> for ::opentelemetry::KeyValue {
 /// A physical or virtual machine.
 /// Identifies the entity: `host.id`.
 /// Describes the entity: `host.name`.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Entity {
-    attributes: Vec<::opentelemetry::KeyValue>,
+    r#host_id: super::hostattr::IdAttr,
+    options: ::smallvec::SmallVec<[EntityAttr; 1]>,
 }
 
 impl Entity {
     pub fn new(r#host_id: super::hostattr::IdAttr, options: impl IntoIterator<Item = EntityAttr>) -> Self {
-        let mut attributes = vec![
-            ::opentelemetry::KeyValue::from(r#host_id),
-        ];
-        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
-        Self { attributes }
+        Self {
+            r#host_id,
+            options: options.into_iter().collect(),
+        }
     }
 
-    pub fn attributes(&self) -> Vec<::opentelemetry::KeyValue> {
-        self.attributes.clone()
+    pub fn attributes(&self) -> impl Iterator<Item = ::opentelemetry::KeyValue> + '_ {
+        ::std::iter::empty()
+            .chain(::std::iter::once_with(move || ::opentelemetry::KeyValue::from(self.r#host_id.clone())))
+            .chain(self.options.iter().cloned().map(::opentelemetry::KeyValue::from))
     }
+}
 
-    pub fn resource(&self) -> ::opentelemetry_sdk::Resource {
+impl From<Entity> for ::opentelemetry_sdk::Resource {
+    fn from(value: Entity) -> Self {
+        let attributes = [
+            ::opentelemetry::KeyValue::from(value.r#host_id),
+        ].into_iter().chain(value.options.into_iter().map(::opentelemetry::KeyValue::from));
         ::opentelemetry_sdk::Resource::builder_empty()
-            .with_schema_url(self.attributes(), super::SCHEMA_URL)
+            .with_schema_url(attributes, super::SCHEMA_URL)
             .build()
     }
 }

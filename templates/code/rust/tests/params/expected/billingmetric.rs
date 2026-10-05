@@ -17,13 +17,15 @@ impl From<InvoiceAmountHistogramAttr> for ::opentelemetry::KeyValue {
 pub struct InvoiceAmountHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
 impl InvoiceAmountHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
-        Self { instrument: meter.inner().f64_histogram("acme.billing.invoice.amount")
+        let instrument = meter.inner().f64_histogram("acme.billing.invoice.amount")
             .with_description("Amount of each issued invoice.")
             .with_unit("{currency_unit}")
-            .build() }
+            .build();
+        Self { instrument }
     }
     pub fn record(&self, value: f64, r#billing_invoice_id: super::billingattr::InvoiceIdAttr, options: impl IntoIterator<Item = InvoiceAmountHistogramAttr>) {
-        let mut attributes = vec![::opentelemetry::KeyValue::from(r#billing_invoice_id)];
+        let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; 3]>::new();
+        attributes.extend([::opentelemetry::KeyValue::from(r#billing_invoice_id)]);
         attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.record(value, &attributes);
     }

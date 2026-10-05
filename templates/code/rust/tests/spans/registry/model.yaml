@@ -38,6 +38,31 @@ attributes:
     stability: stable
     brief: Port the worker listens on.
     examples: 8080
+  - key: myapp.number.value
+    type: double
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [1.5]
+  - key: myapp.array.flags
+    type: boolean[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [[true]]
+  - key: myapp.array.indices
+    type: int[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [[1]]
+  - key: myapp.array.samples
+    type: double[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [[1.5]]
+  - key: myapp.array.tags
+    type: string[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [["a"]]
 spans:
   - type: myapp.task.dispatch
     kind: client
@@ -122,6 +147,39 @@ spans:
     attributes:
       - ref: worker.host.port
         requirement_level: required
+  - type: myapp.name.float
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A span named from a floating point value.
+    name:
+      note: "`{myapp.number.value}`"
+    attributes:
+      - ref: myapp.number.value
+        requirement_level: required
+  - type: myapp.name.arrays
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A span named from array values.
+    name:
+      note: "`{myapp.array.tags}:{myapp.array.indices}:{myapp.array.samples}:{myapp.array.flags}`"
+    attributes:
+      - ref: myapp.array.tags
+        requirement_level: required
+      - ref: myapp.array.indices
+        requirement_level: required
+      - ref: myapp.array.samples
+        requirement_level: required
+      - ref: myapp.array.flags
+        requirement_level: required
+  - type: myapp.name.static
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A span with an unconstrained caller supplied name.
+    name:
+      note: "`static`"
 span_refinements:
   - id: worker.task.dispatch
     ref: myapp.task.dispatch

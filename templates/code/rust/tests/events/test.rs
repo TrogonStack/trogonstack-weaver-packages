@@ -41,7 +41,7 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
                 1.5,
             ])),
             myappevent::TaskFinishedOption::StringValues(myappattr::StringValuesAttr::from(vec![
-                "fetch".into(),
+                opentelemetry::StringValue::from("fetch"),
             ])),
         ],
     );

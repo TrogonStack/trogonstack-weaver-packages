@@ -4,13 +4,14 @@
 pub struct TaskDurationHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
 impl TaskDurationHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
-        Self { instrument: meter.inner().f64_histogram("myapp.task.duration")
+        let instrument = meter.inner().f64_histogram("myapp.task.duration")
             .with_description("Time a task took from start to finish.")
             .with_unit("s")
-            .build() }
+            .build();
+        Self { instrument }
     }
     pub fn record(&self, value: f64, r#myapp_task_id: super::myappattr::TaskIdAttr) {
-        let attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        let attributes = [::opentelemetry::KeyValue::from(r#myapp_task_id)];
         self.instrument.record(value, &attributes);
     }
 }
@@ -22,14 +23,15 @@ impl Default for TaskDurationHistogram {
 pub struct TaskQueueWaitHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
 impl TaskQueueWaitHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
-        Self { instrument: meter.inner().f64_histogram("myapp.task.queue_wait")
+        let instrument = meter.inner().f64_histogram("myapp.task.queue_wait")
             .with_description("Time a task waited in the queue, in minutes.")
             .with_unit("min")
             .with_boundaries(vec![1_f64, 5_f64, 10_f64, 30_f64, 60_f64])
-            .build() }
+            .build();
+        Self { instrument }
     }
     pub fn record(&self, value: f64, r#myapp_task_id: super::myappattr::TaskIdAttr) {
-        let attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        let attributes = [::opentelemetry::KeyValue::from(r#myapp_task_id)];
         self.instrument.record(value, &attributes);
     }
 }

@@ -32,18 +32,24 @@ impl From<{{ name }}Attr> for ::opentelemetry::KeyValue {
 pub struct {{ name }} { instrument: ::opentelemetry::metrics::{{ suffix }}<{{ value_type }}> }
 impl {{ name }} {
     pub fn new(meter: &super::meter::Meter) -> Self {
-        Self { instrument: meter.inner().{{ builder }}({{ h.literal(def.instrument_name) }})
+        let instrument = meter.inner().{{ builder }}({{ h.literal(def.instrument_name) }})
             .with_description({{ h.literal(def.description | trim) }})
             .with_unit({{ h.literal(def.unit) }})
 {% if def.bucket_boundaries %}
             .with_boundaries(vec![{% for bound in def.bucket_boundaries %}{{ bound }}_f64{% if not loop.last %}, {% endif %}{% endfor %}])
 {% endif %}
-            .build() }
+            .build();
+        Self { instrument }
     }
     pub fn {{ method }}(&self, value: {{ value_type }}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}Attr>{% endif %}) {
-        let {% if def.optional %}mut {% endif %}attributes = vec![{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
 {% if def.optional %}
+        let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; {{ def.required | length + ([def.optional | length, 8] | min) }}]>::new();
+{% if def.required %}
+        attributes.extend([{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}]);
+{% endif %}
         attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
+{% else %}
+        let attributes = [{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
 {% endif %}
         self.instrument.{{ method }}(value, &attributes);
     }
@@ -56,9 +62,14 @@ impl Default for {{ name }} {
 pub struct {{ name }}Observer<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<{{ value_type }}> }
 impl {{ name }}Observer<'_> {
     pub fn observe(&self, value: {{ value_type }}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}Attr>{% endif %}) {
-        let {% if def.optional %}mut {% endif %}attributes = vec![{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
 {% if def.optional %}
+        let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; {{ def.required | length + ([def.optional | length, 8] | min) }}]>::new();
+{% if def.required %}
+        attributes.extend([{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}]);
+{% endif %}
         attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
+{% else %}
+        let attributes = [{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
 {% endif %}
         self.observer.observe(value, &attributes);
     }
@@ -68,11 +79,12 @@ impl {{ name }}Observer<'_> {
 pub struct {{ observable }} { _instrument: ::opentelemetry::metrics::Observable{{ suffix }}<{{ value_type }}> }
 impl {{ observable }} {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn({{ name }}Observer<'_>) + Send + Sync + 'static) -> Self {
-        Self { _instrument: meter.inner().{{ value_type }}_observable_{{ 'up_down_counter' if def.instrument == 'updowncounter' else def.instrument }}({{ h.literal(def.instrument_name) }})
+        let instrument = meter.inner().{{ value_type }}_observable_{{ 'up_down_counter' if def.instrument == 'updowncounter' else def.instrument }}({{ h.literal(def.instrument_name) }})
             .with_description({{ h.literal(def.description | trim) }})
             .with_unit({{ h.literal(def.unit) }})
             .with_callback(move |observer| callback({{ name }}Observer { observer }))
-            .build() }
+            .build();
+        Self { _instrument: instrument }
     }
 }
 impl Default for {{ observable }} {

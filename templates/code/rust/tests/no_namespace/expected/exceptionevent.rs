@@ -10,18 +10,18 @@ pub enum Option {
 }
 /// A noteworthy exception occurred.
 pub fn r#emit_<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#exception_type: super::exceptionattr::TypeAttr, options: impl IntoIterator<Item = Option>) {
-    let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let mut attributes: Vec<::opentelemetry::KeyValue> = vec![::opentelemetry::KeyValue::from(r#exception_type)];
+    let mut attributes = ::smallvec::SmallVec::<[Option; 1]>::new();
     for option in options {
         match option {
             Option::Severity(value) => severity = value,
             Option::Timestamp(value) => timestamp = Some(value),
-            Option::Message(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
+            attribute => attributes.push(attribute),
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("exception")) { return; }
+    let _context_guard = context.clone().attach();
     let mut record = logger.inner().create_log_record();
     record.set_event_name("exception");
     record.set_severity_number(severity);
@@ -30,6 +30,14 @@ pub fn r#emit_<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Cont
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    for attribute in attributes { record.add_attribute(attribute.key, super::logger::log_value(attribute.value)); }
+    let attribute = ::opentelemetry::KeyValue::from(r#exception_type);
+    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    for option in attributes {
+        let attribute = match option {
+            Option::Message(value) => ::opentelemetry::KeyValue::from(value),
+            Option::Severity(_) | Option::Timestamp(_) => continue,
+        };
+        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    }
     logger.inner().emit(record);
 }

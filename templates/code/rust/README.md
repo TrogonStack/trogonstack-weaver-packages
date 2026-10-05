@@ -27,6 +27,7 @@ Declare `mod semconv;` in the consuming crate and add its dependencies:
 [dependencies]
 opentelemetry = "0.33.0"
 opentelemetry_sdk = "0.33.0"
+smallvec = { version = "=1.16.2", features = ["const_generics"] }
 ```
 
 Run `cargo fmt` after generation. Weaver writes only the files it produces, so
@@ -50,7 +51,7 @@ before choosing that namespace.
 | `<namespace>metric` | Synchronous instruments and observable counters, up-down counters, and gauges.               |
 | `<namespace>span`   | Span starters, typed names, start attributes, and attributes allowed after starting.         |
 | `<namespace>event`  | Typed log event emitters and options for attributes, severity, and timestamp.                |
-| `<namespace>entity` | Entity values, attribute copies, and resources carrying the registry schema URL.             |
+| `<namespace>entity` | Typed entity values, attribute iterators, and resources carrying the registry schema URL.    |
 
 Handle modules are emitted when the registry includes their corresponding
 signals. They set the registry schema URL on their instrumentation scope.
@@ -63,13 +64,21 @@ Attribute keys, metric names, and event names retain their full registry names.
 An attribute such as `myapp.task.id` becomes
 `myappattr::TaskIdAttr::from("task-1")`. Convert the attribute into an OpenTelemetry `KeyValue` with
 `KeyValue::from(attribute)` or `attribute.into()`. String attributes implement
-`From<String>` and `From<&str>`; scalar and array attributes implement `From`
-for their exact backing types. Use `Attr::from(value)` or `value.into()` when
+`From<String>`, `From<&'static str>`, and `From<opentelemetry::StringValue>`.
+Static strings retain their static storage. Own a dynamic borrowed string
+explicitly, such as `Attr::from(text.to_owned())`. Scalar and array attributes
+implement `From` for their backing types; string arrays accept `Vec<String>`
+and native `Vec<opentelemetry::StringValue>`. Native storage moves into the SDK
+without rebuilding the vector. Use `Attr::from(value)` or `value.into()` when
 the attribute type is known. Enums expose named variants,
 such as `myappattr::TaskStateAttr::Running`, rather than arbitrary constructors.
 
-Supported backing types are `String`, `i64`, `f64`, `bool`, and their `Vec`
+Supported backing types are `StringValue`, `i64`, `f64`, `bool`, and their `Vec`
 forms. Enums can have string, integer, fractional, or boolean values.
+String attributes implement `AsRef<str>`; arrays expose their borrowed slices
+through `AsRef<[T]>`. Attributes implement `Display`
+without building a temporary `KeyValue`; arrays follow OpenTelemetry's array
+formatting. Boolean, integer, floating-point and enum attributes are `Copy`.
 Deprecation metadata becomes Rust deprecation annotations.
 
 ### Metrics
@@ -79,6 +88,13 @@ an `add` or `record` method. Required attributes are typed arguments. Other
 attributes are variants of the instrument's `Attr` enum, passed as an iterator.
 Observable constructors register a callback whose typed observer has the same
 required arguments and optional attribute contract.
+
+Recording required attributes uses a stack array. Optional attributes use an
+inline buffer sized for the required attributes and the lesser of the declared
+optional attributes or eight. Larger inputs spill to the heap; duplicate
+attributes retain their order. This avoids generated buffer allocations for
+ordinary attribute sets while preserving iterator input. Attribute values and
+the SDK may still require ownership or aggregation allocations.
 
 Set `annotations.code_generation.metric_value_type` to `int` or `double`.
 Rust's integer counters and histograms use `u64`; integer up-down counters and
@@ -95,15 +111,25 @@ provides unit-specific boundaries; units absent from that map use SDK defaults.
 A span starter takes a parent `Context`, a generated tracer, required typed
 attributes, and optional start attributes. A registry name template whose
 placeholders refer to required attributes is expanded from those values.
-Otherwise the starter takes a typed `Name`; an empty name falls back to the
-span's registry type.
+Otherwise the starter takes a typed `Name`, constructed with `From` for a static
+string, owned `String`, or `Cow<'static, str>`. An empty name borrows the span's
+registry type; static names stay borrowed and owned names move into the span.
 
 All starter attributes are present before sampling. Sampling-relevant
 attributes appear only in the start attribute enum. The separate late attribute
 enum is accepted by `set_attributes`. The wrapper exposes `end`,
 `end_with_timestamp`, `record_error`, `set_status`, and the underlying span.
 `into_context` transfers the span into a parent context for nested spans and
-normal OpenTelemetry context attachment.
+normal OpenTelemetry context attachment. The generated tracer and span wrappers
+retain the provider's concrete types. Their default type is the no-op API type;
+`into_context` uses OpenTelemetry's synchronization and type erasure when
+context integration is needed.
+
+Derived names borrow attribute values and write directly into a preallocated
+`String`, reserving known literal and string lengths plus space for other
+values. Nonempty derived names allocate their output buffer. Required attributes use a
+stack array and optional iterators, which the span builder collects into its
+owned attribute buffer.
 
 ### Events
 
@@ -113,12 +139,28 @@ and timestamp. Severity defaults to Info. The emitter checks whether the logger
 accepts the event, sets the observed timestamp, and copies a valid trace context
 from the supplied `Context`.
 
+The last severity and timestamp options win. Declared attribute options remain
+typed until the enabled check succeeds, so disabled events avoid attribute
+conversion and context attachment. Optional attributes use inline storage for
+the lesser of the declared optional attributes or eight, with heap overflow
+for larger inputs. Enabled emitters add required attributes and then optional
+attributes directly to the record, preserving duplicates and their order.
+
 ### Entities
 
 Entity constructors take required identity attributes before required
-description attributes, followed by optional attributes. `attributes()` returns
-a copy. `resource()` creates a resource with the registry schema URL and no
-implicit SDK detector attributes. `Default` carries no attributes.
+description attributes, followed by optional attributes. Required attributes
+remain typed fields, and optional attributes remain variants of the entity's
+attribute enum. Optional storage uses a bounded inline buffer and supports
+heap overflow when the caller supplies more values.
+
+`attributes()` returns an iterator over SDK-owned `KeyValue` values. Borrowed
+export clones only the values needed to give the SDK ownership, without
+building an intermediate attribute vector. Convert an entity with
+`Resource::from(entity)` or `entity.into()` to consume its fields and optional
+values without cloning them. The resource retains the registry schema URL and
+has no implicit SDK detector attributes. `Default` is available only when the
+entity has no required attributes.
 
 ### Refinements and dependencies
 
@@ -138,6 +180,9 @@ params:
 
 That mapping refers to `upstream::errorattr` in the consuming crate. Both
 registries must use compatible namespace and vendor-prefix settings.
+Plain imported strings use `opentelemetry::StringValue`, and string arrays use
+`Vec<opentelemetry::StringValue>`, preserving their SDK storage. Convert a static
+string with `.into()` or `StringValue::from` at the call site.
 
 ## Parameters
 
@@ -175,3 +220,7 @@ mise run weaver:test:rust
 The Rust check formats generated fixture code in temporary crates, runs consumer
 and documentation tests, verifies compile-fail examples, and runs Clippy with
 warnings denied. Snapshot checks compare the original Weaver output.
+The allocation fixture runs in release mode with a thread-local counting
+allocator and custom providers that do not allocate while recording. It checks
+generated buffer costs separately from SDK storage costs and verifies duplicate
+attributes beyond inline capacity.

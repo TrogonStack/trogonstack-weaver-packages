@@ -10,18 +10,18 @@ pub enum TaskErroredOption {
 }
 /// A task failed with an error.
 pub fn r#emit_task_errored<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#error_type: upstream::errorattr::TypeAttr, options: impl IntoIterator<Item = TaskErroredOption>) {
-    let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let mut attributes: Vec<::opentelemetry::KeyValue> = vec![::opentelemetry::KeyValue::from(r#error_type)];
+    let mut attributes = ::smallvec::SmallVec::<[TaskErroredOption; 1]>::new();
     for option in options {
         match option {
             TaskErroredOption::Severity(value) => severity = value,
             TaskErroredOption::Timestamp(value) => timestamp = Some(value),
-            TaskErroredOption::ServerPort(value) => attributes.push(::opentelemetry::KeyValue::new("server.port", value)),
+            attribute => attributes.push(attribute),
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("myapp.task.errored")) { return; }
+    let _context_guard = context.clone().attach();
     let mut record = logger.inner().create_log_record();
     record.set_event_name("myapp.task.errored");
     record.set_severity_number(severity);
@@ -30,6 +30,14 @@ pub fn r#emit_task_errored<L: ::opentelemetry::logs::Logger>(context: &::opentel
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    for attribute in attributes { record.add_attribute(attribute.key, super::logger::log_value(attribute.value)); }
+    let attribute = ::opentelemetry::KeyValue::from(r#error_type);
+    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    for option in attributes {
+        let attribute = match option {
+            TaskErroredOption::ServerPort(value) => ::opentelemetry::KeyValue::new("server.port", value),
+            TaskErroredOption::Severity(_) | TaskErroredOption::Timestamp(_) => continue,
+        };
+        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    }
     logger.inner().emit(record);
 }

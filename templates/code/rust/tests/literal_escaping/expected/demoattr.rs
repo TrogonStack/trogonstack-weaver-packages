@@ -14,11 +14,31 @@ impl LiteralAttr {
 }
 
 #[allow(deprecated)]
+impl AsRef<str> for LiteralAttr {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        match self {
+            LiteralAttr::Literal => "backspace\\b formfeed\\f unicode\\u1234 doubled\\\\b tripled\\\\\\u0000",
+            LiteralAttr::Controls => "backspace\u{0008} formfeed\u{000c} unicode\u{0001} slash\\b",
+        }
+    }
+}
+
+#[allow(deprecated)]
+impl ::std::fmt::Display for LiteralAttr {
+    #[inline]
+    fn fmt(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        formatter.write_str(self.as_ref())
+    }
+}
+
+#[allow(deprecated)]
 impl From<LiteralAttr> for ::opentelemetry::KeyValue {
+    #[inline]
     fn from(value: LiteralAttr) -> Self {
-        let value: String = match value {
-            LiteralAttr::Literal => "backspace\\b formfeed\\f unicode\\u1234 doubled\\\\b tripled\\\\\\u0000".into(),
-            LiteralAttr::Controls => "backspace\u{0008} formfeed\u{000c} unicode\u{0001} slash\\b".into(),
+        let value: &'static str = match value {
+            LiteralAttr::Literal => "backspace\\b formfeed\\f unicode\\u1234 doubled\\\\b tripled\\\\\\u0000",
+            LiteralAttr::Controls => "backspace\u{0008} formfeed\u{000c} unicode\u{0001} slash\\b",
         };
         ::opentelemetry::KeyValue::new(LiteralAttr::KEY, value)
     }

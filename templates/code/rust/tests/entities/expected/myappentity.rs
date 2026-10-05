@@ -20,27 +20,34 @@ impl From<HostEntityAttr> for ::opentelemetry::KeyValue {
 /// Identified by its name across its lifetime.
 /// Identifies the entity: `myapp.host.name`.
 /// Describes the entity: `myapp.host.cpu.count`, `myapp.host.type`.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct HostEntity {
-    attributes: Vec<::opentelemetry::KeyValue>,
+    r#myapp_host_name: super::myappattr::HostNameAttr,
+    options: ::smallvec::SmallVec<[HostEntityAttr; 2]>,
 }
 
 impl HostEntity {
     pub fn new(r#myapp_host_name: super::myappattr::HostNameAttr, options: impl IntoIterator<Item = HostEntityAttr>) -> Self {
-        let mut attributes = vec![
-            ::opentelemetry::KeyValue::from(r#myapp_host_name),
-        ];
-        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
-        Self { attributes }
+        Self {
+            r#myapp_host_name,
+            options: options.into_iter().collect(),
+        }
     }
 
-    pub fn attributes(&self) -> Vec<::opentelemetry::KeyValue> {
-        self.attributes.clone()
+    pub fn attributes(&self) -> impl Iterator<Item = ::opentelemetry::KeyValue> + '_ {
+        ::std::iter::empty()
+            .chain(::std::iter::once_with(move || ::opentelemetry::KeyValue::from(self.r#myapp_host_name.clone())))
+            .chain(self.options.iter().cloned().map(::opentelemetry::KeyValue::from))
     }
+}
 
-    pub fn resource(&self) -> ::opentelemetry_sdk::Resource {
+impl From<HostEntity> for ::opentelemetry_sdk::Resource {
+    fn from(value: HostEntity) -> Self {
+        let attributes = [
+            ::opentelemetry::KeyValue::from(value.r#myapp_host_name),
+        ].into_iter().chain(value.options.into_iter().map(::opentelemetry::KeyValue::from));
         ::opentelemetry_sdk::Resource::builder_empty()
-            .with_schema_url(self.attributes(), super::SCHEMA_URL)
+            .with_schema_url(attributes, super::SCHEMA_URL)
             .build()
     }
 }
@@ -65,28 +72,82 @@ impl From<HostWorkerEntityAttr> for ::opentelemetry::KeyValue {
 /// Identifies the entity: `myapp.host.name`.
 /// Describes the entity: `myapp.host.cpu.count`, `myapp.host.role`, `myapp.host.type`.
 /// Refines `myapp.host`.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct HostWorkerEntity {
-    attributes: Vec<::opentelemetry::KeyValue>,
+    r#myapp_host_name: super::myappattr::HostNameAttr,
+    r#myapp_host_role: super::myappattr::HostRoleAttr,
+    options: ::smallvec::SmallVec<[HostWorkerEntityAttr; 2]>,
 }
 
 impl HostWorkerEntity {
     pub fn new(r#myapp_host_name: super::myappattr::HostNameAttr, r#myapp_host_role: super::myappattr::HostRoleAttr, options: impl IntoIterator<Item = HostWorkerEntityAttr>) -> Self {
-        let mut attributes = vec![
-            ::opentelemetry::KeyValue::from(r#myapp_host_name),
-            ::opentelemetry::KeyValue::from(r#myapp_host_role),
-        ];
-        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
-        Self { attributes }
+        Self {
+            r#myapp_host_name,
+            r#myapp_host_role,
+            options: options.into_iter().collect(),
+        }
     }
 
-    pub fn attributes(&self) -> Vec<::opentelemetry::KeyValue> {
-        self.attributes.clone()
+    pub fn attributes(&self) -> impl Iterator<Item = ::opentelemetry::KeyValue> + '_ {
+        ::std::iter::empty()
+            .chain(::std::iter::once_with(move || ::opentelemetry::KeyValue::from(self.r#myapp_host_name.clone())))
+            .chain(::std::iter::once_with(move || ::opentelemetry::KeyValue::from(self.r#myapp_host_role.clone())))
+            .chain(self.options.iter().cloned().map(::opentelemetry::KeyValue::from))
     }
+}
 
-    pub fn resource(&self) -> ::opentelemetry_sdk::Resource {
+impl From<HostWorkerEntity> for ::opentelemetry_sdk::Resource {
+    fn from(value: HostWorkerEntity) -> Self {
+        let attributes = [
+            ::opentelemetry::KeyValue::from(value.r#myapp_host_name),
+            ::opentelemetry::KeyValue::from(value.r#myapp_host_role),
+        ].into_iter().chain(value.options.into_iter().map(::opentelemetry::KeyValue::from));
         ::opentelemetry_sdk::Resource::builder_empty()
-            .with_schema_url(self.attributes(), super::SCHEMA_URL)
+            .with_schema_url(attributes, super::SCHEMA_URL)
+            .build()
+    }
+}
+#[derive(Clone, Debug)]
+pub enum OptionalEntityAttr {
+    QueueName(super::myappattr::QueueNameAttr),
+    QueueSize(super::myappattr::QueueSizeAttr),
+}
+
+impl From<OptionalEntityAttr> for ::opentelemetry::KeyValue {
+    fn from(value: OptionalEntityAttr) -> Self {
+        match value {
+            OptionalEntityAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
+            OptionalEntityAttr::QueueSize(value) => ::opentelemetry::KeyValue::from(value),
+        }
+    }
+}
+/// An entity with optional description only.
+/// Identifies the entity: `myapp.queue.name`.
+/// Describes the entity: `myapp.queue.size`.
+#[derive(Clone, Debug, Default)]
+pub struct OptionalEntity {
+    options: ::smallvec::SmallVec<[OptionalEntityAttr; 2]>,
+}
+
+impl OptionalEntity {
+    pub fn new(options: impl IntoIterator<Item = OptionalEntityAttr>) -> Self {
+        Self {
+            options: options.into_iter().collect(),
+        }
+    }
+
+    pub fn attributes(&self) -> impl Iterator<Item = ::opentelemetry::KeyValue> + '_ {
+        ::std::iter::empty()
+            .chain(self.options.iter().cloned().map(::opentelemetry::KeyValue::from))
+    }
+}
+
+impl From<OptionalEntity> for ::opentelemetry_sdk::Resource {
+    fn from(value: OptionalEntity) -> Self {
+        let attributes = [
+        ].into_iter().chain(value.options.into_iter().map(::opentelemetry::KeyValue::from));
+        ::opentelemetry_sdk::Resource::builder_empty()
+            .with_schema_url(attributes, super::SCHEMA_URL)
             .build()
     }
 }
@@ -105,27 +166,34 @@ impl From<QueueEntityAttr> for ::opentelemetry::KeyValue {
 /// A queue of tasks.
 /// Identifies the entity: `myapp.queue.name`.
 /// Describes the entity: `myapp.queue.size`.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct QueueEntity {
-    attributes: Vec<::opentelemetry::KeyValue>,
+    r#myapp_queue_name: super::myappattr::QueueNameAttr,
+    options: ::smallvec::SmallVec<[QueueEntityAttr; 1]>,
 }
 
 impl QueueEntity {
     pub fn new(r#myapp_queue_name: super::myappattr::QueueNameAttr, options: impl IntoIterator<Item = QueueEntityAttr>) -> Self {
-        let mut attributes = vec![
-            ::opentelemetry::KeyValue::from(r#myapp_queue_name),
-        ];
-        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
-        Self { attributes }
+        Self {
+            r#myapp_queue_name,
+            options: options.into_iter().collect(),
+        }
     }
 
-    pub fn attributes(&self) -> Vec<::opentelemetry::KeyValue> {
-        self.attributes.clone()
+    pub fn attributes(&self) -> impl Iterator<Item = ::opentelemetry::KeyValue> + '_ {
+        ::std::iter::empty()
+            .chain(::std::iter::once_with(move || ::opentelemetry::KeyValue::from(self.r#myapp_queue_name.clone())))
+            .chain(self.options.iter().cloned().map(::opentelemetry::KeyValue::from))
     }
+}
 
-    pub fn resource(&self) -> ::opentelemetry_sdk::Resource {
+impl From<QueueEntity> for ::opentelemetry_sdk::Resource {
+    fn from(value: QueueEntity) -> Self {
+        let attributes = [
+            ::opentelemetry::KeyValue::from(value.r#myapp_queue_name),
+        ].into_iter().chain(value.options.into_iter().map(::opentelemetry::KeyValue::from));
         ::opentelemetry_sdk::Resource::builder_empty()
-            .with_schema_url(self.attributes(), super::SCHEMA_URL)
+            .with_schema_url(attributes, super::SCHEMA_URL)
             .build()
     }
 }
