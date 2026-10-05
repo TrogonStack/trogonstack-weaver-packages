@@ -1,0 +1,6 @@
+params:
+  module_description: Typed telemetry for a synthetic registry.
+  header_source: model/
+  regenerate_command: mise run generate
+  vendor_prefixes: [acme]
+  exclude_deprecated: true

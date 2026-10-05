@@ -1,0 +1,1 @@
+enum members that render to the same Rust identifier

@@ -1,0 +1,1 @@
+package myappevent has events that render to the same Rust identifier: myapp.task.finished and myapp.task_finished

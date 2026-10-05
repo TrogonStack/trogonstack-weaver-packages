@@ -3,4 +3,5 @@
 go = "1.27.1"
 jq = "1.8.1"
 node = "24.21.0"
+rust = { version = "1.99.0", profile = "minimal", components = ["rustfmt", "clippy"] }
 "npm:prettier" = "3.9.9"

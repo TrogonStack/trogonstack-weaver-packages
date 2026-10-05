@@ -1,0 +1,30 @@
+file_format: definition/2
+attributes:
+  - key: caps.http2_STATUS.api_ID
+    type: string
+    stability: stable
+    brief: Synthetic identifier.
+  - key: caps.mode2_STATE
+    type:
+      members:
+        - id: HTTP2_ready_STATE
+          value: ready
+          stability: stable
+          brief: Synthetic state.
+    stability: stable
+    brief: Synthetic mode.
+metrics:
+  - name: caps.http2_STATUS.count
+    instrument: counter
+    unit: "{item}"
+    requirement_level: recommended
+    stability: stable
+    brief: Synthetic count.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: caps.http2_STATUS.api_ID
+        requirement_level: required
+      - ref: caps.mode2_STATE
+        requirement_level: required

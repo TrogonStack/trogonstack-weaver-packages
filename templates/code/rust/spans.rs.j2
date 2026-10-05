@@ -1,0 +1,103 @@
+{%- filter trim %}
+#![allow(deprecated)]
+{% import "signal_helpers.j2" as h %}
+{% for def in ctx.spans %}
+{% set name = h.exported(def.short_name) %}
+{% set span = name ~ 'Span' %}
+{% if def.optional %}
+#[derive(Clone, Debug)]
+pub enum {{ name }}StartAttr {
+{% for opt in def.optional %}
+{{ opt.requirement_doc | comment if opt.requirement_doc else '' }}
+    {{ h.exported(opt.attr_short_name) }}({{ h.attr_type(opt) }}),
+{% endfor %}
+}
+impl {{ name }}StartAttr {
+    fn key_value(self) -> ::opentelemetry::KeyValue {
+        match self {
+{% for opt in def.optional %}
+            Self::{{ h.exported(opt.attr_short_name) }}(value) => {{ h.attr_kv(opt, 'value') }},
+{% endfor %}
+        }
+    }
+}
+{% endif %}
+{% if def.has_late_attrs %}
+#[derive(Clone, Debug)]
+pub enum {{ name }}Attr {
+{% for opt in def.optional if not opt.sampling_relevant %}
+    {{ h.exported(opt.attr_short_name) }}({{ h.attr_type(opt) }}),
+{% endfor %}
+}
+impl From<{{ name }}Attr> for {{ name }}StartAttr {
+    fn from(value: {{ name }}Attr) -> Self {
+        match value {
+{% for opt in def.optional if not opt.sampling_relevant %}
+            {{ name }}Attr::{{ h.exported(opt.attr_short_name) }}(value) => Self::{{ h.exported(opt.attr_short_name) }}(value),
+{% endfor %}
+        }
+    }
+}
+{% endif %}
+{% if not def.name_parts %}
+#[derive(Clone, Debug, Default)]
+pub struct {{ name }}Name(String);
+impl {{ name }}Name {
+    pub fn new(value: impl Into<String>) -> Self { Self(value.into()) }
+}
+{% endif %}
+{{ (h.docs(def) ~ "\n" ~ h.deprecated(def)) | trim }}
+pub struct {{ span }} { span: ::opentelemetry::global::BoxedSpan }
+impl {{ span }} {
+    pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
+        use ::opentelemetry::trace::TraceContextExt;
+        parent.with_span(self.span)
+    }
+    pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
+    pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
+    pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
+    pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
+    pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+{% if def.has_late_attrs %}
+    pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = {{ name }}Attr>) {
+        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, {{ name }}StartAttr::from(attribute).key_value()); }
+    }
+{% endif %}
+}
+impl Default for {{ span }} {
+    fn default() -> Self {
+        use ::opentelemetry::trace::Tracer;
+        Self { span: super::tracer::Tracer::default().inner().start({{ h.literal(def.type) }}) }
+    }
+}
+{{ h.deprecated(def) }}
+pub fn {{ h.ident('start.' ~ def.short_name) }}(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer{% if not def.name_parts %}, name: {{ name }}Name{% endif %}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}StartAttr>{% endif %}) -> {{ span }} {
+    use ::opentelemetry::trace::Tracer;
+{% if def.name_parts %}
+    let mut name = String::new();
+{% for part in def.name_parts %}
+{% if part.attr %}
+    name.push_str(&{{ h.attr_kv(part.attr, h.ident(part.attr.attr_param) ~ ('' if (part.attr.type is mapping and not part.attr.imported) or (part.attr.imported and part.attr.attr_type in ['int', 'double', 'boolean']) else '.clone()')) }}.value.to_string());
+{% else %}
+{% if part.text | length == 1 %}
+    name.push('{{ h.literal(part.text)[1:-1] | replace("'", "\\'") }}');
+{% else %}
+    name.push_str({{ h.literal(part.text) }});
+{% endif %}
+{% endif %}
+{% endfor %}
+{% else %}
+    let name = if name.0.is_empty() { {{ h.literal(def.type) }}.to_owned() } else { name.0 };
+{% endif %}
+    let {% if def.optional %}mut {% endif %}attributes = vec![{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
+{% if def.optional %}
+    attributes.extend(options.into_iter().map({{ name }}StartAttr::key_value));
+{% endif %}
+    let span = tracer.inner().span_builder(name)
+        .with_kind(::opentelemetry::trace::SpanKind::{{ def.kind | pascal_case }})
+        .with_attributes(attributes)
+        .start_with_context(tracer.inner(), context);
+    {{ span }} { span }
+}
+{% endfor %}
+{% endfilter -%}{{ "\n" -}}

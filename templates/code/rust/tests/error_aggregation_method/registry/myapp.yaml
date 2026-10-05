@@ -1,0 +1,13 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.duration
+    requirement_level: recommended
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Time a task took from start to finish.
+    annotations:
+      code_generation:
+        metric_value_type: double
+      aggregation:
+        method: histogram

@@ -1,0 +1,1 @@
+package myappspan has spans that render to the same Rust identifier: myapp.task.run and myapp.task_run

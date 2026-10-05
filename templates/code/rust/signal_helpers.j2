@@ -1,0 +1,25 @@
+{% macro literal(value) -%}
+"{%- for char in value -%}{{ (char | tojson | replace("\\b", "\\u{0008}") | replace("\\f", "\\u{000c}") | regex_replace("\\\\u([0-9A-Fa-f]{4})", "\\u{${1}}"))[1:-1] }}{%- endfor -%}"
+{%- endmacro %}
+{% macro exported(value) -%}{% for dotted in value.split(".") %}{% for segment in dotted.split("_") %}{{ segment[:1] | upper }}{{ segment[1:] }}{% endfor %}{% endfor %}{%- endmacro %}
+{% macro ident(value) -%}r#{{ value | snake_case }}{%- endmacro %}
+{% macro attr_type(a) -%}
+{%- if a.imported -%}{{ a.attr_type | map_text("rust_type") }}
+{%- else -%}{{ a.attr_import_path if a.attr_import_path else 'super::' ~ a.attr_namespace ~ 'attr' }}::{{ exported(a.attr_short_name) }}Attr
+{%- endif -%}
+{%- endmacro %}
+{% macro attr_kv(a, value) -%}
+{%- if a.imported -%}::opentelemetry::KeyValue::new({{ literal(a.key) }}, {% if "[]" in a.attr_type %}::opentelemetry::Value::Array(::opentelemetry::Array::{{ a.attr_type | map_text("rust_array") }}({{ value }}{% if a.attr_type == "string[]" %}.into_iter().map(Into::into).collect(){% endif %})){% else %}{{ value }}{% endif %})
+{%- else -%}{{ value }}.key_value()
+{%- endif -%}
+{%- endmacro %}
+{% macro deprecated(def) -%}
+{%- if def.deprecated -%}#[deprecated(note = {{ literal((def.deprecated.note if def.deprecated.note else 'Deprecated by the semantic convention registry')) }})]
+{%- endif -%}
+{%- endmacro %}
+{% macro docs(def) -%}
+{{ ([def.brief, def.note] | select | join('\n\n')) | comment | trim }}
+{%- if def.requirement_level == 'opt_in' %}
+/// Opt-in: record only when the user requests it.
+{%- endif -%}
+{%- endmacro %}

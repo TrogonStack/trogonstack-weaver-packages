@@ -1,0 +1,1 @@
+namespace CAPS is not a supported Rust module name

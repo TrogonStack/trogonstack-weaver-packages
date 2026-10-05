@@ -1,0 +1,1 @@
+metric myapp.task.queue_wait resolves histogram_boundaries_by_unit for unit min to boundaries that are not in strictly increasing order

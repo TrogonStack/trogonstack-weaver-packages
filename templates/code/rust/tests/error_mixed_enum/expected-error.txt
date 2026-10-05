@@ -1,0 +1,1 @@
+has enum members of more than one value type

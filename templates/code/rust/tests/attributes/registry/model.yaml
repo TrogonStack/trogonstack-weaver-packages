@@ -1,0 +1,163 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    note: The identifier is assigned by the scheduler and stays stable across retries.
+    examples: ["task_0001"]
+  - key: myapp.task.retries
+    type: int
+    stability: stable
+    brief: Number of times the task was retried.
+    examples: 3
+  - key: myapp.task.progress
+    type: double
+    stability: development
+    brief: Fraction of the task that has completed, between 0 and 1.
+    examples: 0.5
+  - key: myapp.task.cancelled
+    type: boolean
+    stability: stable
+    brief: Whether the task was cancelled.
+    examples: false
+  - key: myapp.task.tags
+    type: string[]
+    stability: stable
+    brief: Tags attached to the task.
+    examples: [["nightly", "batch"]]
+  - key: myapp.task.shard_ids
+    type: int[]
+    stability: stable
+    brief: Shards the task touched.
+    examples: [[1, 2]]
+  - key: myapp.task.weights
+    type: double[]
+    stability: development
+    brief: Scheduling weights applied to the task.
+    examples: [[0.25, 0.75]]
+  - key: myapp.task.flags
+    type: boolean[]
+    stability: development
+    brief: Feature flags evaluated for the task.
+    examples: [[true, false]]
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The task is waiting to run.
+        - id: running
+          value: running
+          stability: stable
+          brief: The task is running.
+          note: A task stays running until it finishes or is cancelled.
+        - id: paused
+          value: paused
+          stability: development
+          brief: The task was paused.
+          deprecated:
+            reason: obsoleted
+            note: Paused tasks are reported as queued.
+    stability: stable
+    brief: Current state of the task.
+  - key: myapp.task.owner
+    type: string
+    stability: development
+    brief: Owner of the task.
+    examples: ["solo"]
+    deprecated:
+      reason: renamed
+      renamed_to: auth.user.id
+  - key: auth.user.id
+    type: string
+    stability: stable
+    brief: Identifier of the authenticated user.
+    examples: ["u_123"]
+  - key: auth.method
+    type:
+      members:
+        - id: password
+          value: password
+          stability: stable
+          brief: A password was checked.
+        - id: token
+          value: token
+          stability: stable
+          brief: A bearer token was checked.
+    stability: stable
+    brief: How the user was authenticated.
+  - key: auth.level
+    type:
+      members:
+        - id: low
+          value: 1
+          stability: stable
+          brief: Single factor.
+        - id: high
+          value: 2
+          stability: stable
+          brief: Multiple factors.
+    stability: development
+    brief: Assurance level of the authentication.
+  - key: myapp.task.preemptible
+    type:
+      members:
+        - id: allowed
+          value: true
+          stability: stable
+          brief: The scheduler may preempt the task.
+        - id: forbidden
+          value: false
+          stability: stable
+          brief: The task runs to completion.
+    stability: stable
+    brief: Whether the scheduler may preempt the task.
+  - key: myapp.task.sample_rate
+    type:
+      members:
+        - id: tenth
+          value: 0.1
+          stability: stable
+          brief: One task in ten is sampled.
+        - id: all
+          value: 1
+          stability: stable
+          brief: Every task is sampled.
+    stability: stable
+    brief: Fraction of tasks whose telemetry is sampled.
+  - key: myapp.task.assigned_by
+    type: string
+    stability: stable
+    brief: Who assigned the task.
+    note: The scheduler sets it on every task it passes along to `myapp.task.state`. Workers never set it themselves.
+    examples: ["scheduler"]
+  - key: myapp.task.lane
+    type:
+      members:
+        - id: fast
+          value: fast
+          stability: stable
+          brief: The fast lane.
+        - id: slow
+          value: slow
+          stability: stable
+          brief: The slow lane.
+          deprecated:
+            reason: obsoleted
+            note: Every task runs in the fast lane.
+    stability: development
+    brief: Lane the task was scheduled in.
+    deprecated:
+      reason: obsoleted
+      note: Lanes were replaced by priorities.
+  - key: myapp.task.escaped
+    type:
+      members:
+        - id: quoted
+          value: "quote\" slash\\ newline\n tab\t backspace\b formfeed\f null\u0000 snowman☃"
+          stability: stable
+          brief: Escaped text.
+    stability: stable
+    brief: Tests Rust string literals.

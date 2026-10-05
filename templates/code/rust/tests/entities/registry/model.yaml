@@ -1,0 +1,74 @@
+file_format: definition/2
+attributes:
+  - key: myapp.host.name
+    type: string
+    stability: stable
+    brief: Name of the host.
+    examples: ["host-1"]
+  - key: myapp.host.type
+    type:
+      members:
+        - id: physical
+          value: physical
+          stability: stable
+          brief: A physical host.
+        - id: virtual
+          value: virtual
+          stability: stable
+          brief: A virtual host.
+    stability: stable
+    brief: Type of the host.
+  - key: myapp.host.cpu.count
+    type: int
+    stability: development
+    brief: Number of CPUs the host has.
+    examples: 4
+    deprecated:
+      reason: uncategorized
+      note: Use `myapp.host.cpu.logical_count` instead.
+  - key: myapp.host.role
+    type: string
+    stability: stable
+    brief: Role the host plays in the cluster.
+    examples: ["worker"]
+  - key: myapp.queue.name
+    type: string
+    stability: stable
+    brief: Name of the queue.
+    examples: ["reports"]
+  - key: myapp.queue.size
+    type: int
+    stability: stable
+    brief: Number of items currently in the queue.
+    examples: 3
+entities:
+  - type: myapp.host
+    requirement_level: recommended
+    stability: stable
+    brief: A host running the application.
+    note: Identified by its name across its lifetime.
+    identity:
+      - ref: myapp.host.name
+        requirement_level: required
+    description:
+      - ref: myapp.host.type
+        requirement_level: recommended
+      - ref: myapp.host.cpu.count
+        requirement_level: opt_in
+  - type: myapp.queue
+    requirement_level: recommended
+    stability: stable
+    brief: A queue of tasks.
+    identity:
+      - ref: myapp.queue.name
+        requirement_level: required
+    description:
+      - ref: myapp.queue.size
+entity_refinements:
+  - id: myapp.host.worker
+    ref: myapp.host
+    stability: stable
+    brief: A host dedicated to running worker processes.
+    description:
+      - ref: myapp.host.role
+        requirement_level: required

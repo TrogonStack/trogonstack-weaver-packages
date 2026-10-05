@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Check that generated Rust is formatted, tested, and passes Clippy"
+set -euo pipefail
+exec ./buildscripts/check_rust_output.sh

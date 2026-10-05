@@ -1,0 +1,170 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The task is waiting to run.
+        - id: done
+          value: done
+          stability: stable
+          brief: The task finished.
+    stability: stable
+    brief: Current state of the task.
+  - key: auth.method
+    type:
+      members:
+        - id: password
+          value: password
+          stability: stable
+          brief: A password was checked.
+        - id: token
+          value: token
+          stability: stable
+          brief: A bearer token was checked.
+    stability: stable
+    brief: How the user was authenticated.
+  - key: auth.success
+    type: boolean
+    stability: stable
+    brief: Whether the attempt succeeded.
+    examples: true
+metrics:
+  - name: myapp.task.duration
+    requirement_level: recommended
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Time a task took from start to finish.
+    note: Measured by the worker that ran the task.
+    annotations:
+      code_generation:
+        metric_value_type: double
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [0, 0.005, 0.01, 0.1, 1, 10]
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+      - ref: myapp.task.state
+        requirement_level:
+          conditionally_required: If the task reached a final state.
+      - ref: auth.method
+        requirement_level: opt_in
+  - name: myapp.task.started
+    requirement_level: opt_in
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks started.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.task.id
+        requirement_level:
+          recommended: When the scheduler assigned an id before the task started.
+  - name: myapp.task.active
+    requirement_level: recommended
+    instrument: updowncounter
+    unit: "{task}"
+    stability: development
+    brief: Number of tasks currently running.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.task.state
+        requirement_level: required
+  - name: myapp.queue.depth
+    requirement_level: recommended
+    instrument: gauge
+    unit: "{task}"
+    stability: development
+    brief: Number of tasks waiting in the queue.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    deprecated:
+      reason: renamed
+      renamed_to: myapp.task.active
+  - name: auth.attempts
+    requirement_level: recommended
+    instrument: counter
+    unit: "{attempt}"
+    stability: stable
+    brief: Number of authentication attempts.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: auth.method
+        requirement_level: required
+      - ref: auth.success
+        requirement_level: required
+  - name: myapp.task.float.started
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Fractional tasks started.
+    annotations:
+      code_generation:
+        metric_value_type: double
+  - name: myapp.task.float.active
+    requirement_level: recommended
+    instrument: updowncounter
+    unit: "{task}"
+    stability: stable
+    brief: Fractional active task adjustment.
+    annotations:
+      code_generation:
+        metric_value_type: double
+  - name: myapp.task.float.depth
+    requirement_level: recommended
+    instrument: gauge
+    unit: "{task}"
+    stability: stable
+    brief: Fractional queue depth.
+    annotations:
+      code_generation:
+        metric_value_type: double
+  - name: myapp.task.payload
+    requirement_level: recommended
+    instrument: histogram
+    unit: By
+    stability: stable
+    brief: Task payload size.
+    annotations:
+      code_generation:
+        metric_value_type: int
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [128, 256, 1024]
+metric_refinements:
+  - id: myapp.task.retry.duration
+    ref: myapp.task.duration
+    stability: stable
+    brief: Time a retried task took from start to finish.
+    note: Recorded only for tasks that ran more than once.
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+      - ref: myapp.task.state
+        requirement_level: required
+  - id: worker.task.duration
+    ref: myapp.task.duration
+    stability: stable
+    brief: Time a task took on the worker that ran it.
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
