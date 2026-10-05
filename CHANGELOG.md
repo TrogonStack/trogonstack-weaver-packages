@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.0...v0.1.1) (2026-10-05)
+
+
+### Features
+
+* Keep Rust telemetry aligned with registry conventions ([#40](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/40)) ([aa15622](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/aa15622facb39e52cf439beda06b6e58b78bf6d4))
+
 ## 0.1.0 (2026-10-01)
 
 
