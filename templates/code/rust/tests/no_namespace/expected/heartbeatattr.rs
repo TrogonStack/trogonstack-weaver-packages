@@ -39,6 +39,7 @@ impl From<SequenceAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Name of the component that sent the heartbeat.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SourceAttr(::opentelemetry::StringValue);
@@ -55,6 +56,7 @@ impl From<::opentelemetry::StringValue> for SourceAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for SourceAttr {
     #[inline]

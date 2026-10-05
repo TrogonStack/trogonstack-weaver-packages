@@ -1,7 +1,10 @@
 #![allow(deprecated)]
 /// Time a task took from start to finish.
 #[derive(Clone)]
-pub struct TaskDurationHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct TaskDurationHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl TaskDurationHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("myapp.task.duration")
@@ -15,12 +18,16 @@ impl TaskDurationHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskDurationHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
 /// Time a task waited in the queue, in minutes.
 #[derive(Clone)]
-pub struct TaskQueueWaitHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct TaskQueueWaitHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl TaskQueueWaitHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("myapp.task.queue_wait")
@@ -35,6 +42,7 @@ impl TaskQueueWaitHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskQueueWaitHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }

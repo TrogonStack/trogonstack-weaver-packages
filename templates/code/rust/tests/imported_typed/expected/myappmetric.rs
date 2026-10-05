@@ -3,6 +3,7 @@
 pub enum TaskFailedCounterAttr {
     ServerPort(i64),
 }
+
 impl From<TaskFailedCounterAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskFailedCounterAttr) -> Self {
         match value {
@@ -12,7 +13,10 @@ impl From<TaskFailedCounterAttr> for ::opentelemetry::KeyValue {
 }
 /// Number of tasks that failed.
 #[derive(Clone)]
-pub struct TaskFailedCounter { instrument: ::opentelemetry::metrics::Counter<u64> }
+pub struct TaskFailedCounter {
+    instrument: ::opentelemetry::metrics::Counter<u64>,
+}
+
 impl TaskFailedCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter("myapp.task.failed")
@@ -28,10 +32,14 @@ impl TaskFailedCounter {
         self.instrument.add(value, &attributes);
     }
 }
+
 impl Default for TaskFailedCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct TaskFailedCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
+pub struct TaskFailedCounterObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64>,
+}
+
 impl TaskFailedCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#error_type: upstream::errorattr::TypeAttr, r#myapp_task_id: super::myappattr::TaskIdAttr, options: impl IntoIterator<Item = TaskFailedCounterAttr>) {
         let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; 3]>::new();
@@ -42,7 +50,10 @@ impl TaskFailedCounterObserver<'_> {
 }
 
 #[derive(Clone)]
-pub struct TaskFailedObservableCounter { _instrument: ::opentelemetry::metrics::ObservableCounter<u64> }
+pub struct TaskFailedObservableCounter {
+    _instrument: ::opentelemetry::metrics::ObservableCounter<u64>,
+}
+
 impl TaskFailedObservableCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(TaskFailedCounterObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter("myapp.task.failed")
@@ -53,6 +64,7 @@ impl TaskFailedObservableCounter {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for TaskFailedObservableCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }

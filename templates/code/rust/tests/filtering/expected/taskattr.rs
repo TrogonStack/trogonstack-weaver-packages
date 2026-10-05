@@ -17,6 +17,7 @@ impl From<::opentelemetry::StringValue> for AssignedByAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for AssignedByAttr {
     #[inline]
@@ -64,6 +65,7 @@ impl From<AssignedByAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Whether the task was cancelled.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct CancelledAttr(bool);
@@ -104,6 +106,7 @@ impl From<CancelledAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Unique identifier of the task.
 ///
 /// The identifier is assigned by the scheduler and stays stable across retries.
@@ -122,6 +125,7 @@ impl From<::opentelemetry::StringValue> for IdAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for IdAttr {
     #[inline]
@@ -169,6 +173,7 @@ impl From<IdAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Whether the scheduler may preempt the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum PreemptibleAttr {
@@ -218,6 +223,7 @@ impl From<PreemptibleAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Number of times the task was retried.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct RetriesAttr(i64);
@@ -258,6 +264,7 @@ impl From<RetriesAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Fraction of tasks whose telemetry is sampled.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum SampleRateAttr {
@@ -307,6 +314,7 @@ impl From<SampleRateAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Shards the task touched.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ShardIdsAttr(Vec<i64>);
@@ -361,6 +369,7 @@ impl From<ShardIdsAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Current state of the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum StateAttr {
@@ -419,6 +428,7 @@ impl From<StateAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Tags attached to the task.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TagsAttr(Vec<::opentelemetry::StringValue>);
@@ -435,6 +445,7 @@ impl From<Vec<::opentelemetry::StringValue>> for TagsAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<Vec<String>> for TagsAttr {
     fn from(value: Vec<String>) -> Self {

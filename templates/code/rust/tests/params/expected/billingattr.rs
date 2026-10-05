@@ -15,6 +15,7 @@ impl From<::opentelemetry::StringValue> for InvoiceIdAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for InvoiceIdAttr {
     #[inline]
@@ -62,6 +63,7 @@ impl From<InvoiceIdAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// ISO 4217 currency code of the amount.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CurrencyAttr(::opentelemetry::StringValue);
@@ -78,6 +80,7 @@ impl From<::opentelemetry::StringValue> for CurrencyAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for CurrencyAttr {
     #[inline]

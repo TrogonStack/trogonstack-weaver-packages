@@ -3,7 +3,10 @@ use ::opentelemetry::trace::{TraceContextExt, Tracer};
 use ::std::fmt::Write;
 
 /// A request named from attempted methods.
-pub struct UpstreamMethodsSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct UpstreamMethodsSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> UpstreamMethodsSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -16,6 +19,7 @@ impl<S: ::opentelemetry::trace::Span> UpstreamMethodsSpan<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
 }
+
 impl Default for UpstreamMethodsSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("edge.upstream.methods") }
@@ -43,6 +47,7 @@ pub enum UpstreamRequestStartAttr {
     ErrorType(::opentelemetry::StringValue),
     HttpRequestMethodList(Vec<::opentelemetry::StringValue>),
 }
+
 impl From<UpstreamRequestStartAttr> for ::opentelemetry::KeyValue {
     fn from(value: UpstreamRequestStartAttr) -> Self {
         match value {
@@ -55,6 +60,7 @@ impl From<UpstreamRequestStartAttr> for ::opentelemetry::KeyValue {
 pub enum UpstreamRequestAttr {
     HttpRequestMethodList(Vec<::opentelemetry::StringValue>),
 }
+
 impl From<UpstreamRequestAttr> for UpstreamRequestStartAttr {
     fn from(value: UpstreamRequestAttr) -> Self {
         match value {
@@ -63,7 +69,10 @@ impl From<UpstreamRequestAttr> for UpstreamRequestStartAttr {
     }
 }
 /// A request to an upstream server.
-pub struct UpstreamRequestSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct UpstreamRequestSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> UpstreamRequestSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -79,6 +88,7 @@ impl<S: ::opentelemetry::trace::Span> UpstreamRequestSpan<S> {
         for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(UpstreamRequestStartAttr::from(attribute))); }
     }
 }
+
 impl Default for UpstreamRequestSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("edge.upstream.request") }

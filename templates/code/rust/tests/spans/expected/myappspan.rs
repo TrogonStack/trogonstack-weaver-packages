@@ -3,7 +3,10 @@ use ::opentelemetry::trace::{TraceContextExt, Tracer};
 use ::std::fmt::Write;
 
 /// Synthetic escaped name.
-pub struct NameApostropheSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct NameApostropheSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> NameApostropheSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -16,6 +19,7 @@ impl<S: ::opentelemetry::trace::Span> NameApostropheSpan<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
 }
+
 impl Default for NameApostropheSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.apostrophe") }
@@ -34,7 +38,10 @@ pub fn r#start_name_apostrophe<T: ::opentelemetry::trace::Tracer>(context: &::op
     NameApostropheSpan { span }
 }
 /// A span named from array values.
-pub struct NameArraysSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct NameArraysSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> NameArraysSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -47,6 +54,7 @@ impl<S: ::opentelemetry::trace::Span> NameArraysSpan<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
 }
+
 impl Default for NameArraysSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.arrays") }
@@ -70,7 +78,10 @@ pub fn r#start_name_arrays<T: ::opentelemetry::trace::Tracer>(context: &::opente
     NameArraysSpan { span }
 }
 /// Synthetic escaped name.
-pub struct NameBackslashSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct NameBackslashSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> NameBackslashSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -83,6 +94,7 @@ impl<S: ::opentelemetry::trace::Span> NameBackslashSpan<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
 }
+
 impl Default for NameBackslashSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.backslash") }
@@ -101,7 +113,10 @@ pub fn r#start_name_backslash<T: ::opentelemetry::trace::Tracer>(context: &::ope
     NameBackslashSpan { span }
 }
 /// Synthetic escaped name.
-pub struct NameControlSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct NameControlSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> NameControlSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -114,6 +129,7 @@ impl<S: ::opentelemetry::trace::Span> NameControlSpan<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
 }
+
 impl Default for NameControlSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.control") }
@@ -132,7 +148,10 @@ pub fn r#start_name_control<T: ::opentelemetry::trace::Tracer>(context: &::opent
     NameControlSpan { span }
 }
 /// A span named from a floating point value.
-pub struct NameFloatSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct NameFloatSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> NameFloatSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -145,6 +164,7 @@ impl<S: ::opentelemetry::trace::Span> NameFloatSpan<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
 }
+
 impl Default for NameFloatSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.float") }
@@ -163,17 +183,23 @@ pub fn r#start_name_float<T: ::opentelemetry::trace::Tracer>(context: &::opentel
 }
 #[derive(Clone, Debug, Default)]
 pub struct NameStaticName(::std::borrow::Cow<'static, str>);
+
 impl From<&'static str> for NameStaticName {
     fn from(value: &'static str) -> Self { Self(::std::borrow::Cow::Borrowed(value)) }
 }
+
 impl From<String> for NameStaticName {
     fn from(value: String) -> Self { Self(::std::borrow::Cow::Owned(value)) }
 }
+
 impl From<::std::borrow::Cow<'static, str>> for NameStaticName {
     fn from(value: ::std::borrow::Cow<'static, str>) -> Self { Self(value) }
 }
 /// A span with an unconstrained caller supplied name.
-pub struct NameStaticSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct NameStaticSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> NameStaticSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -186,6 +212,7 @@ impl<S: ::opentelemetry::trace::Span> NameStaticSpan<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
 }
+
 impl Default for NameStaticSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.static") }
@@ -202,7 +229,10 @@ pub fn r#start_name_static<T: ::opentelemetry::trace::Tracer>(context: &::opente
     NameStaticSpan { span }
 }
 /// Synthetic escaped name.
-pub struct NameUnicodeSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct NameUnicodeSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> NameUnicodeSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -215,6 +245,7 @@ impl<S: ::opentelemetry::trace::Span> NameUnicodeSpan<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
 }
+
 impl Default for NameUnicodeSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.unicode") }
@@ -234,19 +265,25 @@ pub fn r#start_name_unicode<T: ::opentelemetry::trace::Tracer>(context: &::opent
 }
 #[derive(Clone, Debug, Default)]
 pub struct QueueDrainName(::std::borrow::Cow<'static, str>);
+
 impl From<&'static str> for QueueDrainName {
     fn from(value: &'static str) -> Self { Self(::std::borrow::Cow::Borrowed(value)) }
 }
+
 impl From<String> for QueueDrainName {
     fn from(value: String) -> Self { Self(::std::borrow::Cow::Owned(value)) }
 }
+
 impl From<::std::borrow::Cow<'static, str>> for QueueDrainName {
     fn from(value: ::std::borrow::Cow<'static, str>) -> Self { Self(value) }
 }
 /// Removing every task from a queue.
 /// Opt-in: record only when the user requests it.
 #[deprecated(note = "Drain queues by dispatching their tasks instead.")]
-pub struct QueueDrainSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct QueueDrainSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> QueueDrainSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -259,6 +296,7 @@ impl<S: ::opentelemetry::trace::Span> QueueDrainSpan<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
 }
+
 impl Default for QueueDrainSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.queue.drain") }
@@ -282,6 +320,7 @@ pub enum TaskDispatchStartAttr {
     TaskAttempt(super::myappattr::TaskAttemptAttr),
     TaskId(super::myappattr::TaskIdAttr),
 }
+
 impl From<TaskDispatchStartAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskDispatchStartAttr) -> Self {
         match value {
@@ -296,6 +335,7 @@ pub enum TaskDispatchAttr {
     QueueName(super::myappattr::QueueNameAttr),
     TaskAttempt(super::myappattr::TaskAttemptAttr),
 }
+
 impl From<TaskDispatchAttr> for TaskDispatchStartAttr {
     fn from(value: TaskDispatchAttr) -> Self {
         match value {
@@ -307,7 +347,10 @@ impl From<TaskDispatchAttr> for TaskDispatchStartAttr {
 /// The scheduler handing a task to a worker.
 ///
 /// Ends when the worker accepts the task.
-pub struct TaskDispatchSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct TaskDispatchSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> TaskDispatchSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -323,6 +366,7 @@ impl<S: ::opentelemetry::trace::Span> TaskDispatchSpan<S> {
         for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(TaskDispatchStartAttr::from(attribute))); }
     }
 }
+
 impl Default for TaskDispatchSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.task.dispatch") }
@@ -346,6 +390,7 @@ pub fn r#start_task_dispatch<T: ::opentelemetry::trace::Tracer>(context: &::open
 pub enum TaskRunStartAttr {
     TaskId(super::myappattr::TaskIdAttr),
 }
+
 impl From<TaskRunStartAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskRunStartAttr) -> Self {
         match value {
@@ -357,6 +402,7 @@ impl From<TaskRunStartAttr> for ::opentelemetry::KeyValue {
 pub enum TaskRunAttr {
     TaskId(super::myappattr::TaskIdAttr),
 }
+
 impl From<TaskRunAttr> for TaskRunStartAttr {
     fn from(value: TaskRunAttr) -> Self {
         match value {
@@ -366,17 +412,23 @@ impl From<TaskRunAttr> for TaskRunStartAttr {
 }
 #[derive(Clone, Debug, Default)]
 pub struct TaskRunName(::std::borrow::Cow<'static, str>);
+
 impl From<&'static str> for TaskRunName {
     fn from(value: &'static str) -> Self { Self(::std::borrow::Cow::Borrowed(value)) }
 }
+
 impl From<String> for TaskRunName {
     fn from(value: String) -> Self { Self(::std::borrow::Cow::Owned(value)) }
 }
+
 impl From<::std::borrow::Cow<'static, str>> for TaskRunName {
     fn from(value: ::std::borrow::Cow<'static, str>) -> Self { Self(value) }
 }
 /// One run of a task.
-pub struct TaskRunSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct TaskRunSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> TaskRunSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -392,6 +444,7 @@ impl<S: ::opentelemetry::trace::Span> TaskRunSpan<S> {
         for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(TaskRunStartAttr::from(attribute))); }
     }
 }
+
 impl Default for TaskRunSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.task.run") }

@@ -15,6 +15,7 @@ impl From<::opentelemetry::StringValue> for TaskIdAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for TaskIdAttr {
     #[inline]
@@ -62,6 +63,7 @@ impl From<TaskIdAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Current state of the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TaskStateAttr {

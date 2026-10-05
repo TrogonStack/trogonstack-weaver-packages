@@ -3,7 +3,10 @@ use ::opentelemetry::trace::{TraceContextExt, Tracer};
 use ::std::fmt::Write;
 
 /// An invoice is being issued.
-pub struct InvoiceIssueSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct InvoiceIssueSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> InvoiceIssueSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -16,6 +19,7 @@ impl<S: ::opentelemetry::trace::Span> InvoiceIssueSpan<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
 }
+
 impl Default for InvoiceIssueSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("acme.billing.invoice.issue") }

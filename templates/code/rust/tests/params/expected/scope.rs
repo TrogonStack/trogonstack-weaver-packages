@@ -2,6 +2,7 @@
 pub struct Scope {
     pub attributes: Vec<::opentelemetry::KeyValue>,
 }
+
 impl From<Scope> for ::opentelemetry::InstrumentationScope {
     fn from(value: Scope) -> Self {
         Self::builder("synthetic-billing")

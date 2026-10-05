@@ -17,6 +17,7 @@ impl From<::opentelemetry::StringValue> for TaskAssignedByAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for TaskAssignedByAttr {
     #[inline]
@@ -64,6 +65,7 @@ impl From<TaskAssignedByAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Whether the task was cancelled.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskCancelledAttr(bool);
@@ -104,6 +106,7 @@ impl From<TaskCancelledAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Tests Rust string literals.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TaskEscapedAttr {
@@ -155,6 +158,7 @@ impl From<TaskEscapedAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Feature flags evaluated for the task.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TaskFlagsAttr(Vec<bool>);
@@ -209,6 +213,7 @@ impl From<TaskFlagsAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Unique identifier of the task.
 ///
 /// The identifier is assigned by the scheduler and stays stable across retries.
@@ -227,6 +232,7 @@ impl From<::opentelemetry::StringValue> for TaskIdAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for TaskIdAttr {
     #[inline]
@@ -274,6 +280,7 @@ impl From<TaskIdAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Lane the task was scheduled in.
 #[deprecated(note = "Lanes were replaced by priorities.")]
 #[derive(Debug, Clone, PartialEq, Copy)]
@@ -333,6 +340,7 @@ impl From<TaskLaneAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Owner of the task.
 #[deprecated(note = "Replaced by `auth.user.id`.")]
 #[derive(Debug, Clone, PartialEq)]
@@ -350,6 +358,7 @@ impl From<::opentelemetry::StringValue> for TaskOwnerAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for TaskOwnerAttr {
     #[inline]
@@ -397,6 +406,7 @@ impl From<TaskOwnerAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Whether the scheduler may preempt the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TaskPreemptibleAttr {
@@ -446,6 +456,7 @@ impl From<TaskPreemptibleAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Fraction of the task that has completed, between 0 and 1.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskProgressAttr(f64);
@@ -486,6 +497,7 @@ impl From<TaskProgressAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Number of times the task was retried.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskRetriesAttr(i64);
@@ -526,6 +538,7 @@ impl From<TaskRetriesAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Fraction of tasks whose telemetry is sampled.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TaskSampleRateAttr {
@@ -575,6 +588,7 @@ impl From<TaskSampleRateAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Shards the task touched.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TaskShardIdsAttr(Vec<i64>);
@@ -629,6 +643,7 @@ impl From<TaskShardIdsAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Current state of the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TaskStateAttr {
@@ -693,6 +708,7 @@ impl From<TaskStateAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Tags attached to the task.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TaskTagsAttr(Vec<::opentelemetry::StringValue>);
@@ -709,6 +725,7 @@ impl From<Vec<::opentelemetry::StringValue>> for TaskTagsAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<Vec<String>> for TaskTagsAttr {
     fn from(value: Vec<String>) -> Self {
@@ -753,6 +770,7 @@ impl From<TaskTagsAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Scheduling weights applied to the task.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TaskWeightsAttr(Vec<f64>);

@@ -44,6 +44,7 @@ pub enum {{ name }}StartAttr {
     {{ h.exported(opt.attr_short_name) }}({{ h.attr_type(opt) }}),
 {% endfor %}
 }
+
 impl From<{{ name }}StartAttr> for ::opentelemetry::KeyValue {
     fn from(value: {{ name }}StartAttr) -> Self {
         match value {
@@ -61,6 +62,7 @@ pub enum {{ name }}Attr {
     {{ h.exported(opt.attr_short_name) }}({{ h.attr_type(opt) }}),
 {% endfor %}
 }
+
 impl From<{{ name }}Attr> for {{ name }}StartAttr {
     fn from(value: {{ name }}Attr) -> Self {
         match value {
@@ -74,18 +76,24 @@ impl From<{{ name }}Attr> for {{ name }}StartAttr {
 {% if not def.name_parts %}
 #[derive(Clone, Debug, Default)]
 pub struct {{ name }}Name(::std::borrow::Cow<'static, str>);
+
 impl From<&'static str> for {{ name }}Name {
     fn from(value: &'static str) -> Self { Self(::std::borrow::Cow::Borrowed(value)) }
 }
+
 impl From<String> for {{ name }}Name {
     fn from(value: String) -> Self { Self(::std::borrow::Cow::Owned(value)) }
 }
+
 impl From<::std::borrow::Cow<'static, str>> for {{ name }}Name {
     fn from(value: ::std::borrow::Cow<'static, str>) -> Self { Self(value) }
 }
 {% endif %}
 {{ (h.docs(def) ~ "\n" ~ h.deprecated(def)) | trim }}
-pub struct {{ span }}<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct {{ span }}<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> {{ span }}<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -103,6 +111,7 @@ impl<S: ::opentelemetry::trace::Span> {{ span }}<S> {
     }
 {% endif %}
 }
+
 impl Default for {{ span }} {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start({{ h.literal(def.type) }}) }

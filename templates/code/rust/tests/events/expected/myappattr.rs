@@ -53,6 +53,7 @@ impl From<BoolValuesAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Synthetic double values.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DoubleValuesAttr(Vec<f64>);
@@ -107,6 +108,7 @@ impl From<DoubleValuesAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Synthetic int values.
 #[derive(Debug, Clone, PartialEq)]
 pub struct IntValuesAttr(Vec<i64>);
@@ -161,6 +163,7 @@ impl From<IntValuesAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Synthetic string values.
 #[derive(Debug, Clone, PartialEq)]
 pub struct StringValuesAttr(Vec<::opentelemetry::StringValue>);
@@ -177,6 +180,7 @@ impl From<Vec<::opentelemetry::StringValue>> for StringValuesAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<Vec<String>> for StringValuesAttr {
     fn from(value: Vec<String>) -> Self {
@@ -221,6 +225,7 @@ impl From<StringValuesAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Number of the attempt, starting at 1.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskAttemptAttr(i64);
@@ -261,6 +266,7 @@ impl From<TaskAttemptAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Current state of the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TaskStateAttr {

@@ -15,6 +15,7 @@ impl From<::opentelemetry::StringValue> for KeptAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for KeptAttr {
     #[inline]
@@ -62,6 +63,7 @@ impl From<KeptAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Synthetic mode.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum ModeAttr {

@@ -15,6 +15,7 @@ impl From<::opentelemetry::StringValue> for RequestUrlAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for RequestUrlAttr {
     #[inline]

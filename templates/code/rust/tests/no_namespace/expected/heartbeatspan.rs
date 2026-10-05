@@ -5,6 +5,7 @@ use ::opentelemetry::trace::{TraceContextExt, Tracer};
 pub enum StartAttr {
     Source(super::heartbeatattr::SourceAttr),
 }
+
 impl From<StartAttr> for ::opentelemetry::KeyValue {
     fn from(value: StartAttr) -> Self {
         match value {
@@ -16,6 +17,7 @@ impl From<StartAttr> for ::opentelemetry::KeyValue {
 pub enum Attr {
     Source(super::heartbeatattr::SourceAttr),
 }
+
 impl From<Attr> for StartAttr {
     fn from(value: Attr) -> Self {
         match value {
@@ -25,17 +27,23 @@ impl From<Attr> for StartAttr {
 }
 #[derive(Clone, Debug, Default)]
 pub struct Name(::std::borrow::Cow<'static, str>);
+
 impl From<&'static str> for Name {
     fn from(value: &'static str) -> Self { Self(::std::borrow::Cow::Borrowed(value)) }
 }
+
 impl From<String> for Name {
     fn from(value: String) -> Self { Self(::std::borrow::Cow::Owned(value)) }
 }
+
 impl From<::std::borrow::Cow<'static, str>> for Name {
     fn from(value: ::std::borrow::Cow<'static, str>) -> Self { Self(value) }
 }
 /// A periodic liveness signal.
-pub struct Span<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct Span<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> Span<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -51,6 +59,7 @@ impl<S: ::opentelemetry::trace::Span> Span<S> {
         for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(StartAttr::from(attribute))); }
     }
 }
+
 impl Default for Span {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("heartbeat") }

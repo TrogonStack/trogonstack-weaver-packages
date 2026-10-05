@@ -6,6 +6,7 @@ use ::std::fmt::Write;
 pub enum TaskDispatchStartAttr {
     ServerPort(i64),
 }
+
 impl From<TaskDispatchStartAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskDispatchStartAttr) -> Self {
         match value {
@@ -17,6 +18,7 @@ impl From<TaskDispatchStartAttr> for ::opentelemetry::KeyValue {
 pub enum TaskDispatchAttr {
     ServerPort(i64),
 }
+
 impl From<TaskDispatchAttr> for TaskDispatchStartAttr {
     fn from(value: TaskDispatchAttr) -> Self {
         match value {
@@ -25,7 +27,10 @@ impl From<TaskDispatchAttr> for TaskDispatchStartAttr {
     }
 }
 /// Dispatch of a task.
-pub struct TaskDispatchSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> { span: S }
+pub struct TaskDispatchSpan<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
+    span: S,
+}
+
 impl<S: ::opentelemetry::trace::Span> TaskDispatchSpan<S> {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context
     where S: Send + Sync + 'static,
@@ -41,6 +46,7 @@ impl<S: ::opentelemetry::trace::Span> TaskDispatchSpan<S> {
         for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(TaskDispatchStartAttr::from(attribute))); }
     }
 }
+
 impl Default for TaskDispatchSpan {
     fn default() -> Self {
         Self { span: super::tracer::Tracer::default().inner().start("myapp.task.dispatch") }

@@ -53,6 +53,7 @@ impl From<ArrayFlagsAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Synthetic naming value.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ArrayIndicesAttr(Vec<i64>);
@@ -107,6 +108,7 @@ impl From<ArrayIndicesAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Synthetic naming value.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ArraySamplesAttr(Vec<f64>);
@@ -161,6 +163,7 @@ impl From<ArraySamplesAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Synthetic naming value.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ArrayTagsAttr(Vec<::opentelemetry::StringValue>);
@@ -177,6 +180,7 @@ impl From<Vec<::opentelemetry::StringValue>> for ArrayTagsAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<Vec<String>> for ArrayTagsAttr {
     fn from(value: Vec<String>) -> Self {
@@ -221,6 +225,7 @@ impl From<ArrayTagsAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
+
 /// Synthetic naming value.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct NumberValueAttr(f64);
@@ -261,6 +266,7 @@ impl From<NumberValueAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Name of the queue the task came from.
 #[derive(Debug, Clone, PartialEq)]
 pub struct QueueNameAttr(::opentelemetry::StringValue);
@@ -277,6 +283,7 @@ impl From<::opentelemetry::StringValue> for QueueNameAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for QueueNameAttr {
     #[inline]
@@ -324,6 +331,7 @@ impl From<QueueNameAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Number of the attempt, starting at one.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskAttemptAttr(i64);
@@ -364,6 +372,7 @@ impl From<TaskAttemptAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Unique identifier of the task.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TaskIdAttr(::opentelemetry::StringValue);
@@ -380,6 +389,7 @@ impl From<::opentelemetry::StringValue> for TaskIdAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for TaskIdAttr {
     #[inline]
@@ -427,6 +437,7 @@ impl From<TaskIdAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Current state of the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TaskStateAttr {

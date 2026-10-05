@@ -32,6 +32,7 @@ impl From<{{ rust_type }}> for {{ attr.name }} {
     }
 }
 {% if attr.value_type == "string" %}
+
 #[allow(deprecated)]
 impl From<String> for {{ attr.name }} {
     #[inline]
@@ -48,6 +49,7 @@ impl From<&'static str> for {{ attr.name }} {
     }
 }
 {% elif attr.value_type == "string[]" %}
+
 #[allow(deprecated)]
 impl From<Vec<String>> for {{ attr.name }} {
     fn from(value: Vec<String>) -> Self {
@@ -160,5 +162,6 @@ impl From<{{ attr.name }}> for ::opentelemetry::logs::AnyValue {
 {% endif %}
     }
 }
+
 {% endfor %}
 {% endfilter -%}{{ "\n" -}}

@@ -2,7 +2,10 @@
 /// Number of tasks waiting in the queue.
 #[deprecated(note = "Replaced by `myapp.task.active`.")]
 #[derive(Clone)]
-pub struct QueueDepthGauge { instrument: ::opentelemetry::metrics::Gauge<i64> }
+pub struct QueueDepthGauge {
+    instrument: ::opentelemetry::metrics::Gauge<i64>,
+}
+
 impl QueueDepthGauge {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().i64_gauge("myapp.queue.depth")
@@ -16,10 +19,14 @@ impl QueueDepthGauge {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for QueueDepthGauge {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct QueueDepthGaugeObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<i64> }
+pub struct QueueDepthGaugeObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<i64>,
+}
+
 impl QueueDepthGaugeObserver<'_> {
     pub fn observe(&self, value: i64) {
         let attributes = [];
@@ -28,7 +35,10 @@ impl QueueDepthGaugeObserver<'_> {
 }
 #[deprecated(note = "Replaced by `myapp.task.active`.")]
 #[derive(Clone)]
-pub struct QueueDepthObservableGauge { _instrument: ::opentelemetry::metrics::ObservableGauge<i64> }
+pub struct QueueDepthObservableGauge {
+    _instrument: ::opentelemetry::metrics::ObservableGauge<i64>,
+}
+
 impl QueueDepthObservableGauge {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(QueueDepthGaugeObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().i64_observable_gauge("myapp.queue.depth")
@@ -39,12 +49,16 @@ impl QueueDepthObservableGauge {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for QueueDepthObservableGauge {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }
 /// Number of tasks currently running.
 #[derive(Clone)]
-pub struct TaskActiveUpDownCounter { instrument: ::opentelemetry::metrics::UpDownCounter<i64> }
+pub struct TaskActiveUpDownCounter {
+    instrument: ::opentelemetry::metrics::UpDownCounter<i64>,
+}
+
 impl TaskActiveUpDownCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().i64_up_down_counter("myapp.task.active")
@@ -58,10 +72,14 @@ impl TaskActiveUpDownCounter {
         self.instrument.add(value, &attributes);
     }
 }
+
 impl Default for TaskActiveUpDownCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct TaskActiveUpDownCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<i64> }
+pub struct TaskActiveUpDownCounterObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<i64>,
+}
+
 impl TaskActiveUpDownCounterObserver<'_> {
     pub fn observe(&self, value: i64, r#myapp_task_state: super::myappattr::TaskStateAttr) {
         let attributes = [::opentelemetry::KeyValue::from(r#myapp_task_state)];
@@ -70,7 +88,10 @@ impl TaskActiveUpDownCounterObserver<'_> {
 }
 
 #[derive(Clone)]
-pub struct TaskActiveObservableUpDownCounter { _instrument: ::opentelemetry::metrics::ObservableUpDownCounter<i64> }
+pub struct TaskActiveObservableUpDownCounter {
+    _instrument: ::opentelemetry::metrics::ObservableUpDownCounter<i64>,
+}
+
 impl TaskActiveObservableUpDownCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(TaskActiveUpDownCounterObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().i64_observable_up_down_counter("myapp.task.active")
@@ -81,6 +102,7 @@ impl TaskActiveObservableUpDownCounter {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for TaskActiveObservableUpDownCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }
@@ -91,6 +113,7 @@ pub enum TaskDurationHistogramAttr {
     /// Conditionally required: If the task reached a final state.
     TaskState(super::myappattr::TaskStateAttr),
 }
+
 impl From<TaskDurationHistogramAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskDurationHistogramAttr) -> Self {
         match value {
@@ -103,7 +126,10 @@ impl From<TaskDurationHistogramAttr> for ::opentelemetry::KeyValue {
 ///
 /// Measured by the worker that ran the task.
 #[derive(Clone)]
-pub struct TaskDurationHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct TaskDurationHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl TaskDurationHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("myapp.task.duration")
@@ -120,12 +146,16 @@ impl TaskDurationHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskDurationHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
 /// Fractional active task adjustment.
 #[derive(Clone)]
-pub struct TaskFloatActiveUpDownCounter { instrument: ::opentelemetry::metrics::UpDownCounter<f64> }
+pub struct TaskFloatActiveUpDownCounter {
+    instrument: ::opentelemetry::metrics::UpDownCounter<f64>,
+}
+
 impl TaskFloatActiveUpDownCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_up_down_counter("myapp.task.float.active")
@@ -139,10 +169,14 @@ impl TaskFloatActiveUpDownCounter {
         self.instrument.add(value, &attributes);
     }
 }
+
 impl Default for TaskFloatActiveUpDownCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct TaskFloatActiveUpDownCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<f64> }
+pub struct TaskFloatActiveUpDownCounterObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<f64>,
+}
+
 impl TaskFloatActiveUpDownCounterObserver<'_> {
     pub fn observe(&self, value: f64) {
         let attributes = [];
@@ -151,7 +185,10 @@ impl TaskFloatActiveUpDownCounterObserver<'_> {
 }
 
 #[derive(Clone)]
-pub struct TaskFloatActiveObservableUpDownCounter { _instrument: ::opentelemetry::metrics::ObservableUpDownCounter<f64> }
+pub struct TaskFloatActiveObservableUpDownCounter {
+    _instrument: ::opentelemetry::metrics::ObservableUpDownCounter<f64>,
+}
+
 impl TaskFloatActiveObservableUpDownCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(TaskFloatActiveUpDownCounterObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().f64_observable_up_down_counter("myapp.task.float.active")
@@ -162,12 +199,16 @@ impl TaskFloatActiveObservableUpDownCounter {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for TaskFloatActiveObservableUpDownCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }
 /// Fractional queue depth.
 #[derive(Clone)]
-pub struct TaskFloatDepthGauge { instrument: ::opentelemetry::metrics::Gauge<f64> }
+pub struct TaskFloatDepthGauge {
+    instrument: ::opentelemetry::metrics::Gauge<f64>,
+}
+
 impl TaskFloatDepthGauge {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_gauge("myapp.task.float.depth")
@@ -181,10 +222,14 @@ impl TaskFloatDepthGauge {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskFloatDepthGauge {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct TaskFloatDepthGaugeObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<f64> }
+pub struct TaskFloatDepthGaugeObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<f64>,
+}
+
 impl TaskFloatDepthGaugeObserver<'_> {
     pub fn observe(&self, value: f64) {
         let attributes = [];
@@ -193,7 +238,10 @@ impl TaskFloatDepthGaugeObserver<'_> {
 }
 
 #[derive(Clone)]
-pub struct TaskFloatDepthObservableGauge { _instrument: ::opentelemetry::metrics::ObservableGauge<f64> }
+pub struct TaskFloatDepthObservableGauge {
+    _instrument: ::opentelemetry::metrics::ObservableGauge<f64>,
+}
+
 impl TaskFloatDepthObservableGauge {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(TaskFloatDepthGaugeObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().f64_observable_gauge("myapp.task.float.depth")
@@ -204,12 +252,16 @@ impl TaskFloatDepthObservableGauge {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for TaskFloatDepthObservableGauge {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }
 /// Fractional tasks started.
 #[derive(Clone)]
-pub struct TaskFloatStartedCounter { instrument: ::opentelemetry::metrics::Counter<f64> }
+pub struct TaskFloatStartedCounter {
+    instrument: ::opentelemetry::metrics::Counter<f64>,
+}
+
 impl TaskFloatStartedCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_counter("myapp.task.float.started")
@@ -223,10 +275,14 @@ impl TaskFloatStartedCounter {
         self.instrument.add(value, &attributes);
     }
 }
+
 impl Default for TaskFloatStartedCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct TaskFloatStartedCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<f64> }
+pub struct TaskFloatStartedCounterObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<f64>,
+}
+
 impl TaskFloatStartedCounterObserver<'_> {
     pub fn observe(&self, value: f64) {
         let attributes = [];
@@ -235,7 +291,10 @@ impl TaskFloatStartedCounterObserver<'_> {
 }
 
 #[derive(Clone)]
-pub struct TaskFloatStartedObservableCounter { _instrument: ::opentelemetry::metrics::ObservableCounter<f64> }
+pub struct TaskFloatStartedObservableCounter {
+    _instrument: ::opentelemetry::metrics::ObservableCounter<f64>,
+}
+
 impl TaskFloatStartedObservableCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(TaskFloatStartedCounterObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().f64_observable_counter("myapp.task.float.started")
@@ -246,12 +305,16 @@ impl TaskFloatStartedObservableCounter {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for TaskFloatStartedObservableCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }
 /// Task payload size.
 #[derive(Clone)]
-pub struct TaskPayloadHistogram { instrument: ::opentelemetry::metrics::Histogram<u64> }
+pub struct TaskPayloadHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<u64>,
+}
+
 impl TaskPayloadHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_histogram("myapp.task.payload")
@@ -266,6 +329,7 @@ impl TaskPayloadHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskPayloadHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
@@ -274,6 +338,7 @@ pub enum TaskRetryDurationHistogramAttr {
     /// Opt-in: the convention records it only when a user asks for it.
     Method(super::authattr::MethodAttr),
 }
+
 impl From<TaskRetryDurationHistogramAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskRetryDurationHistogramAttr) -> Self {
         match value {
@@ -285,7 +350,10 @@ impl From<TaskRetryDurationHistogramAttr> for ::opentelemetry::KeyValue {
 ///
 /// Recorded only for tasks that ran more than once.
 #[derive(Clone)]
-pub struct TaskRetryDurationHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct TaskRetryDurationHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl TaskRetryDurationHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("myapp.task.duration")
@@ -302,6 +370,7 @@ impl TaskRetryDurationHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskRetryDurationHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
@@ -310,6 +379,7 @@ pub enum TaskStartedCounterAttr {
     /// Recommended: When the scheduler assigned an id before the task started.
     TaskId(super::myappattr::TaskIdAttr),
 }
+
 impl From<TaskStartedCounterAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskStartedCounterAttr) -> Self {
         match value {
@@ -320,7 +390,10 @@ impl From<TaskStartedCounterAttr> for ::opentelemetry::KeyValue {
 /// Number of tasks started.
 /// Opt-in: record only when the user requests it.
 #[derive(Clone)]
-pub struct TaskStartedCounter { instrument: ::opentelemetry::metrics::Counter<u64> }
+pub struct TaskStartedCounter {
+    instrument: ::opentelemetry::metrics::Counter<u64>,
+}
+
 impl TaskStartedCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter("myapp.task.started")
@@ -335,10 +408,14 @@ impl TaskStartedCounter {
         self.instrument.add(value, &attributes);
     }
 }
+
 impl Default for TaskStartedCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct TaskStartedCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
+pub struct TaskStartedCounterObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64>,
+}
+
 impl TaskStartedCounterObserver<'_> {
     pub fn observe(&self, value: u64, options: impl IntoIterator<Item = TaskStartedCounterAttr>) {
         let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; 1]>::new();
@@ -348,7 +425,10 @@ impl TaskStartedCounterObserver<'_> {
 }
 
 #[derive(Clone)]
-pub struct TaskStartedObservableCounter { _instrument: ::opentelemetry::metrics::ObservableCounter<u64> }
+pub struct TaskStartedObservableCounter {
+    _instrument: ::opentelemetry::metrics::ObservableCounter<u64>,
+}
+
 impl TaskStartedObservableCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(TaskStartedCounterObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter("myapp.task.started")
@@ -359,6 +439,7 @@ impl TaskStartedObservableCounter {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for TaskStartedObservableCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }

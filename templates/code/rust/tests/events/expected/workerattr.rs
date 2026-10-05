@@ -15,6 +15,7 @@ impl From<::opentelemetry::StringValue> for HostNameAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for HostNameAttr {
     #[inline]

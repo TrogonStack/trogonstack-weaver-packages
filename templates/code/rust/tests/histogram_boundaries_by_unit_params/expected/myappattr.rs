@@ -15,6 +15,7 @@ impl From<::opentelemetry::StringValue> for TaskIdAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for TaskIdAttr {
     #[inline]

@@ -48,6 +48,7 @@ impl From<LevelAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// How the user was authenticated.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum MethodAttr {
@@ -104,6 +105,7 @@ impl From<MethodAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Identifier of the authenticated user.
 #[derive(Debug, Clone, PartialEq)]
 pub struct UserIdAttr(::opentelemetry::StringValue);
@@ -120,6 +122,7 @@ impl From<::opentelemetry::StringValue> for UserIdAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for UserIdAttr {
     #[inline]

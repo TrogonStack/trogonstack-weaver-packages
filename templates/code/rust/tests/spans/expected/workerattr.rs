@@ -15,6 +15,7 @@ impl From<::opentelemetry::StringValue> for HostNameAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for HostNameAttr {
     #[inline]
@@ -62,6 +63,7 @@ impl From<HostNameAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Port the worker listens on.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct HostPortAttr(i64);

@@ -1,7 +1,10 @@
 #![allow(deprecated)]
 /// Number of authentication attempts.
 #[derive(Clone)]
-pub struct AttemptsCounter { instrument: ::opentelemetry::metrics::Counter<u64> }
+pub struct AttemptsCounter {
+    instrument: ::opentelemetry::metrics::Counter<u64>,
+}
+
 impl AttemptsCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter("auth.attempts")
@@ -15,10 +18,14 @@ impl AttemptsCounter {
         self.instrument.add(value, &attributes);
     }
 }
+
 impl Default for AttemptsCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct AttemptsCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
+pub struct AttemptsCounterObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64>,
+}
+
 impl AttemptsCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#auth_method: super::authattr::MethodAttr, r#auth_success: super::authattr::SuccessAttr) {
         let attributes = [::opentelemetry::KeyValue::from(r#auth_method), ::opentelemetry::KeyValue::from(r#auth_success)];
@@ -27,7 +34,10 @@ impl AttemptsCounterObserver<'_> {
 }
 
 #[derive(Clone)]
-pub struct AttemptsObservableCounter { _instrument: ::opentelemetry::metrics::ObservableCounter<u64> }
+pub struct AttemptsObservableCounter {
+    _instrument: ::opentelemetry::metrics::ObservableCounter<u64>,
+}
+
 impl AttemptsObservableCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(AttemptsCounterObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter("auth.attempts")
@@ -38,6 +48,7 @@ impl AttemptsObservableCounter {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for AttemptsObservableCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }

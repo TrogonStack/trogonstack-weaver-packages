@@ -6,6 +6,7 @@ pub enum TaskDurationHistogramAttr {
     /// Conditionally required: If the task reached a final state.
     TaskState(super::myappattr::TaskStateAttr),
 }
+
 impl From<TaskDurationHistogramAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskDurationHistogramAttr) -> Self {
         match value {
@@ -18,7 +19,10 @@ impl From<TaskDurationHistogramAttr> for ::opentelemetry::KeyValue {
 ///
 /// Measured by the worker that ran the task.
 #[derive(Clone)]
-pub struct TaskDurationHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct TaskDurationHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl TaskDurationHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("myapp.task.duration")
@@ -35,6 +39,7 @@ impl TaskDurationHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskDurationHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }

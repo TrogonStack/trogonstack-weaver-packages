@@ -15,6 +15,7 @@ impl From<::opentelemetry::StringValue> for IdAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for IdAttr {
     #[inline]
@@ -62,6 +63,7 @@ impl From<IdAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Name of the host.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NameAttr(::opentelemetry::StringValue);
@@ -78,6 +80,7 @@ impl From<::opentelemetry::StringValue> for NameAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for NameAttr {
     #[inline]

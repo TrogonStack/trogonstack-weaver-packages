@@ -1,7 +1,10 @@
 #![allow(deprecated)]
 /// Time a task took from start to finish.
 #[derive(Clone)]
-pub struct TaskDurationHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct TaskDurationHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl TaskDurationHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("myapp.task.duration")
@@ -16,12 +19,16 @@ impl TaskDurationHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskDurationHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
 /// Time between a task being queued and started.
 #[derive(Clone)]
-pub struct TaskLatencyHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct TaskLatencyHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl TaskLatencyHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("myapp.task.latency")
@@ -36,12 +43,16 @@ impl TaskLatencyHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskLatencyHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
 /// Time a retried task took from start to finish.
 #[derive(Clone)]
-pub struct TaskRetryDurationHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct TaskRetryDurationHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl TaskRetryDurationHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("myapp.task.duration")
@@ -56,12 +67,16 @@ impl TaskRetryDurationHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskRetryDurationHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
 /// Size of a task's payload.
 #[derive(Clone)]
-pub struct TaskSizeHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct TaskSizeHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl TaskSizeHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("myapp.task.size")
@@ -75,6 +90,7 @@ impl TaskSizeHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for TaskSizeHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }

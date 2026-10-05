@@ -15,6 +15,7 @@ impl From<::opentelemetry::StringValue> for MessageAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for MessageAttr {
     #[inline]
@@ -62,6 +63,7 @@ impl From<MessageAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// The type of the exception.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TypeAttr(::opentelemetry::StringValue);
@@ -78,6 +80,7 @@ impl From<::opentelemetry::StringValue> for TypeAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for TypeAttr {
     #[inline]

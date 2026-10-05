@@ -55,6 +55,7 @@ impl From<MethodAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Whether the attempt succeeded.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct SuccessAttr(bool);

@@ -3,6 +3,7 @@
 pub enum UpstreamDurationHistogramAttr {
     ServerPort(i64),
 }
+
 impl From<UpstreamDurationHistogramAttr> for ::opentelemetry::KeyValue {
     fn from(value: UpstreamDurationHistogramAttr) -> Self {
         match value {
@@ -12,7 +13,10 @@ impl From<UpstreamDurationHistogramAttr> for ::opentelemetry::KeyValue {
 }
 /// Time spent waiting on an upstream server.
 #[derive(Clone)]
-pub struct UpstreamDurationHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct UpstreamDurationHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl UpstreamDurationHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("edge.upstream.duration")
@@ -29,6 +33,7 @@ impl UpstreamDurationHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for UpstreamDurationHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }

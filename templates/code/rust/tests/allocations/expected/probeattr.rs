@@ -39,6 +39,7 @@ impl From<FlagAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// A synthetic fractional value.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct FractionAttr(f64);
@@ -79,6 +80,7 @@ impl From<FractionAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// A synthetic text value.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LabelAttr(::opentelemetry::StringValue);
@@ -95,6 +97,7 @@ impl From<::opentelemetry::StringValue> for LabelAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for LabelAttr {
     #[inline]
@@ -142,6 +145,7 @@ impl From<LabelAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Optional numeric measurement identity.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct OptionalAttr(i64);
@@ -182,6 +186,7 @@ impl From<OptionalAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Required numeric measurement identity.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct RequiredAttr(i64);
@@ -222,6 +227,7 @@ impl From<RequiredAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Numeric values attached to an event.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ValuesAttr(Vec<i64>);

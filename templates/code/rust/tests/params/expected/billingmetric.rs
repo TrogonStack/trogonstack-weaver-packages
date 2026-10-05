@@ -4,6 +4,7 @@ pub enum InvoiceAmountHistogramAttr {
     Currency(super::billingattr::CurrencyAttr),
     RequestUrl(super::myappattr::RequestUrlAttr),
 }
+
 impl From<InvoiceAmountHistogramAttr> for ::opentelemetry::KeyValue {
     fn from(value: InvoiceAmountHistogramAttr) -> Self {
         match value {
@@ -14,7 +15,10 @@ impl From<InvoiceAmountHistogramAttr> for ::opentelemetry::KeyValue {
 }
 /// Amount of each issued invoice.
 #[derive(Clone)]
-pub struct InvoiceAmountHistogram { instrument: ::opentelemetry::metrics::Histogram<f64> }
+pub struct InvoiceAmountHistogram {
+    instrument: ::opentelemetry::metrics::Histogram<f64>,
+}
+
 impl InvoiceAmountHistogram {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram("acme.billing.invoice.amount")
@@ -30,6 +34,7 @@ impl InvoiceAmountHistogram {
         self.instrument.record(value, &attributes);
     }
 }
+
 impl Default for InvoiceAmountHistogram {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }

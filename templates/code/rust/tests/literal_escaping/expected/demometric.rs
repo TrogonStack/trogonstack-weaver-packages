@@ -1,7 +1,10 @@
 #![allow(deprecated)]
 /// literal \b \f \u1234
 #[derive(Clone)]
-pub struct LiteralCountCounter { instrument: ::opentelemetry::metrics::Counter<u64> }
+pub struct LiteralCountCounter {
+    instrument: ::opentelemetry::metrics::Counter<u64>,
+}
+
 impl LiteralCountCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter("demo.literal.count")
@@ -15,10 +18,14 @@ impl LiteralCountCounter {
         self.instrument.add(value, &attributes);
     }
 }
+
 impl Default for LiteralCountCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct LiteralCountCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
+pub struct LiteralCountCounterObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64>,
+}
+
 impl LiteralCountCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#demo_literal: super::demoattr::LiteralAttr) {
         let attributes = [::opentelemetry::KeyValue::from(r#demo_literal)];
@@ -27,7 +34,10 @@ impl LiteralCountCounterObserver<'_> {
 }
 
 #[derive(Clone)]
-pub struct LiteralCountObservableCounter { _instrument: ::opentelemetry::metrics::ObservableCounter<u64> }
+pub struct LiteralCountObservableCounter {
+    _instrument: ::opentelemetry::metrics::ObservableCounter<u64>,
+}
+
 impl LiteralCountObservableCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(LiteralCountCounterObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter("demo.literal.count")
@@ -38,6 +48,7 @@ impl LiteralCountObservableCounter {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for LiteralCountObservableCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }

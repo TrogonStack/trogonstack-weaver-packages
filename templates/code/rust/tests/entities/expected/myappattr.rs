@@ -40,6 +40,7 @@ impl From<HostCpuCountAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Name of the host.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HostNameAttr(::opentelemetry::StringValue);
@@ -56,6 +57,7 @@ impl From<::opentelemetry::StringValue> for HostNameAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for HostNameAttr {
     #[inline]
@@ -103,6 +105,7 @@ impl From<HostNameAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Role the host plays in the cluster.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HostRoleAttr(::opentelemetry::StringValue);
@@ -119,6 +122,7 @@ impl From<::opentelemetry::StringValue> for HostRoleAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for HostRoleAttr {
     #[inline]
@@ -166,6 +170,7 @@ impl From<HostRoleAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Type of the host.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum HostTypeAttr {
@@ -222,6 +227,7 @@ impl From<HostTypeAttr> for ::opentelemetry::logs::AnyValue {
         value.into()
     }
 }
+
 /// Name of the queue.
 #[derive(Debug, Clone, PartialEq)]
 pub struct QueueNameAttr(::opentelemetry::StringValue);
@@ -238,6 +244,7 @@ impl From<::opentelemetry::StringValue> for QueueNameAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for QueueNameAttr {
     #[inline]
@@ -285,6 +292,7 @@ impl From<QueueNameAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Number of items currently in the queue.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct QueueSizeAttr(i64);

@@ -15,6 +15,7 @@ impl From<::opentelemetry::StringValue> for Http2STATUSApiIDAttr {
         Self(value)
     }
 }
+
 #[allow(deprecated)]
 impl From<String> for Http2STATUSApiIDAttr {
     #[inline]
@@ -62,6 +63,7 @@ impl From<Http2STATUSApiIDAttr> for ::opentelemetry::logs::AnyValue {
         value.0.into()
     }
 }
+
 /// Synthetic mode.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Mode2STATEAttr {

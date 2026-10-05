@@ -3,6 +3,7 @@
 pub enum OptionalCounterAttr {
     Optional(super::probeattr::OptionalAttr),
 }
+
 impl From<OptionalCounterAttr> for ::opentelemetry::KeyValue {
     fn from(value: OptionalCounterAttr) -> Self {
         match value {
@@ -12,7 +13,10 @@ impl From<OptionalCounterAttr> for ::opentelemetry::KeyValue {
 }
 /// Measurements with optional numeric attributes.
 #[derive(Clone)]
-pub struct OptionalCounter { instrument: ::opentelemetry::metrics::Counter<u64> }
+pub struct OptionalCounter {
+    instrument: ::opentelemetry::metrics::Counter<u64>,
+}
+
 impl OptionalCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter("probe.optional")
@@ -28,10 +32,14 @@ impl OptionalCounter {
         self.instrument.add(value, &attributes);
     }
 }
+
 impl Default for OptionalCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct OptionalCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
+pub struct OptionalCounterObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64>,
+}
+
 impl OptionalCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#probe_required: super::probeattr::RequiredAttr, options: impl IntoIterator<Item = OptionalCounterAttr>) {
         let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; 2]>::new();
@@ -42,7 +50,10 @@ impl OptionalCounterObserver<'_> {
 }
 
 #[derive(Clone)]
-pub struct OptionalObservableCounter { _instrument: ::opentelemetry::metrics::ObservableCounter<u64> }
+pub struct OptionalObservableCounter {
+    _instrument: ::opentelemetry::metrics::ObservableCounter<u64>,
+}
+
 impl OptionalObservableCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(OptionalCounterObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter("probe.optional")
@@ -53,12 +64,16 @@ impl OptionalObservableCounter {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for OptionalObservableCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }
 /// Measurements with a required numeric attribute.
 #[derive(Clone)]
-pub struct RequiredCounter { instrument: ::opentelemetry::metrics::Counter<u64> }
+pub struct RequiredCounter {
+    instrument: ::opentelemetry::metrics::Counter<u64>,
+}
+
 impl RequiredCounter {
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter("probe.required")
@@ -72,10 +87,14 @@ impl RequiredCounter {
         self.instrument.add(value, &attributes);
     }
 }
+
 impl Default for RequiredCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-pub struct RequiredCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
+pub struct RequiredCounterObserver<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64>,
+}
+
 impl RequiredCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#probe_required: super::probeattr::RequiredAttr) {
         let attributes = [::opentelemetry::KeyValue::from(r#probe_required)];
@@ -84,7 +103,10 @@ impl RequiredCounterObserver<'_> {
 }
 
 #[derive(Clone)]
-pub struct RequiredObservableCounter { _instrument: ::opentelemetry::metrics::ObservableCounter<u64> }
+pub struct RequiredObservableCounter {
+    _instrument: ::opentelemetry::metrics::ObservableCounter<u64>,
+}
+
 impl RequiredObservableCounter {
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(RequiredCounterObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter("probe.required")
@@ -95,6 +117,7 @@ impl RequiredObservableCounter {
         Self { _instrument: instrument }
     }
 }
+
 impl Default for RequiredObservableCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
 }
