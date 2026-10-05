@@ -38,6 +38,7 @@ jobs:
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - run: mise run weaver:test:templates
       - run: mise run weaver:test:go
+      - run: mise run weaver:test:rust
 
   markdown:
     name: Markdown

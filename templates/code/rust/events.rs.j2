@@ -1,0 +1,62 @@
+{%- filter trim %}
+#![allow(deprecated)]
+use ::opentelemetry::logs::LogRecord;
+use ::opentelemetry::trace::TraceContextExt;
+
+{% import "signal_helpers.j2" as h %}
+{% for def in ctx.events %}
+{% set name = h.exported(def.short_name) or 'Event' %}
+#[derive(Clone, Debug)]
+pub enum {{ name }}Option {
+    Severity(::opentelemetry::logs::Severity),
+    Timestamp(::std::time::SystemTime),
+{% for opt in def.optional %}
+{% if opt.requirement_doc %}
+    {{ opt.requirement_doc | comment | indent(4) }}
+{% endif %}
+    {{ h.exported(opt.attr_short_name) }}({{ h.attr_type(opt) }}),
+{% endfor %}
+}
+{{ (h.docs(def) ~ "\n" ~ h.deprecated(def)) | trim }}
+pub fn {{ h.signal_fn('emit', def.short_name) }}<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}, options: impl IntoIterator<Item = {{ name }}Option>) {
+    let mut severity = ::opentelemetry::logs::Severity::Info;
+    let mut timestamp = None;
+{% if def.optional %}
+    let mut attributes = ::smallvec::SmallVec::<[{{ name }}Option; {{ [def.optional | length, 8] | min }}]>::new();
+{% endif %}
+    for option in options {
+        match option {
+            {{ name }}Option::Severity(value) => severity = value,
+            {{ name }}Option::Timestamp(value) => timestamp = Some(value),
+{% if def.optional %}
+            attribute => attributes.push(attribute),
+{% endif %}
+        }
+    }
+    if !logger.inner().event_enabled(severity, "", Some({{ h.literal(def.name) }})) { return; }
+    let _context_guard = context.clone().attach();
+    let mut record = logger.inner().create_log_record();
+    record.set_event_name({{ h.literal(def.name) }});
+    record.set_severity_number(severity);
+    record.set_observed_timestamp(::std::time::SystemTime::now());
+    if let Some(timestamp) = timestamp { record.set_timestamp(timestamp); }
+    let span = context.span();
+    let span_context = span.span_context();
+    if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
+{% for req in def.required %}
+    {{ h.attr_log("record", req, h.ident(req.attr_param)) }};
+{% endfor %}
+{% if def.optional %}
+    for option in attributes {
+        match option {
+{% for opt in def.optional %}
+            {{ name }}Option::{{ h.exported(opt.attr_short_name) }}(value) => {{ h.attr_log('record', opt, 'value') }},
+{% endfor %}
+            {{ name }}Option::Severity(_) | {{ name }}Option::Timestamp(_) => continue,
+        }
+    }
+{% endif %}
+    logger.inner().emit(record);
+}
+{% endfor %}
+{% endfilter -%}{{ "\n" -}}

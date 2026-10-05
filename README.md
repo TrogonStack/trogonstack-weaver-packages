@@ -6,7 +6,8 @@ is versioned and released from this repository, ready to be referenced by tag.
 
 **The packages turn a semantic convention registry into code and keep that
 registry fit for generation.** Templates generate typed telemetry helpers, such
-as Go attribute values and metric instruments on the OpenTelemetry Go API.
+as typed attribute values and signal helpers on the OpenTelemetry Go and
+Rust APIs.
 Policies run during `weaver registry check` and reject conventions a template
 cannot render, before any code is written.
 
@@ -28,6 +29,9 @@ checked telemetry instead of stringly typed calls.
 Templates live under [`templates`](templates) and policies under
 [`policies`](policies). Each package directory has a README describing what it
 does and the params it accepts.
+
+- [Go code generation](templates/code/go/README.md)
+- [Rust code generation](templates/code/rust/README.md)
 
 ## Using a package
 

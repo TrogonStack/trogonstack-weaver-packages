@@ -1,0 +1,70 @@
+file_format: definition/2
+attributes:
+  - key: probe.flag
+    type: boolean
+    stability: stable
+    brief: A synthetic boolean value.
+    examples: true
+  - key: probe.fraction
+    type: double
+    stability: stable
+    brief: A synthetic fractional value.
+    examples: 0.5
+  - key: probe.label
+    type: string
+    stability: stable
+    brief: A synthetic text value.
+    examples: ["label"]
+  - key: probe.required
+    type: int
+    stability: stable
+    brief: Required numeric measurement identity.
+    examples: 1
+  - key: probe.optional
+    type: int
+    stability: stable
+    brief: Optional numeric measurement identity.
+    examples: 2
+  - key: probe.values
+    type: int[]
+    stability: stable
+    brief: Numeric values attached to an event.
+    examples: [1, 2]
+metrics:
+  - name: probe.required
+    requirement_level: recommended
+    instrument: counter
+    unit: "{measurement}"
+    stability: stable
+    brief: Measurements with a required numeric attribute.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: probe.required
+        requirement_level: required
+  - name: probe.optional
+    requirement_level: recommended
+    instrument: counter
+    unit: "{measurement}"
+    stability: stable
+    brief: Measurements with optional numeric attributes.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: probe.required
+        requirement_level: required
+      - ref: probe.optional
+        requirement_level: recommended
+events:
+  - name: probe.recorded
+    stability: stable
+    brief: A measurement was recorded.
+    attributes:
+      - ref: probe.required
+        requirement_level: required
+      - ref: probe.optional
+        requirement_level: recommended
+      - ref: probe.values
+        requirement_level: recommended

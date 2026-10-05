@@ -1,0 +1,1 @@
+span myapp.task.run requires myapp.task.id, which exclude_deprecated or stable_only leaves out

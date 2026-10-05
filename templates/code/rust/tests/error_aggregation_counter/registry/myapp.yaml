@@ -1,0 +1,15 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.started
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks started.
+    annotations:
+      code_generation:
+        metric_value_type: int
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [1, 10]

@@ -1,0 +1,107 @@
+{%- filter trim %}
+#![allow(deprecated)]
+{% import "signal_helpers.j2" as h %}
+{% for def in ctx.metrics %}
+{% set suffix = def.instrument | map_text("metric_instrument") %}
+{% set name = h.exported(def.short_name) ~ suffix %}
+{% set method = 'add' if def.instrument in ['counter','updowncounter'] else 'record' %}
+{% set value_type = 'f64' if def.annotations.code_generation.metric_value_type == 'double' else ('i64' if def.instrument in ['updowncounter','gauge'] else 'u64') %}
+{% set builder = value_type ~ '_' ~ ('up_down_counter' if def.instrument == 'updowncounter' else def.instrument) %}
+{% if def.optional %}
+#[derive(Clone, Debug)]
+pub enum {{ name }}Attr {
+{% for opt in def.optional %}
+{% if opt.requirement_doc %}
+    {{ opt.requirement_doc | comment | indent(4) }}
+{% endif %}
+    {{ h.exported(opt.attr_short_name) }}({{ h.attr_type(opt) }}),
+{% endfor %}
+}
+
+impl From<{{ name }}Attr> for ::opentelemetry::KeyValue {
+    fn from(value: {{ name }}Attr) -> Self {
+        match value {
+{% for opt in def.optional %}
+            {{ name }}Attr::{{ h.exported(opt.attr_short_name) }}(value) => {{ h.attr_kv(opt, 'value') }},
+{% endfor %}
+        }
+    }
+}
+{% endif %}
+{{ (h.docs(def) ~ "\n" ~ h.deprecated(def)) | trim }}
+#[derive(Clone)]
+pub struct {{ name }} {
+    instrument: ::opentelemetry::metrics::{{ suffix }}<{{ value_type }}>,
+}
+
+impl {{ name }} {
+    pub fn new(meter: &super::meter::Meter) -> Self {
+        let instrument = meter.inner().{{ builder }}({{ h.literal(def.instrument_name) }})
+            .with_description({{ h.literal(def.description | trim) }})
+            .with_unit({{ h.literal(def.unit) }})
+{% if def.bucket_boundaries %}
+            .with_boundaries(vec![{% for bound in def.bucket_boundaries %}{{ bound }}_f64{% if not loop.last %}, {% endif %}{% endfor %}])
+{% endif %}
+            .build();
+        Self { instrument }
+    }
+    pub fn {{ method }}(&self, value: {{ value_type }}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}Attr>{% endif %}) {
+{% if def.optional %}
+        let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; {{ def.required | length + ([def.optional | length, 8] | min) }}]>::new();
+{% if def.required %}
+        attributes.extend([{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}]);
+{% endif %}
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
+{% else %}
+        let attributes = [{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
+{% endif %}
+        self.instrument.{{ method }}(value, &attributes);
+    }
+}
+
+impl Default for {{ name }} {
+    fn default() -> Self { Self::new(&super::meter::Meter::default()) }
+}
+{% if def.instrument != 'histogram' %}
+{% set observable = h.exported(def.short_name) ~ 'Observable' ~ suffix %}
+pub struct {{ name }}Observer<'a> {
+    observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<{{ value_type }}>,
+}
+
+impl {{ name }}Observer<'_> {
+    pub fn observe(&self, value: {{ value_type }}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}Attr>{% endif %}) {
+{% if def.optional %}
+        let mut attributes = ::smallvec::SmallVec::<[::opentelemetry::KeyValue; {{ def.required | length + ([def.optional | length, 8] | min) }}]>::new();
+{% if def.required %}
+        attributes.extend([{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}]);
+{% endif %}
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
+{% else %}
+        let attributes = [{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
+{% endif %}
+        self.observer.observe(value, &attributes);
+    }
+}
+{{ h.deprecated(def) }}
+#[derive(Clone)]
+pub struct {{ observable }} {
+    _instrument: ::opentelemetry::metrics::Observable{{ suffix }}<{{ value_type }}>,
+}
+
+impl {{ observable }} {
+    pub fn new(meter: &super::meter::Meter, callback: impl Fn({{ name }}Observer<'_>) + Send + Sync + 'static) -> Self {
+        let instrument = meter.inner().{{ value_type }}_observable_{{ 'up_down_counter' if def.instrument == 'updowncounter' else def.instrument }}({{ h.literal(def.instrument_name) }})
+            .with_description({{ h.literal(def.description | trim) }})
+            .with_unit({{ h.literal(def.unit) }})
+            .with_callback(move |observer| callback({{ name }}Observer { observer }))
+            .build();
+        Self { _instrument: instrument }
+    }
+}
+
+impl Default for {{ observable }} {
+    fn default() -> Self { Self::new(&super::meter::Meter::default(), |_| {}) }
+}
+{% endif %}
+{% endfor %}
+{% endfilter -%}{{ "\n" -}}

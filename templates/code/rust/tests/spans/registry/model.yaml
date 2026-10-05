@@ -1,0 +1,188 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The task is waiting to run.
+        - id: done
+          value: done
+          stability: stable
+          brief: The task finished.
+    stability: stable
+    brief: Current state of the task.
+  - key: myapp.task.attempt
+    type: int
+    stability: stable
+    brief: Number of the attempt, starting at one.
+    examples: 1
+  - key: myapp.queue.name
+    type: string
+    stability: stable
+    brief: Name of the queue the task came from.
+    examples: ["reports"]
+  - key: worker.host.name
+    type: string
+    stability: stable
+    brief: Host name of the worker.
+    examples: ["worker-1"]
+  - key: worker.host.port
+    type: int
+    stability: stable
+    brief: Port the worker listens on.
+    examples: 8080
+  - key: myapp.number.value
+    type: double
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [1.5]
+  - key: myapp.array.flags
+    type: boolean[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [[true]]
+  - key: myapp.array.indices
+    type: int[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [[1]]
+  - key: myapp.array.samples
+    type: double[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [[1.5]]
+  - key: myapp.array.tags
+    type: string[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [["a"]]
+spans:
+  - type: myapp.task.dispatch
+    kind: client
+    requirement_level: recommended
+    stability: stable
+    brief: The scheduler handing a task to a worker.
+    note: Ends when the worker accepts the task.
+    name:
+      note: "`dispatch {worker.host.name}:{worker.host.port}`"
+    attributes:
+      - ref: worker.host.name
+        requirement_level: required
+      - ref: worker.host.port
+        requirement_level: required
+      - ref: myapp.task.id
+        requirement_level: recommended
+        sampling_relevant: true
+      - ref: myapp.queue.name
+        requirement_level:
+          recommended: When the task came from a named queue.
+      - ref: myapp.task.attempt
+        requirement_level: opt_in
+  - type: myapp.task.run
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: One run of a task.
+    name:
+      note: "`run {myapp.task.id}`"
+    attributes:
+      - ref: myapp.task.state
+        requirement_level: required
+      - ref: myapp.task.id
+        requirement_level: recommended
+  - type: myapp.queue.drain
+    kind: consumer
+    requirement_level: opt_in
+    stability: development
+    brief: Removing every task from a queue.
+    name:
+      note: "`drain` followed by the queue's name, such as `drain reports`."
+    deprecated:
+      reason: obsoleted
+      note: Drain queues by dispatching their tasks instead.
+  - type: myapp.name.apostrophe
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: Synthetic escaped name.
+    name:
+      note: "`'{worker.host.port}`"
+    attributes:
+      - ref: worker.host.port
+        requirement_level: required
+  - type: myapp.name.backslash
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: Synthetic escaped name.
+    name:
+      note: "`\\{worker.host.port}`"
+    attributes:
+      - ref: worker.host.port
+        requirement_level: required
+  - type: myapp.name.unicode
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: Synthetic escaped name.
+    name:
+      note: "`é{worker.host.port}`"
+    attributes:
+      - ref: worker.host.port
+        requirement_level: required
+  - type: myapp.name.control
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: Synthetic escaped name.
+    name:
+      note: "`\b{worker.host.port}`"
+    attributes:
+      - ref: worker.host.port
+        requirement_level: required
+  - type: myapp.name.float
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A span named from a floating point value.
+    name:
+      note: "`{myapp.number.value}`"
+    attributes:
+      - ref: myapp.number.value
+        requirement_level: required
+  - type: myapp.name.arrays
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A span named from array values.
+    name:
+      note: "`{myapp.array.tags}:{myapp.array.indices}:{myapp.array.samples}:{myapp.array.flags}`"
+    attributes:
+      - ref: myapp.array.tags
+        requirement_level: required
+      - ref: myapp.array.indices
+        requirement_level: required
+      - ref: myapp.array.samples
+        requirement_level: required
+      - ref: myapp.array.flags
+        requirement_level: required
+  - type: myapp.name.static
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A span with an unconstrained caller supplied name.
+    name:
+      note: "`static`"
+span_refinements:
+  - id: worker.task.dispatch
+    ref: myapp.task.dispatch
+    attributes:
+      - ref: myapp.task.attempt
+        requirement_level: required

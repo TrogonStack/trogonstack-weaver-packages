@@ -1,0 +1,18 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.started
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks started.
+    annotations:
+      code_generation:
+        metric_value_type: int
+  - name: myapp.task_started
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks started, under another name.
+    annotations:
+      code_generation:
+        metric_value_type: int

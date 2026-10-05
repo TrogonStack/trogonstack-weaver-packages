@@ -1,0 +1,1 @@
+metric myapp.task.started has optional attributes that render to the same Rust identifier: myapp.task.id and queue.task.id

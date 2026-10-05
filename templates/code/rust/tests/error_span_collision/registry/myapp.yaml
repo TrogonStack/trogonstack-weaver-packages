@@ -1,0 +1,16 @@
+file_format: definition/2
+spans:
+  - type: myapp.task.run
+    kind: internal
+    name:
+      note: ""
+    requirement_level: recommended
+    stability: stable
+    brief: One run of a task.
+  - type: myapp.task_run
+    kind: internal
+    name:
+      note: ""
+    requirement_level: recommended
+    stability: stable
+    brief: One run of a task, under another name.

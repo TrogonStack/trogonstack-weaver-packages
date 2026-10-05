@@ -1,0 +1,28 @@
+file_format: definition/2
+attributes:
+  - key: demo.literal
+    stability: stable
+    brief: Literal escape sequences.
+    type:
+      members:
+        - id: literal
+          value: 'backspace\b formfeed\f unicode\u1234 doubled\\b tripled\\\u0000'
+          stability: stable
+          brief: Literal escape sequences.
+        - id: controls
+          value: "backspace\b formfeed\f unicode\u0001 slash\\b"
+          stability: stable
+          brief: Actual controls and escaped text.
+metrics:
+  - name: demo.literal.count
+    instrument: counter
+    unit: 'literal\b\u1234'
+    stability: stable
+    requirement_level: recommended
+    brief: 'literal \b \f \u1234'
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: demo.literal
+        requirement_level: required

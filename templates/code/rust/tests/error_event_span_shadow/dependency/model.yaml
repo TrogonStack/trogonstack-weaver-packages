@@ -1,0 +1,7 @@
+file_format: definition/2
+attributes:
+  - key: span
+    type: int
+    stability: stable
+    brief: A synthetic numeric span attribute.
+    examples: 1

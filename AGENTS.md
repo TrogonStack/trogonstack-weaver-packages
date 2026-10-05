@@ -38,6 +38,10 @@ Each template package includes:
 Generated Go must pass `gofmt`, `go build`, and `go vet`, which
 `mise run weaver:test:go` checks.
 
+Generated Rust must pass formatting, consumer tests, and Clippy, which
+`mise run weaver:test:rust` checks against the pinned OpenTelemetry Rust API
+and SDK.
+
 ## Contribution guidelines
 
 - Keep changes to the package being modified.

@@ -1,0 +1,1 @@
+package exceptionevent has events that render to the same Rust identifier

@@ -1,0 +1,15 @@
+file_format: definition/2
+attributes:
+  - key: demo.boundary
+    stability: stable
+    brief: Synthetic integer limits.
+    type:
+      members:
+        - id: minimum
+          value: -9223372036854775808
+          stability: stable
+          brief: Lowest signed 64-bit integer.
+        - id: maximum
+          value: 9223372036854775807
+          stability: stable
+          brief: Highest signed 64-bit integer.

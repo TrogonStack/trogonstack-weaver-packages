@@ -1,0 +1,35 @@
+file_format: definition/2
+attributes:
+  - key: demo.kept
+    type: string
+    stability: stable
+    brief: Synthetic kept attribute.
+    annotations:
+      code_generation:
+        exclude: false
+  - key: demo.hidden
+    type: string
+    stability: stable
+    brief: Synthetic excluded attribute.
+    annotations:
+      code_generation:
+        exclude: true
+  - key: demo.mode
+    type:
+      members:
+        - id: kept
+          value: kept
+          stability: stable
+          brief: Included mode.
+          annotations:
+            code_generation:
+              exclude: false
+        - id: hidden
+          value: hidden
+          stability: stable
+          brief: Excluded mode.
+          annotations:
+            code_generation:
+              exclude: true
+    stability: stable
+    brief: Synthetic mode.

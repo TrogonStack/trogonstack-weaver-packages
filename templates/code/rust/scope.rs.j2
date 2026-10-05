@@ -1,0 +1,19 @@
+{%- filter trim %}
+{% import "signal_helpers.j2" as h %}
+#[derive(Clone, Debug, Default)]
+pub struct Scope {
+    pub attributes: Vec<::opentelemetry::KeyValue>,
+}
+
+impl From<Scope> for ::opentelemetry::InstrumentationScope {
+    fn from(value: Scope) -> Self {
+        Self::builder({{ h.literal(params.instrumentation_name) }})
+{% if params.instrumentation_version %}
+            .with_version({{ h.literal(params.instrumentation_version) }})
+{% endif %}
+            .with_schema_url(super::SCHEMA_URL)
+            .with_attributes(value.attributes)
+            .build()
+    }
+}
+{% endfilter -%}{{ "\n" -}}

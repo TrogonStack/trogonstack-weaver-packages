@@ -55,6 +55,11 @@ Run `mise tasks` to list every task and what it does.
 Every test must pass before a pull request is merged. The `Checks` workflow
 runs the same tasks.
 
+For Rust packages, `mise run weaver:test:rust` compiles the expected output in
+temporary crates and runs formatting, consumer tests, and Clippy. Put consumer
+tests in a case's `test.rs`, importing the generated crate as
+`generated_semconv`.
+
 Keep test registries synthetic. Use neutral namespaces such as `myapp` and
 `auth` rather than conventions from a real system.
 
