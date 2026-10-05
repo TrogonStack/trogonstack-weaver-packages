@@ -12,7 +12,7 @@ pub fn r#emit_task_errored<L: ::opentelemetry::logs::Logger>(context: &::opentel
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let mut attributes: Vec<::opentelemetry::KeyValue> = vec![r#error_type.key_value()];
+    let mut attributes: Vec<::opentelemetry::KeyValue> = vec![::opentelemetry::KeyValue::from(r#error_type)];
     for option in options {
         match option {
             TaskErroredOption::Severity(value) => severity = value,

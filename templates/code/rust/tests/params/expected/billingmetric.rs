@@ -4,11 +4,11 @@ pub enum InvoiceAmountHistogramAttr {
     Currency(super::billingattr::CurrencyAttr),
     RequestUrl(super::myappattr::RequestUrlAttr),
 }
-impl InvoiceAmountHistogramAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::Currency(value) => value.key_value(),
-            Self::RequestUrl(value) => value.key_value(),
+impl From<InvoiceAmountHistogramAttr> for ::opentelemetry::KeyValue {
+    fn from(value: InvoiceAmountHistogramAttr) -> Self {
+        match value {
+            InvoiceAmountHistogramAttr::Currency(value) => ::opentelemetry::KeyValue::from(value),
+            InvoiceAmountHistogramAttr::RequestUrl(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -23,8 +23,8 @@ impl InvoiceAmountHistogram {
             .build() }
     }
     pub fn record(&self, value: f64, r#billing_invoice_id: super::billingattr::InvoiceIdAttr, options: impl IntoIterator<Item = InvoiceAmountHistogramAttr>) {
-        let mut attributes = vec![r#billing_invoice_id.key_value()];
-        attributes.extend(options.into_iter().map(InvoiceAmountHistogramAttr::key_value));
+        let mut attributes = vec![::opentelemetry::KeyValue::from(r#billing_invoice_id)];
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.record(value, &attributes);
     }
 }

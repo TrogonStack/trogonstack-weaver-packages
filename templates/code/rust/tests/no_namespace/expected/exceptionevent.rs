@@ -12,12 +12,12 @@ pub fn r#emit_<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Cont
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let mut attributes: Vec<::opentelemetry::KeyValue> = vec![r#exception_type.key_value()];
+    let mut attributes: Vec<::opentelemetry::KeyValue> = vec![::opentelemetry::KeyValue::from(r#exception_type)];
     for option in options {
         match option {
             Option::Severity(value) => severity = value,
             Option::Timestamp(value) => timestamp = Some(value),
-            Option::Message(value) => attributes.push(value.key_value()),
+            Option::Message(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("exception")) { return; }

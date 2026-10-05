@@ -11,7 +11,7 @@ impl TaskDurationHistogram {
             .build() }
     }
     pub fn record(&self, value: f64, r#myapp_task_id: super::myappattr::TaskIdAttr) {
-        let attributes = vec![r#myapp_task_id.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_id)];
         self.instrument.record(value, &attributes);
     }
 }
@@ -30,7 +30,7 @@ impl TaskLatencyHistogram {
             .build() }
     }
     pub fn record(&self, value: f64, r#myapp_task_id: super::myappattr::TaskIdAttr) {
-        let attributes = vec![r#myapp_task_id.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_id)];
         self.instrument.record(value, &attributes);
     }
 }
@@ -49,7 +49,7 @@ impl TaskRetryDurationHistogram {
             .build() }
     }
     pub fn record(&self, value: f64, r#myapp_task_id: super::myappattr::TaskIdAttr) {
-        let attributes = vec![r#myapp_task_id.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_id)];
         self.instrument.record(value, &attributes);
     }
 }
@@ -67,7 +67,7 @@ impl TaskSizeHistogram {
             .build() }
     }
     pub fn record(&self, value: f64, r#myapp_task_id: super::myappattr::TaskIdAttr) {
-        let attributes = vec![r#myapp_task_id.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_id)];
         self.instrument.record(value, &attributes);
     }
 }

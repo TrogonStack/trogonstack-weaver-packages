@@ -10,7 +10,7 @@ impl AttemptsCounter {
             .build() }
     }
     pub fn add(&self, value: u64, r#auth_method: super::authattr::MethodAttr, r#auth_success: super::authattr::SuccessAttr) {
-        let attributes = vec![r#auth_method.key_value(), r#auth_success.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#auth_method), ::opentelemetry::KeyValue::from(r#auth_success)];
         self.instrument.add(value, &attributes);
     }
 }
@@ -20,7 +20,7 @@ impl Default for AttemptsCounter {
 pub struct AttemptsCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
 impl AttemptsCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#auth_method: super::authattr::MethodAttr, r#auth_success: super::authattr::SuccessAttr) {
-        let attributes = vec![r#auth_method.key_value(), r#auth_success.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#auth_method), ::opentelemetry::KeyValue::from(r#auth_success)];
         self.observer.observe(value, &attributes);
     }
 }

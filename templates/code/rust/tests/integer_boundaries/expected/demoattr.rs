@@ -11,19 +11,15 @@ pub enum BoundaryAttr {
 #[allow(deprecated)]
 impl BoundaryAttr {
     pub const KEY: &'static str = "demo.boundary";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: i64 = match self {
-            Self::Minimum => -9223372036854775808,
-            Self::Maximum => 9223372036854775807,
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<BoundaryAttr> for ::opentelemetry::KeyValue {
     fn from(value: BoundaryAttr) -> Self {
-        value.key_value()
+        let value: i64 = match value {
+            BoundaryAttr::Minimum => -9223372036854775808,
+            BoundaryAttr::Maximum => 9223372036854775807,
+        };
+        ::opentelemetry::KeyValue::new(BoundaryAttr::KEY, value)
     }
 }

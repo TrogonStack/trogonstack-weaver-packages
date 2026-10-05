@@ -10,7 +10,7 @@ impl LiteralCountCounter {
             .build() }
     }
     pub fn add(&self, value: u64, r#demo_literal: super::demoattr::LiteralAttr) {
-        let attributes = vec![r#demo_literal.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#demo_literal)];
         self.instrument.add(value, &attributes);
     }
 }
@@ -20,7 +20,7 @@ impl Default for LiteralCountCounter {
 pub struct LiteralCountCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
 impl LiteralCountCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#demo_literal: super::demoattr::LiteralAttr) {
-        let attributes = vec![r#demo_literal.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#demo_literal)];
         self.observer.observe(value, &attributes);
     }
 }

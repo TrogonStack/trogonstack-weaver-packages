@@ -50,16 +50,16 @@ pub fn r#emit_task_finished<L: ::opentelemetry::logs::Logger>(context: &::opente
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let mut attributes: Vec<::opentelemetry::KeyValue> = vec![r#myapp_task_state.key_value(), r#worker_host_name.key_value()];
+    let mut attributes: Vec<::opentelemetry::KeyValue> = vec![::opentelemetry::KeyValue::from(r#myapp_task_state), ::opentelemetry::KeyValue::from(r#worker_host_name)];
     for option in options {
         match option {
             TaskFinishedOption::Severity(value) => severity = value,
             TaskFinishedOption::Timestamp(value) => timestamp = Some(value),
-            TaskFinishedOption::BoolValues(value) => attributes.push(value.key_value()),
-            TaskFinishedOption::DoubleValues(value) => attributes.push(value.key_value()),
-            TaskFinishedOption::IntValues(value) => attributes.push(value.key_value()),
-            TaskFinishedOption::StringValues(value) => attributes.push(value.key_value()),
-            TaskFinishedOption::TaskAttempt(value) => attributes.push(value.key_value()),
+            TaskFinishedOption::BoolValues(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
+            TaskFinishedOption::DoubleValues(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
+            TaskFinishedOption::IntValues(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
+            TaskFinishedOption::StringValues(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
+            TaskFinishedOption::TaskAttempt(value) => attributes.push(::opentelemetry::KeyValue::from(value)),
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("worker.task.finished")) { return; }

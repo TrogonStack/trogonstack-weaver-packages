@@ -7,11 +7,11 @@ pub enum HostEntityAttr {
     HostType(super::myappattr::HostTypeAttr),
 }
 
-impl HostEntityAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::HostCpuCount(value) => value.key_value(),
-            Self::HostType(value) => value.key_value(),
+impl From<HostEntityAttr> for ::opentelemetry::KeyValue {
+    fn from(value: HostEntityAttr) -> Self {
+        match value {
+            HostEntityAttr::HostCpuCount(value) => ::opentelemetry::KeyValue::from(value),
+            HostEntityAttr::HostType(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -28,9 +28,9 @@ pub struct HostEntity {
 impl HostEntity {
     pub fn new(r#myapp_host_name: super::myappattr::HostNameAttr, options: impl IntoIterator<Item = HostEntityAttr>) -> Self {
         let mut attributes = vec![
-            r#myapp_host_name.key_value(),
+            ::opentelemetry::KeyValue::from(r#myapp_host_name),
         ];
-        attributes.extend(options.into_iter().map(HostEntityAttr::key_value));
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         Self { attributes }
     }
 
@@ -51,11 +51,11 @@ pub enum HostWorkerEntityAttr {
     HostType(super::myappattr::HostTypeAttr),
 }
 
-impl HostWorkerEntityAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::HostCpuCount(value) => value.key_value(),
-            Self::HostType(value) => value.key_value(),
+impl From<HostWorkerEntityAttr> for ::opentelemetry::KeyValue {
+    fn from(value: HostWorkerEntityAttr) -> Self {
+        match value {
+            HostWorkerEntityAttr::HostCpuCount(value) => ::opentelemetry::KeyValue::from(value),
+            HostWorkerEntityAttr::HostType(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -73,10 +73,10 @@ pub struct HostWorkerEntity {
 impl HostWorkerEntity {
     pub fn new(r#myapp_host_name: super::myappattr::HostNameAttr, r#myapp_host_role: super::myappattr::HostRoleAttr, options: impl IntoIterator<Item = HostWorkerEntityAttr>) -> Self {
         let mut attributes = vec![
-            r#myapp_host_name.key_value(),
-            r#myapp_host_role.key_value(),
+            ::opentelemetry::KeyValue::from(r#myapp_host_name),
+            ::opentelemetry::KeyValue::from(r#myapp_host_role),
         ];
-        attributes.extend(options.into_iter().map(HostWorkerEntityAttr::key_value));
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         Self { attributes }
     }
 
@@ -95,10 +95,10 @@ pub enum QueueEntityAttr {
     QueueSize(super::myappattr::QueueSizeAttr),
 }
 
-impl QueueEntityAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::QueueSize(value) => value.key_value(),
+impl From<QueueEntityAttr> for ::opentelemetry::KeyValue {
+    fn from(value: QueueEntityAttr) -> Self {
+        match value {
+            QueueEntityAttr::QueueSize(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -113,9 +113,9 @@ pub struct QueueEntity {
 impl QueueEntity {
     pub fn new(r#myapp_queue_name: super::myappattr::QueueNameAttr, options: impl IntoIterator<Item = QueueEntityAttr>) -> Self {
         let mut attributes = vec![
-            r#myapp_queue_name.key_value(),
+            ::opentelemetry::KeyValue::from(r#myapp_queue_name),
         ];
-        attributes.extend(options.into_iter().map(QueueEntityAttr::key_value));
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         Self { attributes }
     }
 

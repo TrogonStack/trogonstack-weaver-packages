@@ -6,10 +6,6 @@ pub struct HostNameAttr(String);
 #[allow(deprecated)]
 impl HostNameAttr {
     pub const KEY: &'static str = "worker.host.name";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -28,7 +24,7 @@ impl From<&str> for HostNameAttr {
 #[allow(deprecated)]
 impl From<HostNameAttr> for ::opentelemetry::KeyValue {
     fn from(value: HostNameAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(HostNameAttr::KEY, value.0)
     }
 }
 /// Port the worker listens on.
@@ -38,10 +34,6 @@ pub struct HostPortAttr(i64);
 #[allow(deprecated)]
 impl HostPortAttr {
     pub const KEY: &'static str = "worker.host.port";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -54,6 +46,6 @@ impl From<i64> for HostPortAttr {
 #[allow(deprecated)]
 impl From<HostPortAttr> for ::opentelemetry::KeyValue {
     fn from(value: HostPortAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(HostPortAttr::KEY, value.0)
     }
 }

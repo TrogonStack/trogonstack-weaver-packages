@@ -3,10 +3,10 @@
 pub enum TaskFailedCounterAttr {
     ServerPort(i64),
 }
-impl TaskFailedCounterAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::ServerPort(value) => ::opentelemetry::KeyValue::new("server.port", value),
+impl From<TaskFailedCounterAttr> for ::opentelemetry::KeyValue {
+    fn from(value: TaskFailedCounterAttr) -> Self {
+        match value {
+            TaskFailedCounterAttr::ServerPort(value) => ::opentelemetry::KeyValue::new("server.port", value),
         }
     }
 }
@@ -21,8 +21,8 @@ impl TaskFailedCounter {
             .build() }
     }
     pub fn add(&self, value: u64, r#error_type: upstream::errorattr::TypeAttr, r#myapp_task_id: super::myappattr::TaskIdAttr, options: impl IntoIterator<Item = TaskFailedCounterAttr>) {
-        let mut attributes = vec![r#error_type.key_value(), r#myapp_task_id.key_value()];
-        attributes.extend(options.into_iter().map(TaskFailedCounterAttr::key_value));
+        let mut attributes = vec![::opentelemetry::KeyValue::from(r#error_type), ::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.add(value, &attributes);
     }
 }
@@ -32,8 +32,8 @@ impl Default for TaskFailedCounter {
 pub struct TaskFailedCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
 impl TaskFailedCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#error_type: upstream::errorattr::TypeAttr, r#myapp_task_id: super::myappattr::TaskIdAttr, options: impl IntoIterator<Item = TaskFailedCounterAttr>) {
-        let mut attributes = vec![r#error_type.key_value(), r#myapp_task_id.key_value()];
-        attributes.extend(options.into_iter().map(TaskFailedCounterAttr::key_value));
+        let mut attributes = vec![::opentelemetry::KeyValue::from(r#error_type), ::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.observer.observe(value, &attributes);
     }
 }

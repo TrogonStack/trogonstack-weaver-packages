@@ -11,20 +11,16 @@ pub enum MethodAttr {
 #[allow(deprecated)]
 impl MethodAttr {
     pub const KEY: &'static str = "auth.method";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: String = match self {
-            Self::Password => "password".into(),
-            Self::Token => "token".into(),
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<MethodAttr> for ::opentelemetry::KeyValue {
     fn from(value: MethodAttr) -> Self {
-        value.key_value()
+        let value: String = match value {
+            MethodAttr::Password => "password".into(),
+            MethodAttr::Token => "token".into(),
+        };
+        ::opentelemetry::KeyValue::new(MethodAttr::KEY, value)
     }
 }
 /// Whether the attempt succeeded.
@@ -34,10 +30,6 @@ pub struct SuccessAttr(bool);
 #[allow(deprecated)]
 impl SuccessAttr {
     pub const KEY: &'static str = "auth.success";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -50,6 +42,6 @@ impl From<bool> for SuccessAttr {
 #[allow(deprecated)]
 impl From<SuccessAttr> for ::opentelemetry::KeyValue {
     fn from(value: SuccessAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(SuccessAttr::KEY, value.0)
     }
 }

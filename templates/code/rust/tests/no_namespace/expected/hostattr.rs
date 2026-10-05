@@ -6,10 +6,6 @@ pub struct IdAttr(String);
 #[allow(deprecated)]
 impl IdAttr {
     pub const KEY: &'static str = "host.id";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -28,7 +24,7 @@ impl From<&str> for IdAttr {
 #[allow(deprecated)]
 impl From<IdAttr> for ::opentelemetry::KeyValue {
     fn from(value: IdAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(IdAttr::KEY, value.0)
     }
 }
 /// Name of the host.
@@ -38,10 +34,6 @@ pub struct NameAttr(String);
 #[allow(deprecated)]
 impl NameAttr {
     pub const KEY: &'static str = "host.name";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -60,6 +52,6 @@ impl From<&str> for NameAttr {
 #[allow(deprecated)]
 impl From<NameAttr> for ::opentelemetry::KeyValue {
     fn from(value: NameAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(NameAttr::KEY, value.0)
     }
 }

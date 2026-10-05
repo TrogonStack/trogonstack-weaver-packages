@@ -6,10 +6,6 @@ pub struct SequenceAttr(i64);
 #[allow(deprecated)]
 impl SequenceAttr {
     pub const KEY: &'static str = "heartbeat.sequence";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -22,7 +18,7 @@ impl From<i64> for SequenceAttr {
 #[allow(deprecated)]
 impl From<SequenceAttr> for ::opentelemetry::KeyValue {
     fn from(value: SequenceAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(SequenceAttr::KEY, value.0)
     }
 }
 /// Name of the component that sent the heartbeat.
@@ -32,10 +28,6 @@ pub struct SourceAttr(String);
 #[allow(deprecated)]
 impl SourceAttr {
     pub const KEY: &'static str = "heartbeat.source";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -54,6 +46,6 @@ impl From<&str> for SourceAttr {
 #[allow(deprecated)]
 impl From<SourceAttr> for ::opentelemetry::KeyValue {
     fn from(value: SourceAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(SourceAttr::KEY, value.0)
     }
 }

@@ -6,7 +6,7 @@ use opentelemetry::KeyValue;
 fn names_preserve_capitalization_and_digits_in_attributes_and_signals() {
     let identifier = capsattr::Http2STATUSApiIDAttr::from("value");
     assert_eq!(
-        identifier.clone().key_value(),
+        KeyValue::from(identifier.clone()),
         KeyValue::new("caps.http2_STATUS.api_ID", "value")
     );
     let mode = capsattr::Mode2STATEAttr::HTTP2ReadySTATE;

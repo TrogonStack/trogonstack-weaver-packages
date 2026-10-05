@@ -4,11 +4,11 @@ use opentelemetry::{KeyValue, Value};
 #[test]
 fn vendor_prefix_changes_types_but_preserves_telemetry_keys() {
     assert_eq!(
-        IdAttr::from("task").key_value(),
+        ::opentelemetry::KeyValue::from(IdAttr::from("task")),
         KeyValue::new("myapp.task.id", "task")
     );
     assert_eq!(
-        StateAttr::Queued.key_value().value,
+        ::opentelemetry::KeyValue::from(StateAttr::Queued).value,
         Value::String("queued".into())
     );
 }

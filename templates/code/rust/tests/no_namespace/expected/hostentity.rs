@@ -5,10 +5,10 @@ pub enum EntityAttr {
     Name(super::hostattr::NameAttr),
 }
 
-impl EntityAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::Name(value) => value.key_value(),
+impl From<EntityAttr> for ::opentelemetry::KeyValue {
+    fn from(value: EntityAttr) -> Self {
+        match value {
+            EntityAttr::Name(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -23,9 +23,9 @@ pub struct Entity {
 impl Entity {
     pub fn new(r#host_id: super::hostattr::IdAttr, options: impl IntoIterator<Item = EntityAttr>) -> Self {
         let mut attributes = vec![
-            r#host_id.key_value(),
+            ::opentelemetry::KeyValue::from(r#host_id),
         ];
-        attributes.extend(options.into_iter().map(EntityAttr::key_value));
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         Self { attributes }
     }
 

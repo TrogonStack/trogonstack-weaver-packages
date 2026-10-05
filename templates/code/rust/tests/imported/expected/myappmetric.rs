@@ -3,10 +3,10 @@
 pub enum TaskFailedCounterAttr {
     HttpRequestMethodList(Vec<String>),
 }
-impl TaskFailedCounterAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::HttpRequestMethodList(value) => ::opentelemetry::KeyValue::new("http.request.method_list", ::opentelemetry::Value::Array(::opentelemetry::Array::String(value.into_iter().map(Into::into).collect()))),
+impl From<TaskFailedCounterAttr> for ::opentelemetry::KeyValue {
+    fn from(value: TaskFailedCounterAttr) -> Self {
+        match value {
+            TaskFailedCounterAttr::HttpRequestMethodList(value) => ::opentelemetry::KeyValue::new("http.request.method_list", ::opentelemetry::Value::Array(::opentelemetry::Array::String(value.into_iter().map(Into::into).collect()))),
         }
     }
 }
@@ -21,8 +21,8 @@ impl TaskFailedCounter {
             .build() }
     }
     pub fn add(&self, value: u64, r#error_type: String, r#myapp_task_id: super::myappattr::TaskIdAttr, options: impl IntoIterator<Item = TaskFailedCounterAttr>) {
-        let mut attributes = vec![::opentelemetry::KeyValue::new("error.type", r#error_type), r#myapp_task_id.key_value()];
-        attributes.extend(options.into_iter().map(TaskFailedCounterAttr::key_value));
+        let mut attributes = vec![::opentelemetry::KeyValue::new("error.type", r#error_type), ::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.add(value, &attributes);
     }
 }
@@ -32,8 +32,8 @@ impl Default for TaskFailedCounter {
 pub struct TaskFailedCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
 impl TaskFailedCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#error_type: String, r#myapp_task_id: super::myappattr::TaskIdAttr, options: impl IntoIterator<Item = TaskFailedCounterAttr>) {
-        let mut attributes = vec![::opentelemetry::KeyValue::new("error.type", r#error_type), r#myapp_task_id.key_value()];
-        attributes.extend(options.into_iter().map(TaskFailedCounterAttr::key_value));
+        let mut attributes = vec![::opentelemetry::KeyValue::new("error.type", r#error_type), ::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.observer.observe(value, &attributes);
     }
 }

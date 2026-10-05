@@ -3,11 +3,11 @@ use opentelemetry::Value;
 #[test]
 fn literal_backslashes_and_actual_control_characters_are_distinct() {
     assert_eq!(
-        LiteralAttr::Literal.key_value().value,
+        ::opentelemetry::KeyValue::from(LiteralAttr::Literal).value,
         Value::String(r"backspace\b formfeed\f unicode\u1234 doubled\\b tripled\\\u0000".into())
     );
     assert_eq!(
-        LiteralAttr::Controls.key_value().value,
+        ::opentelemetry::KeyValue::from(LiteralAttr::Controls).value,
         Value::String("backspace\u{0008} formfeed\u{000c} unicode\u{0001} slash\\b".into())
     );
 }

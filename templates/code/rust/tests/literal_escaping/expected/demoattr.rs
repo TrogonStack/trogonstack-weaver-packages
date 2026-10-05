@@ -11,19 +11,15 @@ pub enum LiteralAttr {
 #[allow(deprecated)]
 impl LiteralAttr {
     pub const KEY: &'static str = "demo.literal";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: String = match self {
-            Self::Literal => "backspace\\b formfeed\\f unicode\\u1234 doubled\\\\b tripled\\\\\\u0000".into(),
-            Self::Controls => "backspace\u{0008} formfeed\u{000c} unicode\u{0001} slash\\b".into(),
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<LiteralAttr> for ::opentelemetry::KeyValue {
     fn from(value: LiteralAttr) -> Self {
-        value.key_value()
+        let value: String = match value {
+            LiteralAttr::Literal => "backspace\\b formfeed\\f unicode\\u1234 doubled\\\\b tripled\\\\\\u0000".into(),
+            LiteralAttr::Controls => "backspace\u{0008} formfeed\u{000c} unicode\u{0001} slash\\b".into(),
+        };
+        ::opentelemetry::KeyValue::new(LiteralAttr::KEY, value)
     }
 }

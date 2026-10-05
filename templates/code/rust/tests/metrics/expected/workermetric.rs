@@ -6,11 +6,11 @@ pub enum TaskDurationHistogramAttr {
     /// Conditionally required: If the task reached a final state.
     TaskState(super::myappattr::TaskStateAttr),
 }
-impl TaskDurationHistogramAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::Method(value) => value.key_value(),
-            Self::TaskState(value) => value.key_value(),
+impl From<TaskDurationHistogramAttr> for ::opentelemetry::KeyValue {
+    fn from(value: TaskDurationHistogramAttr) -> Self {
+        match value {
+            TaskDurationHistogramAttr::Method(value) => ::opentelemetry::KeyValue::from(value),
+            TaskDurationHistogramAttr::TaskState(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -28,8 +28,8 @@ impl TaskDurationHistogram {
             .build() }
     }
     pub fn record(&self, value: f64, r#myapp_task_id: super::myappattr::TaskIdAttr, options: impl IntoIterator<Item = TaskDurationHistogramAttr>) {
-        let mut attributes = vec![r#myapp_task_id.key_value()];
-        attributes.extend(options.into_iter().map(TaskDurationHistogramAttr::key_value));
+        let mut attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.record(value, &attributes);
     }
 }

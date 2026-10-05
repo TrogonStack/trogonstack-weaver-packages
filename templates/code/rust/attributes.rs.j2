@@ -20,21 +20,6 @@ pub struct {{ attr.name }}({{ attr.value_type | map_text("rust_type") }});
 #[allow(deprecated)]
 impl {{ attr.name }} {
     pub const KEY: &'static str = {{ attr.key_literal }};
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-{% if attr.type is mapping %}
-        let value: {{ attr.value_type | map_text("rust_type") }} = match self {
-{% for member in attr.type.members %}
-            Self::{{ member.name }} => {{ member.literal }}{% if attr.value_type == "string" %}.into(){% elif attr.value_type == "double" %}_f64{% endif %},
-{% endfor %}
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-{% elif "[]" in attr.value_type %}
-        ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::{{ attr.value_type | map_text("rust_array") }}(self.0{% if attr.value_type == "string[]" %}.into_iter().map(Into::into).collect(){% endif %})))
-{% else %}
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-{% endif %}
-    }
 }
 {% if attr.type is not mapping %}
 
@@ -57,7 +42,18 @@ impl From<&str> for {{ attr.name }} {
 #[allow(deprecated)]
 impl From<{{ attr.name }}> for ::opentelemetry::KeyValue {
     fn from(value: {{ attr.name }}) -> Self {
-        value.key_value()
+{% if attr.type is mapping %}
+        let value: {{ attr.value_type | map_text("rust_type") }} = match value {
+{% for member in attr.type.members %}
+            {{ attr.name }}::{{ member.name }} => {{ member.literal }}{% if attr.value_type == "string" %}.into(){% elif attr.value_type == "double" %}_f64{% endif %},
+{% endfor %}
+        };
+        ::opentelemetry::KeyValue::new({{ attr.name }}::KEY, value)
+{% elif "[]" in attr.value_type %}
+        ::opentelemetry::KeyValue::new({{ attr.name }}::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::{{ attr.value_type | map_text("rust_array") }}(value.0{% if attr.value_type == "string[]" %}.into_iter().map(Into::into).collect(){% endif %})))
+{% else %}
+        ::opentelemetry::KeyValue::new({{ attr.name }}::KEY, value.0)
+{% endif %}
     }
 }
 {% endfor %}

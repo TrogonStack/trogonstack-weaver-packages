@@ -10,7 +10,7 @@ impl Http2STATUSCountCounter {
             .build() }
     }
     pub fn add(&self, value: u64, r#caps_http2_status_api_id: super::capsattr::Http2STATUSApiIDAttr, r#caps_mode2_state: super::capsattr::Mode2STATEAttr) {
-        let attributes = vec![r#caps_http2_status_api_id.key_value(), r#caps_mode2_state.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#caps_http2_status_api_id), ::opentelemetry::KeyValue::from(r#caps_mode2_state)];
         self.instrument.add(value, &attributes);
     }
 }
@@ -20,7 +20,7 @@ impl Default for Http2STATUSCountCounter {
 pub struct Http2STATUSCountCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
 impl Http2STATUSCountCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#caps_http2_status_api_id: super::capsattr::Http2STATUSApiIDAttr, r#caps_mode2_state: super::capsattr::Mode2STATEAttr) {
-        let attributes = vec![r#caps_http2_status_api_id.key_value(), r#caps_mode2_state.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#caps_http2_status_api_id), ::opentelemetry::KeyValue::from(r#caps_mode2_state)];
         self.observer.observe(value, &attributes);
     }
 }

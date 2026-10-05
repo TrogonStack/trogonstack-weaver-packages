@@ -6,10 +6,6 @@ pub struct RequestUrlAttr(String);
 #[allow(deprecated)]
 impl RequestUrlAttr {
     pub const KEY: &'static str = "myapp.request.url";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -28,6 +24,6 @@ impl From<&str> for RequestUrlAttr {
 #[allow(deprecated)]
 impl From<RequestUrlAttr> for ::opentelemetry::KeyValue {
     fn from(value: RequestUrlAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(RequestUrlAttr::KEY, value.0)
     }
 }

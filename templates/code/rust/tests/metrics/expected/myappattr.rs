@@ -6,10 +6,6 @@ pub struct TaskIdAttr(String);
 #[allow(deprecated)]
 impl TaskIdAttr {
     pub const KEY: &'static str = "myapp.task.id";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -28,7 +24,7 @@ impl From<&str> for TaskIdAttr {
 #[allow(deprecated)]
 impl From<TaskIdAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskIdAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskIdAttr::KEY, value.0)
     }
 }
 /// Current state of the task.
@@ -43,19 +39,15 @@ pub enum TaskStateAttr {
 #[allow(deprecated)]
 impl TaskStateAttr {
     pub const KEY: &'static str = "myapp.task.state";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: String = match self {
-            Self::Queued => "queued".into(),
-            Self::Done => "done".into(),
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<TaskStateAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskStateAttr) -> Self {
-        value.key_value()
+        let value: String = match value {
+            TaskStateAttr::Queued => "queued".into(),
+            TaskStateAttr::Done => "done".into(),
+        };
+        ::opentelemetry::KeyValue::new(TaskStateAttr::KEY, value)
     }
 }

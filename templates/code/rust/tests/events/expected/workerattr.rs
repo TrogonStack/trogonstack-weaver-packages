@@ -6,10 +6,6 @@ pub struct HostNameAttr(String);
 #[allow(deprecated)]
 impl HostNameAttr {
     pub const KEY: &'static str = "worker.host.name";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -28,6 +24,6 @@ impl From<&str> for HostNameAttr {
 #[allow(deprecated)]
 impl From<HostNameAttr> for ::opentelemetry::KeyValue {
     fn from(value: HostNameAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(HostNameAttr::KEY, value.0)
     }
 }

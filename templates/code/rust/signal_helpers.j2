@@ -10,7 +10,7 @@
 {%- endmacro %}
 {% macro attr_kv(a, value) -%}
 {%- if a.imported -%}::opentelemetry::KeyValue::new({{ literal(a.key) }}, {% if "[]" in a.attr_type %}::opentelemetry::Value::Array(::opentelemetry::Array::{{ a.attr_type | map_text("rust_array") }}({{ value }}{% if a.attr_type == "string[]" %}.into_iter().map(Into::into).collect(){% endif %})){% else %}{{ value }}{% endif %})
-{%- else -%}{{ value }}.key_value()
+{%- else -%}::opentelemetry::KeyValue::from({{ value }})
 {%- endif -%}
 {%- endmacro %}
 {% macro deprecated(def) -%}

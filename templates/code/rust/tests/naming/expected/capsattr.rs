@@ -6,10 +6,6 @@ pub struct Http2STATUSApiIDAttr(String);
 #[allow(deprecated)]
 impl Http2STATUSApiIDAttr {
     pub const KEY: &'static str = "caps.http2_STATUS.api_ID";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -28,7 +24,7 @@ impl From<&str> for Http2STATUSApiIDAttr {
 #[allow(deprecated)]
 impl From<Http2STATUSApiIDAttr> for ::opentelemetry::KeyValue {
     fn from(value: Http2STATUSApiIDAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(Http2STATUSApiIDAttr::KEY, value.0)
     }
 }
 /// Synthetic mode.
@@ -41,18 +37,14 @@ pub enum Mode2STATEAttr {
 #[allow(deprecated)]
 impl Mode2STATEAttr {
     pub const KEY: &'static str = "caps.mode2_STATE";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: String = match self {
-            Self::HTTP2ReadySTATE => "ready".into(),
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<Mode2STATEAttr> for ::opentelemetry::KeyValue {
     fn from(value: Mode2STATEAttr) -> Self {
-        value.key_value()
+        let value: String = match value {
+            Mode2STATEAttr::HTTP2ReadySTATE => "ready".into(),
+        };
+        ::opentelemetry::KeyValue::new(Mode2STATEAttr::KEY, value)
     }
 }

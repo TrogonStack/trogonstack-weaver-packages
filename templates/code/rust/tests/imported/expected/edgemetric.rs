@@ -3,10 +3,10 @@
 pub enum UpstreamDurationHistogramAttr {
     ServerPort(i64),
 }
-impl UpstreamDurationHistogramAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::ServerPort(value) => ::opentelemetry::KeyValue::new("server.port", value),
+impl From<UpstreamDurationHistogramAttr> for ::opentelemetry::KeyValue {
+    fn from(value: UpstreamDurationHistogramAttr) -> Self {
+        match value {
+            UpstreamDurationHistogramAttr::ServerPort(value) => ::opentelemetry::KeyValue::new("server.port", value),
         }
     }
 }
@@ -23,7 +23,7 @@ impl UpstreamDurationHistogram {
     }
     pub fn record(&self, value: f64, r#server_address: String, options: impl IntoIterator<Item = UpstreamDurationHistogramAttr>) {
         let mut attributes = vec![::opentelemetry::KeyValue::new("server.address", r#server_address)];
-        attributes.extend(options.into_iter().map(UpstreamDurationHistogramAttr::key_value));
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.record(value, &attributes);
     }
 }

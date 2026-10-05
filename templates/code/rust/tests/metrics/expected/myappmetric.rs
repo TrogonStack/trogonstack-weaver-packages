@@ -51,7 +51,7 @@ impl TaskActiveUpDownCounter {
             .build() }
     }
     pub fn add(&self, value: i64, r#myapp_task_state: super::myappattr::TaskStateAttr) {
-        let attributes = vec![r#myapp_task_state.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_state)];
         self.instrument.add(value, &attributes);
     }
 }
@@ -61,7 +61,7 @@ impl Default for TaskActiveUpDownCounter {
 pub struct TaskActiveUpDownCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<i64> }
 impl TaskActiveUpDownCounterObserver<'_> {
     pub fn observe(&self, value: i64, r#myapp_task_state: super::myappattr::TaskStateAttr) {
-        let attributes = vec![r#myapp_task_state.key_value()];
+        let attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_state)];
         self.observer.observe(value, &attributes);
     }
 }
@@ -87,11 +87,11 @@ pub enum TaskDurationHistogramAttr {
     /// Conditionally required: If the task reached a final state.
     TaskState(super::myappattr::TaskStateAttr),
 }
-impl TaskDurationHistogramAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::Method(value) => value.key_value(),
-            Self::TaskState(value) => value.key_value(),
+impl From<TaskDurationHistogramAttr> for ::opentelemetry::KeyValue {
+    fn from(value: TaskDurationHistogramAttr) -> Self {
+        match value {
+            TaskDurationHistogramAttr::Method(value) => ::opentelemetry::KeyValue::from(value),
+            TaskDurationHistogramAttr::TaskState(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -109,8 +109,8 @@ impl TaskDurationHistogram {
             .build() }
     }
     pub fn record(&self, value: f64, r#myapp_task_id: super::myappattr::TaskIdAttr, options: impl IntoIterator<Item = TaskDurationHistogramAttr>) {
-        let mut attributes = vec![r#myapp_task_id.key_value()];
-        attributes.extend(options.into_iter().map(TaskDurationHistogramAttr::key_value));
+        let mut attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_id)];
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.record(value, &attributes);
     }
 }
@@ -261,10 +261,10 @@ pub enum TaskRetryDurationHistogramAttr {
     /// Opt-in: the convention records it only when a user asks for it.
     Method(super::authattr::MethodAttr),
 }
-impl TaskRetryDurationHistogramAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::Method(value) => value.key_value(),
+impl From<TaskRetryDurationHistogramAttr> for ::opentelemetry::KeyValue {
+    fn from(value: TaskRetryDurationHistogramAttr) -> Self {
+        match value {
+            TaskRetryDurationHistogramAttr::Method(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -282,8 +282,8 @@ impl TaskRetryDurationHistogram {
             .build() }
     }
     pub fn record(&self, value: f64, r#myapp_task_id: super::myappattr::TaskIdAttr, r#myapp_task_state: super::myappattr::TaskStateAttr, options: impl IntoIterator<Item = TaskRetryDurationHistogramAttr>) {
-        let mut attributes = vec![r#myapp_task_id.key_value(), r#myapp_task_state.key_value()];
-        attributes.extend(options.into_iter().map(TaskRetryDurationHistogramAttr::key_value));
+        let mut attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_id), ::opentelemetry::KeyValue::from(r#myapp_task_state)];
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.record(value, &attributes);
     }
 }
@@ -295,10 +295,10 @@ pub enum TaskStartedCounterAttr {
     /// Recommended: When the scheduler assigned an id before the task started.
     TaskId(super::myappattr::TaskIdAttr),
 }
-impl TaskStartedCounterAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::TaskId(value) => value.key_value(),
+impl From<TaskStartedCounterAttr> for ::opentelemetry::KeyValue {
+    fn from(value: TaskStartedCounterAttr) -> Self {
+        match value {
+            TaskStartedCounterAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -315,7 +315,7 @@ impl TaskStartedCounter {
     }
     pub fn add(&self, value: u64, options: impl IntoIterator<Item = TaskStartedCounterAttr>) {
         let mut attributes = vec![];
-        attributes.extend(options.into_iter().map(TaskStartedCounterAttr::key_value));
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.instrument.add(value, &attributes);
     }
 }
@@ -326,7 +326,7 @@ pub struct TaskStartedCounterObserver<'a> { observer: &'a dyn ::opentelemetry::m
 impl TaskStartedCounterObserver<'_> {
     pub fn observe(&self, value: u64, options: impl IntoIterator<Item = TaskStartedCounterAttr>) {
         let mut attributes = vec![];
-        attributes.extend(options.into_iter().map(TaskStartedCounterAttr::key_value));
+        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
         self.observer.observe(value, &attributes);
     }
 }

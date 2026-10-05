@@ -16,11 +16,11 @@ pub enum {{ name }}Attr {
 {% endfor %}
 }
 
-impl {{ name }}Attr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
+impl From<{{ name }}Attr> for ::opentelemetry::KeyValue {
+    fn from(value: {{ name }}Attr) -> Self {
+        match value {
 {% for opt in def.optional %}
-            Self::{{ s.exported(opt.attr_short_name) }}(value) => {{ s.attr_kv(opt, "value") }},
+            {{ name }}Attr::{{ s.exported(opt.attr_short_name) }}(value) => {{ s.attr_kv(opt, "value") }},
 {% endfor %}
         }
     }
@@ -44,7 +44,7 @@ impl {{ name }} {
             {{ s.attr_kv(req, s.ident(req.attr_param)) }},
 {% endfor %}
         ];
-{% if def.optional %}        attributes.extend(options.into_iter().map({{ name }}Attr::key_value));
+{% if def.optional %}        attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
 {% endif %}        Self { attributes }
 {% else %}        Self::default()
 {% endif %}    }

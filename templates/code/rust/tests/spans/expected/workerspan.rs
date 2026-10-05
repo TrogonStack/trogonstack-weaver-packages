@@ -5,11 +5,11 @@ pub enum TaskDispatchStartAttr {
     QueueName(super::myappattr::QueueNameAttr),
     TaskId(super::myappattr::TaskIdAttr),
 }
-impl TaskDispatchStartAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::QueueName(value) => value.key_value(),
-            Self::TaskId(value) => value.key_value(),
+impl From<TaskDispatchStartAttr> for ::opentelemetry::KeyValue {
+    fn from(value: TaskDispatchStartAttr) -> Self {
+        match value {
+            TaskDispatchStartAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
+            TaskDispatchStartAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -39,7 +39,7 @@ impl TaskDispatchSpan {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = TaskDispatchAttr>) {
-        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, TaskDispatchStartAttr::from(attribute).key_value()); }
+        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(TaskDispatchStartAttr::from(attribute))); }
     }
 }
 impl Default for TaskDispatchSpan {
@@ -53,11 +53,11 @@ pub fn r#start_task_dispatch(context: &::opentelemetry::Context, tracer: &super:
     use ::opentelemetry::trace::Tracer;
     let mut name = String::new();
     name.push_str("dispatch ");
-    name.push_str(&r#worker_host_name.clone().key_value().value.to_string());
+    name.push_str(&::opentelemetry::KeyValue::from(r#worker_host_name.clone()).value.to_string());
     name.push(':');
-    name.push_str(&r#worker_host_port.clone().key_value().value.to_string());
-    let mut attributes = vec![r#myapp_task_attempt.key_value(), r#worker_host_name.key_value(), r#worker_host_port.key_value()];
-    attributes.extend(options.into_iter().map(TaskDispatchStartAttr::key_value));
+    name.push_str(&::opentelemetry::KeyValue::from(r#worker_host_port.clone()).value.to_string());
+    let mut attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_attempt), ::opentelemetry::KeyValue::from(r#worker_host_name), ::opentelemetry::KeyValue::from(r#worker_host_port)];
+    attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Client)
         .with_attributes(attributes)

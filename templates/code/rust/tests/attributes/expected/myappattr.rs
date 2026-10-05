@@ -8,10 +8,6 @@ pub struct TaskAssignedByAttr(String);
 #[allow(deprecated)]
 impl TaskAssignedByAttr {
     pub const KEY: &'static str = "myapp.task.assigned_by";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -30,7 +26,7 @@ impl From<&str> for TaskAssignedByAttr {
 #[allow(deprecated)]
 impl From<TaskAssignedByAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskAssignedByAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskAssignedByAttr::KEY, value.0)
     }
 }
 /// Whether the task was cancelled.
@@ -40,10 +36,6 @@ pub struct TaskCancelledAttr(bool);
 #[allow(deprecated)]
 impl TaskCancelledAttr {
     pub const KEY: &'static str = "myapp.task.cancelled";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -56,7 +48,7 @@ impl From<bool> for TaskCancelledAttr {
 #[allow(deprecated)]
 impl From<TaskCancelledAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskCancelledAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskCancelledAttr::KEY, value.0)
     }
 }
 /// Tests Rust string literals.
@@ -69,19 +61,15 @@ pub enum TaskEscapedAttr {
 #[allow(deprecated)]
 impl TaskEscapedAttr {
     pub const KEY: &'static str = "myapp.task.escaped";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: String = match self {
-            Self::Quoted => "quote\" slash\\ newline\n tab\t backspace\u{0008} formfeed\u{000c} null\u{0000} snowman☃".into(),
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<TaskEscapedAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskEscapedAttr) -> Self {
-        value.key_value()
+        let value: String = match value {
+            TaskEscapedAttr::Quoted => "quote\" slash\\ newline\n tab\t backspace\u{0008} formfeed\u{000c} null\u{0000} snowman☃".into(),
+        };
+        ::opentelemetry::KeyValue::new(TaskEscapedAttr::KEY, value)
     }
 }
 /// Feature flags evaluated for the task.
@@ -91,10 +79,6 @@ pub struct TaskFlagsAttr(Vec<bool>);
 #[allow(deprecated)]
 impl TaskFlagsAttr {
     pub const KEY: &'static str = "myapp.task.flags";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::Bool(self.0)))
-    }
 }
 
 #[allow(deprecated)]
@@ -107,7 +91,7 @@ impl From<Vec<bool>> for TaskFlagsAttr {
 #[allow(deprecated)]
 impl From<TaskFlagsAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskFlagsAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskFlagsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::Bool(value.0)))
     }
 }
 /// Unique identifier of the task.
@@ -119,10 +103,6 @@ pub struct TaskIdAttr(String);
 #[allow(deprecated)]
 impl TaskIdAttr {
     pub const KEY: &'static str = "myapp.task.id";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -141,7 +121,7 @@ impl From<&str> for TaskIdAttr {
 #[allow(deprecated)]
 impl From<TaskIdAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskIdAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskIdAttr::KEY, value.0)
     }
 }
 /// Lane the task was scheduled in.
@@ -159,20 +139,16 @@ pub enum TaskLaneAttr {
 #[allow(deprecated)]
 impl TaskLaneAttr {
     pub const KEY: &'static str = "myapp.task.lane";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: String = match self {
-            Self::Fast => "fast".into(),
-            Self::Slow => "slow".into(),
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<TaskLaneAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskLaneAttr) -> Self {
-        value.key_value()
+        let value: String = match value {
+            TaskLaneAttr::Fast => "fast".into(),
+            TaskLaneAttr::Slow => "slow".into(),
+        };
+        ::opentelemetry::KeyValue::new(TaskLaneAttr::KEY, value)
     }
 }
 /// Owner of the task.
@@ -183,10 +159,6 @@ pub struct TaskOwnerAttr(String);
 #[allow(deprecated)]
 impl TaskOwnerAttr {
     pub const KEY: &'static str = "myapp.task.owner";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -205,7 +177,7 @@ impl From<&str> for TaskOwnerAttr {
 #[allow(deprecated)]
 impl From<TaskOwnerAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskOwnerAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskOwnerAttr::KEY, value.0)
     }
 }
 /// Whether the scheduler may preempt the task.
@@ -220,20 +192,16 @@ pub enum TaskPreemptibleAttr {
 #[allow(deprecated)]
 impl TaskPreemptibleAttr {
     pub const KEY: &'static str = "myapp.task.preemptible";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: bool = match self {
-            Self::Allowed => true,
-            Self::Forbidden => false,
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<TaskPreemptibleAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskPreemptibleAttr) -> Self {
-        value.key_value()
+        let value: bool = match value {
+            TaskPreemptibleAttr::Allowed => true,
+            TaskPreemptibleAttr::Forbidden => false,
+        };
+        ::opentelemetry::KeyValue::new(TaskPreemptibleAttr::KEY, value)
     }
 }
 /// Fraction of the task that has completed, between 0 and 1.
@@ -243,10 +211,6 @@ pub struct TaskProgressAttr(f64);
 #[allow(deprecated)]
 impl TaskProgressAttr {
     pub const KEY: &'static str = "myapp.task.progress";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -259,7 +223,7 @@ impl From<f64> for TaskProgressAttr {
 #[allow(deprecated)]
 impl From<TaskProgressAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskProgressAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskProgressAttr::KEY, value.0)
     }
 }
 /// Number of times the task was retried.
@@ -269,10 +233,6 @@ pub struct TaskRetriesAttr(i64);
 #[allow(deprecated)]
 impl TaskRetriesAttr {
     pub const KEY: &'static str = "myapp.task.retries";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -285,7 +245,7 @@ impl From<i64> for TaskRetriesAttr {
 #[allow(deprecated)]
 impl From<TaskRetriesAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskRetriesAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskRetriesAttr::KEY, value.0)
     }
 }
 /// Fraction of tasks whose telemetry is sampled.
@@ -300,20 +260,16 @@ pub enum TaskSampleRateAttr {
 #[allow(deprecated)]
 impl TaskSampleRateAttr {
     pub const KEY: &'static str = "myapp.task.sample_rate";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: f64 = match self {
-            Self::Tenth => 0.1_f64,
-            Self::All => 1_f64,
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<TaskSampleRateAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskSampleRateAttr) -> Self {
-        value.key_value()
+        let value: f64 = match value {
+            TaskSampleRateAttr::Tenth => 0.1_f64,
+            TaskSampleRateAttr::All => 1_f64,
+        };
+        ::opentelemetry::KeyValue::new(TaskSampleRateAttr::KEY, value)
     }
 }
 /// Shards the task touched.
@@ -323,10 +279,6 @@ pub struct TaskShardIdsAttr(Vec<i64>);
 #[allow(deprecated)]
 impl TaskShardIdsAttr {
     pub const KEY: &'static str = "myapp.task.shard_ids";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::I64(self.0)))
-    }
 }
 
 #[allow(deprecated)]
@@ -339,7 +291,7 @@ impl From<Vec<i64>> for TaskShardIdsAttr {
 #[allow(deprecated)]
 impl From<TaskShardIdsAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskShardIdsAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskShardIdsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::I64(value.0)))
     }
 }
 /// Current state of the task.
@@ -359,21 +311,17 @@ pub enum TaskStateAttr {
 #[allow(deprecated)]
 impl TaskStateAttr {
     pub const KEY: &'static str = "myapp.task.state";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: String = match self {
-            Self::Queued => "queued".into(),
-            Self::Running => "running".into(),
-            Self::Paused => "paused".into(),
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<TaskStateAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskStateAttr) -> Self {
-        value.key_value()
+        let value: String = match value {
+            TaskStateAttr::Queued => "queued".into(),
+            TaskStateAttr::Running => "running".into(),
+            TaskStateAttr::Paused => "paused".into(),
+        };
+        ::opentelemetry::KeyValue::new(TaskStateAttr::KEY, value)
     }
 }
 /// Tags attached to the task.
@@ -383,10 +331,6 @@ pub struct TaskTagsAttr(Vec<String>);
 #[allow(deprecated)]
 impl TaskTagsAttr {
     pub const KEY: &'static str = "myapp.task.tags";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::String(self.0.into_iter().map(Into::into).collect())))
-    }
 }
 
 #[allow(deprecated)]
@@ -399,7 +343,7 @@ impl From<Vec<String>> for TaskTagsAttr {
 #[allow(deprecated)]
 impl From<TaskTagsAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskTagsAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskTagsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::String(value.0.into_iter().map(Into::into).collect())))
     }
 }
 /// Scheduling weights applied to the task.
@@ -409,10 +353,6 @@ pub struct TaskWeightsAttr(Vec<f64>);
 #[allow(deprecated)]
 impl TaskWeightsAttr {
     pub const KEY: &'static str = "myapp.task.weights";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::F64(self.0)))
-    }
 }
 
 #[allow(deprecated)]
@@ -425,6 +365,6 @@ impl From<Vec<f64>> for TaskWeightsAttr {
 #[allow(deprecated)]
 impl From<TaskWeightsAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskWeightsAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskWeightsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::F64(value.0)))
     }
 }

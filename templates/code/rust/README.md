@@ -43,7 +43,7 @@ before choosing that namespace.
 
 | Module              | API                                                                                          |
 | ------------------- | -------------------------------------------------------------------------------------------- |
-| `<namespace>attr`   | Attribute newtypes and enum variants, `KEY`, `key_value`, and conversion into `KeyValue`.    |
+| `<namespace>attr`   | Attribute newtypes and enum variants, `KEY` and conversion into `KeyValue`.                  |
 | `meter`             | Schema-aware `Meter`, with `new`, `new_with_scope`, `inner`, and a no-op `Default`.          |
 | `tracer`            | Schema-aware `Tracer`, with `new`, `new_with_scope`, `inner`, and a no-op `Default`.         |
 | `logger`            | Schema-aware generic `Logger`, with `new`, `new_with_scope`, `inner`, and a no-op `Default`. |
@@ -61,8 +61,8 @@ Attribute keys, metric names, and event names retain their full registry names.
 ### Typed attributes
 
 An attribute such as `myapp.task.id` becomes
-`myappattr::TaskIdAttr::from("task-1")`. Its `key_value()` method consumes the
-value and returns an OpenTelemetry `KeyValue`. String attributes implement
+`myappattr::TaskIdAttr::from("task-1")`. Convert the attribute into an OpenTelemetry `KeyValue` with
+`KeyValue::from(attribute)` or `attribute.into()`. String attributes implement
 `From<String>` and `From<&str>`; scalar and array attributes implement `From`
 for their exact backing types. Use `Attr::from(value)` or `value.into()` when
 the attribute type is known. Enums expose named variants,

@@ -6,10 +6,6 @@ pub struct KeptAttr(String);
 #[allow(deprecated)]
 impl KeptAttr {
     pub const KEY: &'static str = "demo.kept";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -28,7 +24,7 @@ impl From<&str> for KeptAttr {
 #[allow(deprecated)]
 impl From<KeptAttr> for ::opentelemetry::KeyValue {
     fn from(value: KeptAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(KeptAttr::KEY, value.0)
     }
 }
 /// Synthetic mode.
@@ -41,18 +37,14 @@ pub enum ModeAttr {
 #[allow(deprecated)]
 impl ModeAttr {
     pub const KEY: &'static str = "demo.mode";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: String = match self {
-            Self::Kept => "kept".into(),
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<ModeAttr> for ::opentelemetry::KeyValue {
     fn from(value: ModeAttr) -> Self {
-        value.key_value()
+        let value: String = match value {
+            ModeAttr::Kept => "kept".into(),
+        };
+        ::opentelemetry::KeyValue::new(ModeAttr::KEY, value)
     }
 }

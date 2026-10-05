@@ -3,10 +3,10 @@
 pub enum StartAttr {
     Source(super::heartbeatattr::SourceAttr),
 }
-impl StartAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::Source(value) => value.key_value(),
+impl From<StartAttr> for ::opentelemetry::KeyValue {
+    fn from(value: StartAttr) -> Self {
+        match value {
+            StartAttr::Source(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -39,7 +39,7 @@ impl Span {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = Attr>) {
-        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, StartAttr::from(attribute).key_value()); }
+        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(StartAttr::from(attribute))); }
     }
 }
 impl Default for Span {
@@ -52,8 +52,8 @@ impl Default for Span {
 pub fn r#start_(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, name: Name, r#heartbeat_sequence: super::heartbeatattr::SequenceAttr, options: impl IntoIterator<Item = StartAttr>) -> Span {
     use ::opentelemetry::trace::Tracer;
     let name = if name.0.is_empty() { "heartbeat".to_owned() } else { name.0 };
-    let mut attributes = vec![r#heartbeat_sequence.key_value()];
-    attributes.extend(options.into_iter().map(StartAttr::key_value));
+    let mut attributes = vec![::opentelemetry::KeyValue::from(r#heartbeat_sequence)];
+    attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Internal)
         .with_attributes(attributes)

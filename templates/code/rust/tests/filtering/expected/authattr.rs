@@ -11,20 +11,16 @@ pub enum MethodAttr {
 #[allow(deprecated)]
 impl MethodAttr {
     pub const KEY: &'static str = "auth.method";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: String = match self {
-            Self::Password => "password".into(),
-            Self::Token => "token".into(),
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<MethodAttr> for ::opentelemetry::KeyValue {
     fn from(value: MethodAttr) -> Self {
-        value.key_value()
+        let value: String = match value {
+            MethodAttr::Password => "password".into(),
+            MethodAttr::Token => "token".into(),
+        };
+        ::opentelemetry::KeyValue::new(MethodAttr::KEY, value)
     }
 }
 /// Identifier of the authenticated user.
@@ -34,10 +30,6 @@ pub struct UserIdAttr(String);
 #[allow(deprecated)]
 impl UserIdAttr {
     pub const KEY: &'static str = "auth.user.id";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -56,6 +48,6 @@ impl From<&str> for UserIdAttr {
 #[allow(deprecated)]
 impl From<UserIdAttr> for ::opentelemetry::KeyValue {
     fn from(value: UserIdAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(UserIdAttr::KEY, value.0)
     }
 }

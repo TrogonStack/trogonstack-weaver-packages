@@ -5,11 +5,11 @@ pub enum UpstreamRequestStartAttr {
     ErrorType(String),
     HttpRequestMethodList(Vec<String>),
 }
-impl UpstreamRequestStartAttr {
-    fn key_value(self) -> ::opentelemetry::KeyValue {
-        match self {
-            Self::ErrorType(value) => ::opentelemetry::KeyValue::new("error.type", value),
-            Self::HttpRequestMethodList(value) => ::opentelemetry::KeyValue::new("http.request.method_list", ::opentelemetry::Value::Array(::opentelemetry::Array::String(value.into_iter().map(Into::into).collect()))),
+impl From<UpstreamRequestStartAttr> for ::opentelemetry::KeyValue {
+    fn from(value: UpstreamRequestStartAttr) -> Self {
+        match value {
+            UpstreamRequestStartAttr::ErrorType(value) => ::opentelemetry::KeyValue::new("error.type", value),
+            UpstreamRequestStartAttr::HttpRequestMethodList(value) => ::opentelemetry::KeyValue::new("http.request.method_list", ::opentelemetry::Value::Array(::opentelemetry::Array::String(value.into_iter().map(Into::into).collect()))),
         }
     }
 }
@@ -37,7 +37,7 @@ impl UpstreamRequestSpan {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = UpstreamRequestAttr>) {
-        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, UpstreamRequestStartAttr::from(attribute).key_value()); }
+        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(UpstreamRequestStartAttr::from(attribute))); }
     }
 }
 impl Default for UpstreamRequestSpan {
@@ -54,7 +54,7 @@ pub fn r#start_upstream_request(context: &::opentelemetry::Context, tracer: &sup
     name.push(':');
     name.push_str(&::opentelemetry::KeyValue::new("server.port", r#server_port).value.to_string());
     let mut attributes = vec![::opentelemetry::KeyValue::new("server.address", r#server_address), ::opentelemetry::KeyValue::new("server.port", r#server_port)];
-    attributes.extend(options.into_iter().map(UpstreamRequestStartAttr::key_value));
+    attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Client)
         .with_attributes(attributes)

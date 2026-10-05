@@ -6,10 +6,6 @@ pub struct TaskIdAttr(String);
 #[allow(deprecated)]
 impl TaskIdAttr {
     pub const KEY: &'static str = "myapp.task.id";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -28,6 +24,6 @@ impl From<&str> for TaskIdAttr {
 #[allow(deprecated)]
 impl From<TaskIdAttr> for ::opentelemetry::KeyValue {
     fn from(value: TaskIdAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TaskIdAttr::KEY, value.0)
     }
 }

@@ -6,10 +6,6 @@ pub struct MessageAttr(String);
 #[allow(deprecated)]
 impl MessageAttr {
     pub const KEY: &'static str = "exception.message";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -28,7 +24,7 @@ impl From<&str> for MessageAttr {
 #[allow(deprecated)]
 impl From<MessageAttr> for ::opentelemetry::KeyValue {
     fn from(value: MessageAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(MessageAttr::KEY, value.0)
     }
 }
 /// The type of the exception.
@@ -38,10 +34,6 @@ pub struct TypeAttr(String);
 #[allow(deprecated)]
 impl TypeAttr {
     pub const KEY: &'static str = "exception.type";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -60,6 +52,6 @@ impl From<&str> for TypeAttr {
 #[allow(deprecated)]
 impl From<TypeAttr> for ::opentelemetry::KeyValue {
     fn from(value: TypeAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(TypeAttr::KEY, value.0)
     }
 }

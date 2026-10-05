@@ -7,10 +7,6 @@ pub struct HostCpuCountAttr(i64);
 #[allow(deprecated)]
 impl HostCpuCountAttr {
     pub const KEY: &'static str = "myapp.host.cpu.count";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -23,7 +19,7 @@ impl From<i64> for HostCpuCountAttr {
 #[allow(deprecated)]
 impl From<HostCpuCountAttr> for ::opentelemetry::KeyValue {
     fn from(value: HostCpuCountAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(HostCpuCountAttr::KEY, value.0)
     }
 }
 /// Name of the host.
@@ -33,10 +29,6 @@ pub struct HostNameAttr(String);
 #[allow(deprecated)]
 impl HostNameAttr {
     pub const KEY: &'static str = "myapp.host.name";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -55,7 +47,7 @@ impl From<&str> for HostNameAttr {
 #[allow(deprecated)]
 impl From<HostNameAttr> for ::opentelemetry::KeyValue {
     fn from(value: HostNameAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(HostNameAttr::KEY, value.0)
     }
 }
 /// Role the host plays in the cluster.
@@ -65,10 +57,6 @@ pub struct HostRoleAttr(String);
 #[allow(deprecated)]
 impl HostRoleAttr {
     pub const KEY: &'static str = "myapp.host.role";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -87,7 +75,7 @@ impl From<&str> for HostRoleAttr {
 #[allow(deprecated)]
 impl From<HostRoleAttr> for ::opentelemetry::KeyValue {
     fn from(value: HostRoleAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(HostRoleAttr::KEY, value.0)
     }
 }
 /// Type of the host.
@@ -102,20 +90,16 @@ pub enum HostTypeAttr {
 #[allow(deprecated)]
 impl HostTypeAttr {
     pub const KEY: &'static str = "myapp.host.type";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        let value: String = match self {
-            Self::Physical => "physical".into(),
-            Self::Virtual => "virtual".into(),
-        };
-        ::opentelemetry::KeyValue::new(Self::KEY, value)
-    }
 }
 
 #[allow(deprecated)]
 impl From<HostTypeAttr> for ::opentelemetry::KeyValue {
     fn from(value: HostTypeAttr) -> Self {
-        value.key_value()
+        let value: String = match value {
+            HostTypeAttr::Physical => "physical".into(),
+            HostTypeAttr::Virtual => "virtual".into(),
+        };
+        ::opentelemetry::KeyValue::new(HostTypeAttr::KEY, value)
     }
 }
 /// Name of the queue.
@@ -125,10 +109,6 @@ pub struct QueueNameAttr(String);
 #[allow(deprecated)]
 impl QueueNameAttr {
     pub const KEY: &'static str = "myapp.queue.name";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -147,7 +127,7 @@ impl From<&str> for QueueNameAttr {
 #[allow(deprecated)]
 impl From<QueueNameAttr> for ::opentelemetry::KeyValue {
     fn from(value: QueueNameAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(QueueNameAttr::KEY, value.0)
     }
 }
 /// Number of items currently in the queue.
@@ -157,10 +137,6 @@ pub struct QueueSizeAttr(i64);
 #[allow(deprecated)]
 impl QueueSizeAttr {
     pub const KEY: &'static str = "myapp.queue.size";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -173,6 +149,6 @@ impl From<i64> for QueueSizeAttr {
 #[allow(deprecated)]
 impl From<QueueSizeAttr> for ::opentelemetry::KeyValue {
     fn from(value: QueueSizeAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(QueueSizeAttr::KEY, value.0)
     }
 }

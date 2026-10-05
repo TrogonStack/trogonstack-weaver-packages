@@ -6,10 +6,6 @@ pub struct InvoiceIdAttr(String);
 #[allow(deprecated)]
 impl InvoiceIdAttr {
     pub const KEY: &'static str = "acme.billing.invoice.id";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -28,7 +24,7 @@ impl From<&str> for InvoiceIdAttr {
 #[allow(deprecated)]
 impl From<InvoiceIdAttr> for ::opentelemetry::KeyValue {
     fn from(value: InvoiceIdAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(InvoiceIdAttr::KEY, value.0)
     }
 }
 /// ISO 4217 currency code of the amount.
@@ -38,10 +34,6 @@ pub struct CurrencyAttr(String);
 #[allow(deprecated)]
 impl CurrencyAttr {
     pub const KEY: &'static str = "billing.currency";
-
-    pub fn key_value(self) -> ::opentelemetry::KeyValue {
-        ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-    }
 }
 
 #[allow(deprecated)]
@@ -60,6 +52,6 @@ impl From<&str> for CurrencyAttr {
 #[allow(deprecated)]
 impl From<CurrencyAttr> for ::opentelemetry::KeyValue {
     fn from(value: CurrencyAttr) -> Self {
-        value.key_value()
+        ::opentelemetry::KeyValue::new(CurrencyAttr::KEY, value.0)
     }
 }
