@@ -1,4 +1,7 @@
 #![allow(deprecated)]
+use ::opentelemetry::logs::LogRecord;
+use ::opentelemetry::trace::TraceContextExt;
+
 #[derive(Clone, Debug)]
 pub enum HostStartedOption {
     Severity(::opentelemetry::logs::Severity),
@@ -6,8 +9,6 @@ pub enum HostStartedOption {
 }
 /// A worker host started taking tasks.
 pub fn r#emit_host_started<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, options: impl IntoIterator<Item = HostStartedOption>) {
-    use ::opentelemetry::logs::LogRecord;
-    use ::opentelemetry::trace::TraceContextExt;
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
@@ -45,8 +46,6 @@ pub enum TaskFinishedOption {
 ///
 /// Emitted once per task, after its last attempt.
 pub fn r#emit_task_finished<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#myapp_task_state: super::myappattr::TaskStateAttr, r#worker_host_name: super::workerattr::HostNameAttr, options: impl IntoIterator<Item = TaskFinishedOption>) {
-    use ::opentelemetry::logs::LogRecord;
-    use ::opentelemetry::trace::TraceContextExt;
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;

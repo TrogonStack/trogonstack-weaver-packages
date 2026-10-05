@@ -1,5 +1,7 @@
 use generated_semconv::demoattr::LiteralAttr;
+use generated_semconv::{demometric::LiteralCountCounter, meter::Meter};
 use opentelemetry::Value;
+use opentelemetry_sdk::metrics::{InMemoryMetricExporter, PeriodicReader, SdkMeterProvider};
 #[test]
 fn literal_backslashes_and_actual_control_characters_are_distinct() {
     assert_eq!(
@@ -14,8 +16,6 @@ fn literal_backslashes_and_actual_control_characters_are_distinct() {
 
 #[test]
 fn signal_metadata_preserves_literal_backslash_sequences() {
-    use generated_semconv::{demometric::LiteralCountCounter, meter::Meter};
-    use opentelemetry_sdk::metrics::{InMemoryMetricExporter, PeriodicReader, SdkMeterProvider};
     let exporter = InMemoryMetricExporter::default();
     let provider = SdkMeterProvider::builder()
         .with_reader(PeriodicReader::builder(exporter.clone()).build())

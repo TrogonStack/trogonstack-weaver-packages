@@ -1,4 +1,7 @@
 #![allow(deprecated)]
+use ::opentelemetry::logs::LogRecord;
+use ::opentelemetry::trace::TraceContextExt;
+
 #[derive(Clone, Debug)]
 pub enum TaskErroredOption {
     Severity(::opentelemetry::logs::Severity),
@@ -7,8 +10,6 @@ pub enum TaskErroredOption {
 }
 /// A task failed with an error.
 pub fn r#emit_task_errored<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#error_type: upstream::errorattr::TypeAttr, options: impl IntoIterator<Item = TaskErroredOption>) {
-    use ::opentelemetry::logs::LogRecord;
-    use ::opentelemetry::trace::TraceContextExt;
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;

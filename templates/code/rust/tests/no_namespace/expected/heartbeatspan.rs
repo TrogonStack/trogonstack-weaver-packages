@@ -1,4 +1,6 @@
 #![allow(deprecated)]
+use ::opentelemetry::trace::{TraceContextExt, Tracer};
+
 #[derive(Clone, Debug)]
 pub enum StartAttr {
     Source(super::heartbeatattr::SourceAttr),
@@ -30,7 +32,6 @@ impl Name {
 pub struct Span { span: ::opentelemetry::global::BoxedSpan }
 impl Span {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -44,13 +45,11 @@ impl Span {
 }
 impl Default for Span {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start("heartbeat") }
     }
 }
 
 pub fn r#start_(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, name: Name, r#heartbeat_sequence: super::heartbeatattr::SequenceAttr, options: impl IntoIterator<Item = StartAttr>) -> Span {
-    use ::opentelemetry::trace::Tracer;
     let name = if name.0.is_empty() { "heartbeat".to_owned() } else { name.0 };
     let mut attributes = vec![::opentelemetry::KeyValue::from(r#heartbeat_sequence)];
     attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));

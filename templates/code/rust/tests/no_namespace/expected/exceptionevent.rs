@@ -1,4 +1,7 @@
 #![allow(deprecated)]
+use ::opentelemetry::logs::LogRecord;
+use ::opentelemetry::trace::TraceContextExt;
+
 #[derive(Clone, Debug)]
 pub enum Option {
     Severity(::opentelemetry::logs::Severity),
@@ -7,8 +10,6 @@ pub enum Option {
 }
 /// A noteworthy exception occurred.
 pub fn r#emit_<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#exception_type: super::exceptionattr::TypeAttr, options: impl IntoIterator<Item = Option>) {
-    use ::opentelemetry::logs::LogRecord;
-    use ::opentelemetry::trace::TraceContextExt;
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;

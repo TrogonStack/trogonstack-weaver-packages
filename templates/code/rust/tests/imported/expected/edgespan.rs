@@ -1,4 +1,6 @@
 #![allow(deprecated)]
+use ::opentelemetry::trace::{TraceContextExt, Tracer};
+
 #[derive(Clone, Debug)]
 pub enum UpstreamRequestStartAttr {
     /// Conditionally required: If the request failed.
@@ -28,7 +30,6 @@ impl From<UpstreamRequestAttr> for UpstreamRequestStartAttr {
 pub struct UpstreamRequestSpan { span: ::opentelemetry::global::BoxedSpan }
 impl UpstreamRequestSpan {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -42,13 +43,11 @@ impl UpstreamRequestSpan {
 }
 impl Default for UpstreamRequestSpan {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start("edge.upstream.request") }
     }
 }
 
 pub fn r#start_upstream_request(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#server_address: String, r#server_port: i64, options: impl IntoIterator<Item = UpstreamRequestStartAttr>) -> UpstreamRequestSpan {
-    use ::opentelemetry::trace::Tracer;
     let mut name = String::new();
     name.push_str(&::opentelemetry::KeyValue::new("server.address", r#server_address.clone()).value.to_string());
     name.push(':');

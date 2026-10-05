@@ -1,4 +1,6 @@
 #![allow(deprecated)]
+use ::opentelemetry::trace::{TraceContextExt, Tracer};
+
 #[derive(Clone, Debug)]
 pub enum TaskDispatchStartAttr {
     /// Recommended: When the task came from a named queue.
@@ -30,7 +32,6 @@ impl From<TaskDispatchAttr> for TaskDispatchStartAttr {
 pub struct TaskDispatchSpan { span: ::opentelemetry::global::BoxedSpan }
 impl TaskDispatchSpan {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -44,13 +45,11 @@ impl TaskDispatchSpan {
 }
 impl Default for TaskDispatchSpan {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start("myapp.task.dispatch") }
     }
 }
 
 pub fn r#start_task_dispatch(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#myapp_task_attempt: super::myappattr::TaskAttemptAttr, r#worker_host_name: super::workerattr::HostNameAttr, r#worker_host_port: super::workerattr::HostPortAttr, options: impl IntoIterator<Item = TaskDispatchStartAttr>) -> TaskDispatchSpan {
-    use ::opentelemetry::trace::Tracer;
     let mut name = String::new();
     name.push_str("dispatch ");
     name.push_str(&::opentelemetry::KeyValue::from(r#worker_host_name.clone()).value.to_string());

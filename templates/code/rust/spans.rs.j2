@@ -1,5 +1,7 @@
 {%- filter trim %}
 #![allow(deprecated)]
+use ::opentelemetry::trace::{TraceContextExt, Tracer};
+
 {% import "signal_helpers.j2" as h %}
 {% for def in ctx.spans %}
 {% set name = h.exported(def.short_name) %}
@@ -52,7 +54,6 @@ impl {{ name }}Name {
 pub struct {{ span }} { span: ::opentelemetry::global::BoxedSpan }
 impl {{ span }} {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -68,13 +69,11 @@ impl {{ span }} {
 }
 impl Default for {{ span }} {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start({{ h.literal(def.type) }}) }
     }
 }
 {{ h.deprecated(def) }}
 pub fn {{ h.ident('start.' ~ def.short_name) }}(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer{% if not def.name_parts %}, name: {{ name }}Name{% endif %}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}StartAttr>{% endif %}) -> {{ span }} {
-    use ::opentelemetry::trace::Tracer;
 {% if def.name_parts %}
     let mut name = String::new();
 {% for part in def.name_parts %}

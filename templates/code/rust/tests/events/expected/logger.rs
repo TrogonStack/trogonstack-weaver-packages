@@ -1,3 +1,6 @@
+use opentelemetry::logs::AnyValue;
+use opentelemetry::{Array, Value};
+
 #[derive(Clone, Debug)]
 pub struct Logger<L: opentelemetry::logs::Logger = <opentelemetry::logs::NoopLoggerProvider as opentelemetry::logs::LoggerProvider>::Logger>(L);
 impl<L: opentelemetry::logs::Logger> Logger<L> {
@@ -13,8 +16,6 @@ impl Default for Logger {
     fn default() -> Self { Self::new(&opentelemetry::logs::NoopLoggerProvider::new(), "") }
 }
 pub(crate) fn log_value(value: opentelemetry::Value) -> opentelemetry::logs::AnyValue {
-    use opentelemetry::{Value, Array};
-    use opentelemetry::logs::AnyValue;
     match value {
         Value::Bool(value) => value.into(),
         Value::I64(value) => value.into(),

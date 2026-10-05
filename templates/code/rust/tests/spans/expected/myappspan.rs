@@ -1,9 +1,10 @@
 #![allow(deprecated)]
+use ::opentelemetry::trace::{TraceContextExt, Tracer};
+
 /// Synthetic escaped name.
 pub struct NameApostropheSpan { span: ::opentelemetry::global::BoxedSpan }
 impl NameApostropheSpan {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -14,13 +15,11 @@ impl NameApostropheSpan {
 }
 impl Default for NameApostropheSpan {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.apostrophe") }
     }
 }
 
 pub fn r#start_name_apostrophe(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#worker_host_port: super::workerattr::HostPortAttr) -> NameApostropheSpan {
-    use ::opentelemetry::trace::Tracer;
     let mut name = String::new();
     name.push('\u{0027}');
     name.push_str(&::opentelemetry::KeyValue::from(r#worker_host_port.clone()).value.to_string());
@@ -35,7 +34,6 @@ pub fn r#start_name_apostrophe(context: &::opentelemetry::Context, tracer: &supe
 pub struct NameBackslashSpan { span: ::opentelemetry::global::BoxedSpan }
 impl NameBackslashSpan {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -46,13 +44,11 @@ impl NameBackslashSpan {
 }
 impl Default for NameBackslashSpan {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.backslash") }
     }
 }
 
 pub fn r#start_name_backslash(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#worker_host_port: super::workerattr::HostPortAttr) -> NameBackslashSpan {
-    use ::opentelemetry::trace::Tracer;
     let mut name = String::new();
     name.push('\\');
     name.push_str(&::opentelemetry::KeyValue::from(r#worker_host_port.clone()).value.to_string());
@@ -67,7 +63,6 @@ pub fn r#start_name_backslash(context: &::opentelemetry::Context, tracer: &super
 pub struct NameControlSpan { span: ::opentelemetry::global::BoxedSpan }
 impl NameControlSpan {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -78,13 +73,11 @@ impl NameControlSpan {
 }
 impl Default for NameControlSpan {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.control") }
     }
 }
 
 pub fn r#start_name_control(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#worker_host_port: super::workerattr::HostPortAttr) -> NameControlSpan {
-    use ::opentelemetry::trace::Tracer;
     let mut name = String::new();
     name.push('\u{0008}');
     name.push_str(&::opentelemetry::KeyValue::from(r#worker_host_port.clone()).value.to_string());
@@ -99,7 +92,6 @@ pub fn r#start_name_control(context: &::opentelemetry::Context, tracer: &super::
 pub struct NameUnicodeSpan { span: ::opentelemetry::global::BoxedSpan }
 impl NameUnicodeSpan {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -110,13 +102,11 @@ impl NameUnicodeSpan {
 }
 impl Default for NameUnicodeSpan {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start("myapp.name.unicode") }
     }
 }
 
 pub fn r#start_name_unicode(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#worker_host_port: super::workerattr::HostPortAttr) -> NameUnicodeSpan {
-    use ::opentelemetry::trace::Tracer;
     let mut name = String::new();
     name.push('é');
     name.push_str(&::opentelemetry::KeyValue::from(r#worker_host_port.clone()).value.to_string());
@@ -138,7 +128,6 @@ impl QueueDrainName {
 pub struct QueueDrainSpan { span: ::opentelemetry::global::BoxedSpan }
 impl QueueDrainSpan {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -149,13 +138,11 @@ impl QueueDrainSpan {
 }
 impl Default for QueueDrainSpan {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start("myapp.queue.drain") }
     }
 }
 #[deprecated(note = "Drain queues by dispatching their tasks instead.")]
 pub fn r#start_queue_drain(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, name: QueueDrainName) -> QueueDrainSpan {
-    use ::opentelemetry::trace::Tracer;
     let name = if name.0.is_empty() { "myapp.queue.drain".to_owned() } else { name.0 };
     let attributes = vec![];
     let span = tracer.inner().span_builder(name)
@@ -200,7 +187,6 @@ impl From<TaskDispatchAttr> for TaskDispatchStartAttr {
 pub struct TaskDispatchSpan { span: ::opentelemetry::global::BoxedSpan }
 impl TaskDispatchSpan {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -214,13 +200,11 @@ impl TaskDispatchSpan {
 }
 impl Default for TaskDispatchSpan {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start("myapp.task.dispatch") }
     }
 }
 
 pub fn r#start_task_dispatch(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#worker_host_name: super::workerattr::HostNameAttr, r#worker_host_port: super::workerattr::HostPortAttr, options: impl IntoIterator<Item = TaskDispatchStartAttr>) -> TaskDispatchSpan {
-    use ::opentelemetry::trace::Tracer;
     let mut name = String::new();
     name.push_str("dispatch ");
     name.push_str(&::opentelemetry::KeyValue::from(r#worker_host_name.clone()).value.to_string());
@@ -265,7 +249,6 @@ impl TaskRunName {
 pub struct TaskRunSpan { span: ::opentelemetry::global::BoxedSpan }
 impl TaskRunSpan {
     pub fn into_context(self, parent: &::opentelemetry::Context) -> ::opentelemetry::Context {
-        use ::opentelemetry::trace::TraceContextExt;
         parent.with_span(self.span)
     }
     pub fn span(&mut self) -> &mut ::opentelemetry::global::BoxedSpan { &mut self.span }
@@ -279,13 +262,11 @@ impl TaskRunSpan {
 }
 impl Default for TaskRunSpan {
     fn default() -> Self {
-        use ::opentelemetry::trace::Tracer;
         Self { span: super::tracer::Tracer::default().inner().start("myapp.task.run") }
     }
 }
 
 pub fn r#start_task_run(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, name: TaskRunName, r#myapp_task_state: super::myappattr::TaskStateAttr, options: impl IntoIterator<Item = TaskRunStartAttr>) -> TaskRunSpan {
-    use ::opentelemetry::trace::Tracer;
     let name = if name.0.is_empty() { "myapp.task.run".to_owned() } else { name.0 };
     let mut attributes = vec![::opentelemetry::KeyValue::from(r#myapp_task_state)];
     attributes.extend(options.into_iter().map(::opentelemetry::KeyValue::from));

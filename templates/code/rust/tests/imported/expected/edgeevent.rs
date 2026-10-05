@@ -1,4 +1,7 @@
 #![allow(deprecated)]
+use ::opentelemetry::logs::LogRecord;
+use ::opentelemetry::trace::TraceContextExt;
+
 #[derive(Clone, Debug)]
 pub enum UpstreamFailedOption {
     Severity(::opentelemetry::logs::Severity),
@@ -7,8 +10,6 @@ pub enum UpstreamFailedOption {
 }
 /// A request to an upstream server failed.
 pub fn r#emit_upstream_failed<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#error_type: String, options: impl IntoIterator<Item = UpstreamFailedOption>) {
-    use ::opentelemetry::logs::LogRecord;
-    use ::opentelemetry::trace::TraceContextExt;
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;

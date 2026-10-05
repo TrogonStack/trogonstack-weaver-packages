@@ -1,4 +1,7 @@
 #![allow(deprecated)]
+use ::opentelemetry::logs::LogRecord;
+use ::opentelemetry::trace::TraceContextExt;
+
 #[derive(Clone, Debug)]
 pub enum TaskFinishedOption {
     Severity(::opentelemetry::logs::Severity),
@@ -16,8 +19,6 @@ pub enum TaskFinishedOption {
 ///
 /// Emitted once per task, after its last attempt.
 pub fn r#emit_task_finished<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#myapp_task_state: super::myappattr::TaskStateAttr, options: impl IntoIterator<Item = TaskFinishedOption>) {
-    use ::opentelemetry::logs::LogRecord;
-    use ::opentelemetry::trace::TraceContextExt;
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
@@ -55,8 +56,6 @@ pub enum TaskRetriedOption {
 /// Opt-in: record only when the user requests it.
 #[deprecated(note = "Read the attempt from `myapp.task.finished` instead.")]
 pub fn r#emit_task_retried<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#myapp_task_attempt: super::myappattr::TaskAttemptAttr, options: impl IntoIterator<Item = TaskRetriedOption>) {
-    use ::opentelemetry::logs::LogRecord;
-    use ::opentelemetry::trace::TraceContextExt;
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;

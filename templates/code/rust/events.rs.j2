@@ -1,5 +1,8 @@
 {%- filter trim %}
 #![allow(deprecated)]
+use ::opentelemetry::logs::LogRecord;
+use ::opentelemetry::trace::TraceContextExt;
+
 {% import "signal_helpers.j2" as h %}
 {% for def in ctx.events %}
 {% set name = h.exported(def.short_name) %}
@@ -16,8 +19,6 @@ pub enum {{ name }}Option {
 }
 {{ (h.docs(def) ~ "\n" ~ h.deprecated(def)) | trim }}
 pub fn {{ h.ident('emit.' ~ def.short_name) }}<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}, options: impl IntoIterator<Item = {{ name }}Option>) {
-    use ::opentelemetry::logs::LogRecord;
-    use ::opentelemetry::trace::TraceContextExt;
     let _context_guard = context.clone().attach();
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
