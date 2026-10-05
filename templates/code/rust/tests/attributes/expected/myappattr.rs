@@ -56,6 +56,14 @@ impl From<TaskAssignedByAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(TaskAssignedByAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<TaskAssignedByAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskAssignedByAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Whether the task was cancelled.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskCancelledAttr(bool);
@@ -86,6 +94,14 @@ impl From<TaskCancelledAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: TaskCancelledAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskCancelledAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskCancelledAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskCancelledAttr) -> Self {
+        value.0.into()
     }
 }
 /// Tests Rust string literals.
@@ -126,6 +142,17 @@ impl From<TaskEscapedAttr> for ::opentelemetry::KeyValue {
             TaskEscapedAttr::Quoted => "quote\" slash\\ newline\n tab\t backspace\u{0008} formfeed\u{000c} null\u{0000} snowman☃",
         };
         ::opentelemetry::KeyValue::new(TaskEscapedAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskEscapedAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskEscapedAttr) -> Self {
+        let value: &'static str = match value {
+            TaskEscapedAttr::Quoted => "quote\" slash\\ newline\n tab\t backspace\u{0008} formfeed\u{000c} null\u{0000} snowman☃",
+        };
+        value.into()
     }
 }
 /// Feature flags evaluated for the task.
@@ -172,6 +199,14 @@ impl From<TaskFlagsAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: TaskFlagsAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskFlagsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::Bool(value.0)))
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskFlagsAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskFlagsAttr) -> Self {
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
 /// Unique identifier of the task.
@@ -231,6 +266,14 @@ impl From<TaskIdAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(TaskIdAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<TaskIdAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskIdAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Lane the task was scheduled in.
 #[deprecated(note = "Lanes were replaced by priorities.")]
 #[derive(Debug, Clone, PartialEq, Copy)]
@@ -276,6 +319,18 @@ impl From<TaskLaneAttr> for ::opentelemetry::KeyValue {
             TaskLaneAttr::Slow => "slow",
         };
         ::opentelemetry::KeyValue::new(TaskLaneAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskLaneAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskLaneAttr) -> Self {
+        let value: &'static str = match value {
+            TaskLaneAttr::Fast => "fast",
+            TaskLaneAttr::Slow => "slow",
+        };
+        value.into()
     }
 }
 /// Owner of the task.
@@ -334,6 +389,14 @@ impl From<TaskOwnerAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(TaskOwnerAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<TaskOwnerAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskOwnerAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Whether the scheduler may preempt the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TaskPreemptibleAttr {
@@ -371,6 +434,18 @@ impl From<TaskPreemptibleAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(TaskPreemptibleAttr::KEY, value)
     }
 }
+
+#[allow(deprecated)]
+impl From<TaskPreemptibleAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskPreemptibleAttr) -> Self {
+        let value: bool = match value {
+            TaskPreemptibleAttr::Allowed => true,
+            TaskPreemptibleAttr::Forbidden => false,
+        };
+        value.into()
+    }
+}
 /// Fraction of the task that has completed, between 0 and 1.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskProgressAttr(f64);
@@ -403,6 +478,14 @@ impl From<TaskProgressAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(TaskProgressAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<TaskProgressAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskProgressAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Number of times the task was retried.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskRetriesAttr(i64);
@@ -433,6 +516,14 @@ impl From<TaskRetriesAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: TaskRetriesAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskRetriesAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskRetriesAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskRetriesAttr) -> Self {
+        value.0.into()
     }
 }
 /// Fraction of tasks whose telemetry is sampled.
@@ -470,6 +561,18 @@ impl From<TaskSampleRateAttr> for ::opentelemetry::KeyValue {
             TaskSampleRateAttr::All => 1_f64,
         };
         ::opentelemetry::KeyValue::new(TaskSampleRateAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskSampleRateAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskSampleRateAttr) -> Self {
+        let value: f64 = match value {
+            TaskSampleRateAttr::Tenth => 0.1_f64,
+            TaskSampleRateAttr::All => 1_f64,
+        };
+        value.into()
     }
 }
 /// Shards the task touched.
@@ -516,6 +619,14 @@ impl From<TaskShardIdsAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: TaskShardIdsAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskShardIdsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::I64(value.0)))
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskShardIdsAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskShardIdsAttr) -> Self {
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
 /// Current state of the task.
@@ -567,6 +678,19 @@ impl From<TaskStateAttr> for ::opentelemetry::KeyValue {
             TaskStateAttr::Paused => "paused",
         };
         ::opentelemetry::KeyValue::new(TaskStateAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskStateAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskStateAttr) -> Self {
+        let value: &'static str = match value {
+            TaskStateAttr::Queued => "queued",
+            TaskStateAttr::Running => "running",
+            TaskStateAttr::Paused => "paused",
+        };
+        value.into()
     }
 }
 /// Tags attached to the task.
@@ -621,6 +745,14 @@ impl From<TaskTagsAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(TaskTagsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::String(value.0)))
     }
 }
+
+#[allow(deprecated)]
+impl From<TaskTagsAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskTagsAttr) -> Self {
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
+    }
+}
 /// Scheduling weights applied to the task.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TaskWeightsAttr(Vec<f64>);
@@ -665,5 +797,13 @@ impl From<TaskWeightsAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: TaskWeightsAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskWeightsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::F64(value.0)))
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskWeightsAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskWeightsAttr) -> Self {
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }

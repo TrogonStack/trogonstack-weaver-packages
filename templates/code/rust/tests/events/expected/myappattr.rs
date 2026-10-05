@@ -45,6 +45,14 @@ impl From<BoolValuesAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(BoolValuesAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::Bool(value.0)))
     }
 }
+
+#[allow(deprecated)]
+impl From<BoolValuesAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: BoolValuesAttr) -> Self {
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
+    }
+}
 /// Synthetic double values.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DoubleValuesAttr(Vec<f64>);
@@ -91,6 +99,14 @@ impl From<DoubleValuesAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(DoubleValuesAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::F64(value.0)))
     }
 }
+
+#[allow(deprecated)]
+impl From<DoubleValuesAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: DoubleValuesAttr) -> Self {
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
+    }
+}
 /// Synthetic int values.
 #[derive(Debug, Clone, PartialEq)]
 pub struct IntValuesAttr(Vec<i64>);
@@ -135,6 +151,14 @@ impl From<IntValuesAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: IntValuesAttr) -> Self {
         ::opentelemetry::KeyValue::new(IntValuesAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::I64(value.0)))
+    }
+}
+
+#[allow(deprecated)]
+impl From<IntValuesAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: IntValuesAttr) -> Self {
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }
 /// Synthetic string values.
@@ -189,6 +213,14 @@ impl From<StringValuesAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(StringValuesAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::String(value.0)))
     }
 }
+
+#[allow(deprecated)]
+impl From<StringValuesAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: StringValuesAttr) -> Self {
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
+    }
+}
 /// Number of the attempt, starting at 1.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct TaskAttemptAttr(i64);
@@ -219,6 +251,14 @@ impl From<TaskAttemptAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: TaskAttemptAttr) -> Self {
         ::opentelemetry::KeyValue::new(TaskAttemptAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskAttemptAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskAttemptAttr) -> Self {
+        value.0.into()
     }
 }
 /// Current state of the task.
@@ -263,5 +303,17 @@ impl From<TaskStateAttr> for ::opentelemetry::KeyValue {
             TaskStateAttr::Failed => "failed",
         };
         ::opentelemetry::KeyValue::new(TaskStateAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskStateAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskStateAttr) -> Self {
+        let value: &'static str = match value {
+            TaskStateAttr::Done => "done",
+            TaskStateAttr::Failed => "failed",
+        };
+        value.into()
     }
 }

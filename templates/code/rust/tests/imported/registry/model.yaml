@@ -73,3 +73,5 @@ events:
         requirement_level: required
       - ref: server.address
         requirement_level: recommended
+      - ref: http.request.method_list
+        requirement_level: recommended

@@ -36,6 +36,18 @@ impl From<LevelAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(LevelAttr::KEY, value)
     }
 }
+
+#[allow(deprecated)]
+impl From<LevelAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: LevelAttr) -> Self {
+        let value: i64 = match value {
+            LevelAttr::Low => 1,
+            LevelAttr::High => 2,
+        };
+        value.into()
+    }
+}
 /// How the user was authenticated.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum MethodAttr {
@@ -78,6 +90,18 @@ impl From<MethodAttr> for ::opentelemetry::KeyValue {
             MethodAttr::Token => "token",
         };
         ::opentelemetry::KeyValue::new(MethodAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<MethodAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: MethodAttr) -> Self {
+        let value: &'static str = match value {
+            MethodAttr::Password => "password",
+            MethodAttr::Token => "token",
+        };
+        value.into()
     }
 }
 /// Identifier of the authenticated user.
@@ -133,5 +157,13 @@ impl From<UserIdAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: UserIdAttr) -> Self {
         ::opentelemetry::KeyValue::new(UserIdAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<UserIdAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: UserIdAttr) -> Self {
+        value.0.into()
     }
 }

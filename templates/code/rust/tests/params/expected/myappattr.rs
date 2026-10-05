@@ -54,3 +54,11 @@ impl From<RequestUrlAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(RequestUrlAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<RequestUrlAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: RequestUrlAttr) -> Self {
+        value.0.into()
+    }
+}

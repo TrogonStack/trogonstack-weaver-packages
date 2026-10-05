@@ -67,13 +67,13 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
     provider.force_flush().unwrap();
     let exported = exporter.get_finished_metrics().unwrap();
     let scope = exported[0].scope_metrics().next().unwrap();
-    assert_eq!(scope.scope().version(), Some("0.0.0"));
+    assert_eq!(scope.scope().version(), None);
     assert!(scope
         .scope()
         .attributes()
         .any(|attribute| attribute.key.as_str() == "scope.kind"
             && attribute.value.as_str() == "worker"));
-    assert_eq!(scope.scope().name(), "generated_semconv");
+    assert_eq!(scope.scope().name(), "generated-semconv");
     assert_eq!(
         scope.scope().schema_url(),
         Some(generated_semconv::SCHEMA_URL)
@@ -214,8 +214,8 @@ fn observable_callbacks_export_values_and_typed_attributes() {
     provider.force_flush().unwrap();
     let exported = exporter.get_finished_metrics().unwrap();
     let scope = exported[0].scope_metrics().next().unwrap();
-    assert_eq!(scope.scope().name(), "generated_semconv");
-    assert_eq!(scope.scope().version(), Some("0.0.0"));
+    assert_eq!(scope.scope().name(), "generated-semconv");
+    assert_eq!(scope.scope().version(), None);
     assert_eq!(
         scope.scope().schema_url(),
         Some(generated_semconv::SCHEMA_URL)
@@ -303,8 +303,8 @@ fn alternate_numeric_types_export_sync_and_observable_measurements() {
                     .any(|attribute| attribute == &KeyValue::new("measurement.mode", mode))
             })
             .unwrap();
-        assert_eq!(scope.scope().name(), "generated_semconv");
-        assert_eq!(scope.scope().version(), Some("0.0.0"));
+        assert_eq!(scope.scope().name(), "generated-semconv");
+        assert_eq!(scope.scope().version(), None);
         assert_eq!(
             scope.scope().schema_url(),
             Some(generated_semconv::SCHEMA_URL)

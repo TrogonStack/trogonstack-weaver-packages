@@ -30,14 +30,12 @@ pub fn r#emit_task_errored<L: ::opentelemetry::logs::Logger>(context: &::opentel
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    let attribute = ::opentelemetry::KeyValue::from(r#error_type);
-    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    record.add_attribute(upstream::errorattr::TypeAttr::KEY, r#error_type);
     for option in attributes {
-        let attribute = match option {
-            TaskErroredOption::ServerPort(value) => ::opentelemetry::KeyValue::new("server.port", value),
+        match option {
+            TaskErroredOption::ServerPort(value) => record.add_attribute("server.port", value),
             TaskErroredOption::Severity(_) | TaskErroredOption::Timestamp(_) => continue,
-        };
-        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+        }
     }
     logger.inner().emit(record);
 }

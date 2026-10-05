@@ -40,3 +40,22 @@ metrics:
         requirement_level: recommended
       - ref: myapp.request.url
         requirement_level: recommended
+spans:
+  - type: acme.billing.invoice.issue
+    kind: internal
+    stability: stable
+    requirement_level: recommended
+    brief: An invoice is being issued.
+    name:
+      note: "`invoice {acme.billing.invoice.id}`"
+    attributes:
+      - ref: acme.billing.invoice.id
+        requirement_level: required
+events:
+  - name: acme.billing.invoice.issued
+    stability: stable
+    requirement_level: recommended
+    brief: An invoice was issued.
+    attributes:
+      - ref: acme.billing.invoice.id
+        requirement_level: required

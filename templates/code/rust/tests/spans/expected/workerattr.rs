@@ -54,6 +54,14 @@ impl From<HostNameAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(HostNameAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<HostNameAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: HostNameAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Port the worker listens on.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct HostPortAttr(i64);
@@ -84,5 +92,13 @@ impl From<HostPortAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: HostPortAttr) -> Self {
         ::opentelemetry::KeyValue::new(HostPortAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<HostPortAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: HostPortAttr) -> Self {
+        value.0.into()
     }
 }

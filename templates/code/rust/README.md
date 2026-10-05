@@ -42,18 +42,18 @@ the signal modules. Names use the first dotted
 segment as their namespace; `vendor_prefixes` removes a leading vendor segment
 before choosing that namespace.
 
-| Module              | API                                                                                       |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| `<namespace>attr`   | Attribute newtypes and enum variants, `KEY` and conversion into `KeyValue`.               |
-| `options`           | Typed instrumentation options containing scope configuration.                             |
-| `scope`             | Scope attributes configuration; package identity is fixed.                                |
-| `meter`             | Schema-aware `Meter`, with `new`, `inner`, and a no-op `Default`.                         |
-| `tracer`            | Schema-aware `Tracer`, with `new`, `inner`, and a no-op `Default`.                        |
-| `logger`            | Schema-aware generic `Logger`, with `new`, `inner`, and a no-op `Default`.                |
-| `<namespace>metric` | Synchronous instruments and observable counters, up-down counters, and gauges.            |
-| `<namespace>span`   | Span starters, typed names, start attributes, and attributes allowed after starting.      |
-| `<namespace>event`  | Typed log event emitters and options for attributes, severity, and timestamp.             |
-| `<namespace>entity` | Typed entity values, attribute iterators, and resources carrying the registry schema URL. |
+| Module              | API                                                                                            |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| `<namespace>attr`   | Attribute newtypes and enum variants, `KEY` and conversions into `KeyValue` or log `AnyValue`. |
+| `options`           | Typed instrumentation options containing scope configuration.                                  |
+| `scope`             | Scope attributes configuration; package identity is fixed.                                     |
+| `meter`             | Schema-aware `Meter`, with `new`, `inner`, and a no-op `Default`.                              |
+| `tracer`            | Schema-aware `Tracer`, with `new`, `inner`, and a no-op `Default`.                             |
+| `logger`            | Schema-aware generic `Logger`, with `new`, `inner`, and a no-op `Default`.                     |
+| `<namespace>metric` | Synchronous instruments and observable counters, up-down counters, and gauges.                 |
+| `<namespace>span`   | Span starters, typed names, start attributes, and attributes allowed after starting.           |
+| `<namespace>event`  | Typed log event emitters and options for attributes, severity, and timestamp.                  |
+| `<namespace>entity` | Typed entity values, attribute iterators, and resources carrying the registry schema URL.      |
 
 Handle modules are emitted when the registry includes their corresponding
 signals. Their `new(provider, options)` constructor takes the exact
@@ -69,11 +69,11 @@ let tracer = semconv::tracer::Tracer::new(&provider, options);
 ```
 
 Use `InstrumentationOptions::default()` when no scope attributes are needed.
-The instrumentation name and version come from the containing Cargo package's
-`CARGO_PKG_NAME` and `CARGO_PKG_VERSION` at compile time. If generated code lives
-in a library crate, that library supplies the identity; if it lives in the
-application crate, the application supplies it. The registry schema URL is also
-fixed. These values are not configuration fields.
+The instrumentation identity is fixed during generation. Set
+`instrumentation_name` and `instrumentation_version` in the Weaver params to
+choose its name and version. The name defaults to `generated-semconv`; an empty
+version omits SDK version metadata. The registry supplies the schema URL.
+Runtime options cannot override these values.
 
 Configured scope attributes move into OpenTelemetry without rebuilding their
 storage. The shared scope and options modules are emitted when a handle is
@@ -101,6 +101,10 @@ through `AsRef<[T]>`. Attributes implement `Display`
 without building a temporary `KeyValue`; arrays follow OpenTelemetry's array
 formatting. Boolean, integer, floating-point and enum attributes are `Copy`.
 Deprecation metadata becomes Rust deprecation annotations.
+
+Attributes also convert directly into `opentelemetry::logs::AnyValue` through
+`From`. Generated event emitters pass `Attr::KEY` and the typed attribute to
+the SDK log record.
 
 ### Metrics
 
@@ -209,6 +213,8 @@ string with `.into()` or `StringValue::from` at the call site.
 
 | Parameter                      | Default                     | Purpose                                                                   |
 | ------------------------------ | --------------------------- | ------------------------------------------------------------------------- |
+| `instrumentation_name`         | `generated-semconv`         | Name baked into every generated instrumentation scope.                    |
+| `instrumentation_version`      | `""`                        | Version baked into generated scopes; empty omits SDK version metadata.    |
 | `vendor_prefixes`              | `[]`                        | Leading vendor segments removed when deriving namespaces and identifiers. |
 | `exclude_deprecated`           | `false`                     | Exclude deprecated conventions and enum members.                          |
 | `stable_only`                  | `false`                     | Include only stable conventions and enum members.                         |

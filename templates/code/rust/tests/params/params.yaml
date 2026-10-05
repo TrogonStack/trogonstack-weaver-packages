@@ -1,4 +1,6 @@
 params:
+  instrumentation_name: synthetic-billing
+  instrumentation_version: "2.3.4"
   module_description: Typed telemetry for a synthetic registry.
   header_source: model/
   regenerate_command: mise run generate

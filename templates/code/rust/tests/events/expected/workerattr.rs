@@ -54,3 +54,11 @@ impl From<HostNameAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(HostNameAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<HostNameAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: HostNameAttr) -> Self {
+        value.0.into()
+    }
+}

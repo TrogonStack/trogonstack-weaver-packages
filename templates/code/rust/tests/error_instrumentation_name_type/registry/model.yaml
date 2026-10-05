@@ -1,0 +1,5 @@
+file_format: definition/2
+events:
+  - name: probe.tick
+    stability: stable
+    brief: A synthetic tick occurred.

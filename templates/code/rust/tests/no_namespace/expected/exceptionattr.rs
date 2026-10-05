@@ -54,6 +54,14 @@ impl From<MessageAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(MessageAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<MessageAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: MessageAttr) -> Self {
+        value.0.into()
+    }
+}
 /// The type of the exception.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TypeAttr(::opentelemetry::StringValue);
@@ -107,5 +115,13 @@ impl From<TypeAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: TypeAttr) -> Self {
         ::opentelemetry::KeyValue::new(TypeAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<TypeAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TypeAttr) -> Self {
+        value.0.into()
     }
 }

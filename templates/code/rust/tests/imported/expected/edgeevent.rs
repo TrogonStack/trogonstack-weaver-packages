@@ -6,13 +6,14 @@ use ::opentelemetry::trace::TraceContextExt;
 pub enum UpstreamFailedOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
+    HttpRequestMethodList(Vec<::opentelemetry::StringValue>),
     ServerAddress(::opentelemetry::StringValue),
 }
 /// A request to an upstream server failed.
 pub fn r#emit_upstream_failed<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#error_type: ::opentelemetry::StringValue, options: impl IntoIterator<Item = UpstreamFailedOption>) {
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let mut attributes = ::smallvec::SmallVec::<[UpstreamFailedOption; 1]>::new();
+    let mut attributes = ::smallvec::SmallVec::<[UpstreamFailedOption; 2]>::new();
     for option in options {
         match option {
             UpstreamFailedOption::Severity(value) => severity = value,
@@ -30,14 +31,13 @@ pub fn r#emit_upstream_failed<L: ::opentelemetry::logs::Logger>(context: &::open
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    let attribute = ::opentelemetry::KeyValue::new("error.type", r#error_type);
-    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    record.add_attribute("error.type", r#error_type);
     for option in attributes {
-        let attribute = match option {
-            UpstreamFailedOption::ServerAddress(value) => ::opentelemetry::KeyValue::new("server.address", value),
+        match option {
+            UpstreamFailedOption::HttpRequestMethodList(value) => record.add_attribute("http.request.method_list", value.into_iter().collect::<::opentelemetry::logs::AnyValue>()),
+            UpstreamFailedOption::ServerAddress(value) => record.add_attribute("server.address", value),
             UpstreamFailedOption::Severity(_) | UpstreamFailedOption::Timestamp(_) => continue,
-        };
-        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+        }
     }
     logger.inner().emit(record);
 }

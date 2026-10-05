@@ -1,5 +1,20 @@
 file_format: definition/2
 attributes:
+  - key: probe.flag
+    type: boolean
+    stability: stable
+    brief: A synthetic boolean value.
+    examples: true
+  - key: probe.fraction
+    type: double
+    stability: stable
+    brief: A synthetic fractional value.
+    examples: 0.5
+  - key: probe.label
+    type: string
+    stability: stable
+    brief: A synthetic text value.
+    examples: ["label"]
   - key: probe.required
     type: int
     stability: stable

@@ -54,6 +54,14 @@ impl From<Http2STATUSApiIDAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Http2STATUSApiIDAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<Http2STATUSApiIDAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: Http2STATUSApiIDAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Synthetic mode.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Mode2STATEAttr {
@@ -92,5 +100,16 @@ impl From<Mode2STATEAttr> for ::opentelemetry::KeyValue {
             Mode2STATEAttr::HTTP2ReadySTATE => "ready",
         };
         ::opentelemetry::KeyValue::new(Mode2STATEAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<Mode2STATEAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: Mode2STATEAttr) -> Self {
+        let value: &'static str = match value {
+            Mode2STATEAttr::HTTP2ReadySTATE => "ready",
+        };
+        value.into()
     }
 }

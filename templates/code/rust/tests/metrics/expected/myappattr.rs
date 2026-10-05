@@ -54,6 +54,14 @@ impl From<TaskIdAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(TaskIdAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<TaskIdAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskIdAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Current state of the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TaskStateAttr {
@@ -96,5 +104,17 @@ impl From<TaskStateAttr> for ::opentelemetry::KeyValue {
             TaskStateAttr::Done => "done",
         };
         ::opentelemetry::KeyValue::new(TaskStateAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<TaskStateAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskStateAttr) -> Self {
+        let value: &'static str = match value {
+            TaskStateAttr::Queued => "queued",
+            TaskStateAttr::Done => "done",
+        };
+        value.into()
     }
 }

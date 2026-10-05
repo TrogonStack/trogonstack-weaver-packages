@@ -139,5 +139,26 @@ impl From<{{ attr.name }}> for ::opentelemetry::KeyValue {
 {% endif %}
     }
 }
+
+#[allow(deprecated)]
+impl From<{{ attr.name }}> for ::opentelemetry::logs::AnyValue {
+{% if attr.type is not mapping or attr.type.members | length <= 8 %}
+    #[inline]
+{% endif %}
+    fn from(value: {{ attr.name }}) -> Self {
+{% if attr.type is mapping %}
+        let value: {{ "&'static str" if attr.value_type == "string" else attr.value_type | map_text("rust_type") }} = match value {
+{% for member in attr.type.members %}
+            {{ attr.name }}::{{ member.name }} => {{ member.literal }}{% if attr.value_type == "double" %}_f64{% endif %},
+{% endfor %}
+        };
+        value.into()
+{% elif "[]" in attr.value_type %}
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
+{% else %}
+        value.0.into()
+{% endif %}
+    }
+}
 {% endfor %}
 {% endfilter -%}{{ "\n" -}}

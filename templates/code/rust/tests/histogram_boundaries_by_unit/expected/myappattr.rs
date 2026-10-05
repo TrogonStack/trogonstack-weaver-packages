@@ -54,3 +54,11 @@ impl From<TaskIdAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(TaskIdAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<TaskIdAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TaskIdAttr) -> Self {
+        value.0.into()
+    }
+}

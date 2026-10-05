@@ -43,6 +43,18 @@ impl From<MethodAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(MethodAttr::KEY, value)
     }
 }
+
+#[allow(deprecated)]
+impl From<MethodAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: MethodAttr) -> Self {
+        let value: &'static str = match value {
+            MethodAttr::Password => "password",
+            MethodAttr::Token => "token",
+        };
+        value.into()
+    }
+}
 /// Identifier of the authenticated user.
 #[derive(Debug, Clone, PartialEq)]
 pub struct UserIdAttr(::opentelemetry::StringValue);
@@ -96,5 +108,13 @@ impl From<UserIdAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: UserIdAttr) -> Self {
         ::opentelemetry::KeyValue::new(UserIdAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<UserIdAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: UserIdAttr) -> Self {
+        value.0.into()
     }
 }

@@ -61,11 +61,47 @@ fn imported_native_string_arrays_format_derived_span_names() {
     provider.force_flush().unwrap();
     let spans = exporter.get_finished_spans().unwrap();
     assert_eq!(spans.len(), 1);
-    assert_eq!(spans[0].instrumentation_scope.name(), "generated_semconv");
-    assert_eq!(spans[0].instrumentation_scope.version(), Some("0.0.0"));
+    assert_eq!(spans[0].instrumentation_scope.name(), "generated-semconv");
+    assert_eq!(spans[0].instrumentation_scope.version(), None);
     assert_eq!(
         spans[0].instrumentation_scope.schema_url(),
         Some(generated_semconv::SCHEMA_URL)
     );
     assert_eq!(spans[0].name, "[\"GET\",\"POST\"]");
+}
+
+#[test]
+fn imported_native_string_array_events_preserve_order_and_duplicates() {
+    let exporter = opentelemetry_sdk::logs::InMemoryLogExporter::default();
+    let provider = opentelemetry_sdk::logs::SdkLoggerProvider::builder()
+        .with_simple_exporter(exporter.clone())
+        .build();
+    edgeevent::emit_upstream_failed(
+        &opentelemetry::Context::new(),
+        &logger::Logger::new(&provider, InstrumentationOptions::default()),
+        StringValue::from("timeout"),
+        [edgeevent::UpstreamFailedOption::HttpRequestMethodList(
+            vec![
+                StringValue::from("GET"),
+                StringValue::from("GET"),
+                StringValue::from("POST"),
+            ],
+        )],
+    );
+    provider.force_flush().unwrap();
+    let records = exporter.get_emitted_logs().unwrap();
+    let value = &records[0]
+        .record
+        .attributes_iter()
+        .find(|(key, _)| key.as_str() == "http.request.method_list")
+        .unwrap()
+        .1;
+    assert_eq!(
+        value,
+        &opentelemetry::logs::AnyValue::ListAny(Box::new(vec![
+            "GET".into(),
+            "GET".into(),
+            "POST".into()
+        ]))
+    );
 }

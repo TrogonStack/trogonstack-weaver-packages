@@ -43,3 +43,15 @@ impl From<LiteralAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(LiteralAttr::KEY, value)
     }
 }
+
+#[allow(deprecated)]
+impl From<LiteralAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: LiteralAttr) -> Self {
+        let value: &'static str = match value {
+            LiteralAttr::Literal => "backspace\\b formfeed\\f unicode\\u1234 doubled\\\\b tripled\\\\\\u0000",
+            LiteralAttr::Controls => "backspace\u{0008} formfeed\u{000c} unicode\u{0001} slash\\b",
+        };
+        value.into()
+    }
+}

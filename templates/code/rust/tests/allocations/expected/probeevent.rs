@@ -31,15 +31,13 @@ pub fn r#emit_recorded<L: ::opentelemetry::logs::Logger>(context: &::opentelemet
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    let attribute = ::opentelemetry::KeyValue::from(r#probe_required);
-    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    record.add_attribute(super::probeattr::RequiredAttr::KEY, r#probe_required);
     for option in attributes {
-        let attribute = match option {
-            RecordedOption::Optional(value) => ::opentelemetry::KeyValue::from(value),
-            RecordedOption::Values(value) => ::opentelemetry::KeyValue::from(value),
+        match option {
+            RecordedOption::Optional(value) => record.add_attribute(super::probeattr::OptionalAttr::KEY, value),
+            RecordedOption::Values(value) => record.add_attribute(super::probeattr::ValuesAttr::KEY, value),
             RecordedOption::Severity(_) | RecordedOption::Timestamp(_) => continue,
-        };
-        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+        }
     }
     logger.inner().emit(record);
 }

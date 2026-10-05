@@ -32,6 +32,14 @@ impl From<HostCpuCountAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(HostCpuCountAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<HostCpuCountAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: HostCpuCountAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Name of the host.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HostNameAttr(::opentelemetry::StringValue);
@@ -85,6 +93,14 @@ impl From<HostNameAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: HostNameAttr) -> Self {
         ::opentelemetry::KeyValue::new(HostNameAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<HostNameAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: HostNameAttr) -> Self {
+        value.0.into()
     }
 }
 /// Role the host plays in the cluster.
@@ -142,6 +158,14 @@ impl From<HostRoleAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(HostRoleAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<HostRoleAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: HostRoleAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Type of the host.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum HostTypeAttr {
@@ -184,6 +208,18 @@ impl From<HostTypeAttr> for ::opentelemetry::KeyValue {
             HostTypeAttr::Virtual => "virtual",
         };
         ::opentelemetry::KeyValue::new(HostTypeAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<HostTypeAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: HostTypeAttr) -> Self {
+        let value: &'static str = match value {
+            HostTypeAttr::Physical => "physical",
+            HostTypeAttr::Virtual => "virtual",
+        };
+        value.into()
     }
 }
 /// Name of the queue.
@@ -241,6 +277,14 @@ impl From<QueueNameAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(QueueNameAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<QueueNameAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: QueueNameAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Number of items currently in the queue.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct QueueSizeAttr(i64);
@@ -271,5 +315,13 @@ impl From<QueueSizeAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: QueueSizeAttr) -> Self {
         ::opentelemetry::KeyValue::new(QueueSizeAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<QueueSizeAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: QueueSizeAttr) -> Self {
+        value.0.into()
     }
 }

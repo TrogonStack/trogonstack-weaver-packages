@@ -9,4 +9,8 @@ pub mod myappattr;
 pub mod scope;
 pub mod options;
 pub mod meter;
+pub mod tracer;
+pub mod logger;
+pub mod billingevent;
 pub mod billingmetric;
+pub mod billingspan;

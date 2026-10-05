@@ -36,3 +36,15 @@ impl From<BoundaryAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(BoundaryAttr::KEY, value)
     }
 }
+
+#[allow(deprecated)]
+impl From<BoundaryAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: BoundaryAttr) -> Self {
+        let value: i64 = match value {
+            BoundaryAttr::Minimum => -9223372036854775808,
+            BoundaryAttr::Maximum => 9223372036854775807,
+        };
+        value.into()
+    }
+}

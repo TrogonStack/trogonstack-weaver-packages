@@ -4,8 +4,8 @@ pub struct Scope {
 }
 impl From<Scope> for ::opentelemetry::InstrumentationScope {
     fn from(value: Scope) -> Self {
-        Self::builder(env!("CARGO_PKG_NAME"))
-            .with_version(env!("CARGO_PKG_VERSION"))
+        Self::builder("synthetic-billing")
+            .with_version("2.3.4")
             .with_schema_url(super::SCHEMA_URL)
             .with_attributes(value.attributes)
             .build()

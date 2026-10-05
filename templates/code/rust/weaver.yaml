@@ -3,6 +3,8 @@ whitespace_control:
   lstrip_blocks: true
 
 params:
+  instrumentation_name: generated-semconv
+  instrumentation_version: ""
   module_description: ""
   histogram_boundaries_by_unit:
     s: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]
@@ -26,7 +28,11 @@ templates:
       def rust_literal:
         if type == "string" then explode | map([.] | implode | tojson | gsub("\\\\b"; "\\u{0008}") | gsub("\\\\f"; "\\u{000c}") | gsub("\\\\u(?<code>[0-9a-fA-F]{4})"; "\\u{\(.code)}") | .[1:-1]) | join("") | "\"" + . + "\""
         else tostring end;
-      .schema_url as $schema
+      if ($instrumentation_name | type) != "string" then error("instrumentation_name must be a nonempty string")
+      elif ($instrumentation_name | length) == 0 then error("instrumentation_name must be a nonempty string")
+      elif ($instrumentation_version | type) != "string" then error("instrumentation_version must be a string")
+      else . end
+      | .schema_url as $schema
       | if $schema == null or $schema == "https://unknown/unknown" or ($schema | test("^https?://[^/]+(/[^/]+)*/[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$") | not)
         then error("the registry schema_url must name a schema version") else . end
       | {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
@@ -615,13 +621,12 @@ templates:
   - template: logger.rs.j2
     filter: |-
       def kept($o):
-        stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
-        | map(.attributes = ((.attributes // []) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)));
+        stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o);
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $o
       | [.registry.events // [] | .[].name] as $bases
       | ((.registry.events // [] | kept($o))
          + (.refinements.events // [] | map(select(.id as $id | $bases | any(. == $id) | not)) | kept($o)))
-      | if length > 0 then [{has_attributes: any((.attributes | length) > 0)}] else [] end
+      | if length > 0 then [{}] else [] end
     application_mode: each
     file_name: logger.rs
 

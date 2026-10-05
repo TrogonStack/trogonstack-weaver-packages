@@ -358,8 +358,8 @@ fn scope_attributes_move_without_rebuilding_storage() {
         (log_provider.0.scope.lock().unwrap(), original_log),
     ] {
         let scope = stored.as_ref().unwrap();
-        assert_eq!(scope.name(), "generated_semconv");
-        assert_eq!(scope.version(), Some("0.0.0"));
+        assert_eq!(scope.name(), "generated-semconv");
+        assert_eq!(scope.version(), None);
         assert_eq!(scope.schema_url(), Some(generated_semconv::SCHEMA_URL));
         assert_eq!(
             scope.attributes().next().unwrap() as *const KeyValue,
@@ -374,7 +374,7 @@ fn scope_attributes_move_without_rebuilding_storage() {
 }
 
 #[test]
-fn default_options_apply_fixed_package_identity() {
+fn default_options_apply_generated_identity() {
     let metric_provider = BorrowedMeterProvider {
         meter: Meter::new(Arc::new(MetricProvider(Arc::new(MetricState::default())))),
         scope: Mutex::new(None),
@@ -382,10 +382,24 @@ fn default_options_apply_fixed_package_identity() {
     let _meter = meter::Meter::new(&metric_provider, InstrumentationOptions::default());
     let stored = metric_provider.scope.lock().unwrap();
     let stored = stored.as_ref().unwrap();
-    assert_eq!(stored.name(), "generated_semconv");
-    assert_eq!(stored.version(), Some("0.0.0"));
+    assert_eq!(stored.name(), "generated-semconv");
+    assert_eq!(stored.version(), None);
     assert_eq!(stored.attributes().count(), 0);
     assert_eq!(stored.schema_url(), Some(generated_semconv::SCHEMA_URL));
+}
+
+#[test]
+fn direct_scalar_log_values_move_without_heap_allocations() {
+    let owned = probeattr::LabelAttr::from(String::from("owned text"));
+    let count = allocations(|| {
+        black_box(AnyValue::from(probeattr::RequiredAttr::from(7)));
+        black_box(AnyValue::from(probeattr::FlagAttr::from(true)));
+        black_box(AnyValue::from(probeattr::FractionAttr::from(0.5)));
+        black_box(AnyValue::from(probeattr::LabelAttr::from("static text")));
+        black_box(AnyValue::from(owned));
+    });
+    assert_eq!(count, 0);
+    println!("generated direct scalar log conversion allocations: {count}");
 }
 
 #[test]

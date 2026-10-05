@@ -31,6 +31,14 @@ impl From<SequenceAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(SequenceAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<SequenceAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: SequenceAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Name of the component that sent the heartbeat.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SourceAttr(::opentelemetry::StringValue);
@@ -84,5 +92,13 @@ impl From<SourceAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: SourceAttr) -> Self {
         ::opentelemetry::KeyValue::new(SourceAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<SourceAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: SourceAttr) -> Self {
+        value.0.into()
     }
 }

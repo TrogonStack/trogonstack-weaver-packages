@@ -39,19 +39,17 @@ pub fn r#emit_task_finished<L: ::opentelemetry::logs::Logger>(context: &::opente
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    let attribute = ::opentelemetry::KeyValue::from(r#myapp_task_state);
-    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    record.add_attribute(super::myappattr::TaskStateAttr::KEY, r#myapp_task_state);
     for option in attributes {
-        let attribute = match option {
-            TaskFinishedOption::BoolValues(value) => ::opentelemetry::KeyValue::from(value),
-            TaskFinishedOption::DoubleValues(value) => ::opentelemetry::KeyValue::from(value),
-            TaskFinishedOption::IntValues(value) => ::opentelemetry::KeyValue::from(value),
-            TaskFinishedOption::StringValues(value) => ::opentelemetry::KeyValue::from(value),
-            TaskFinishedOption::TaskAttempt(value) => ::opentelemetry::KeyValue::from(value),
-            TaskFinishedOption::HostName(value) => ::opentelemetry::KeyValue::from(value),
+        match option {
+            TaskFinishedOption::BoolValues(value) => record.add_attribute(super::myappattr::BoolValuesAttr::KEY, value),
+            TaskFinishedOption::DoubleValues(value) => record.add_attribute(super::myappattr::DoubleValuesAttr::KEY, value),
+            TaskFinishedOption::IntValues(value) => record.add_attribute(super::myappattr::IntValuesAttr::KEY, value),
+            TaskFinishedOption::StringValues(value) => record.add_attribute(super::myappattr::StringValuesAttr::KEY, value),
+            TaskFinishedOption::TaskAttempt(value) => record.add_attribute(super::myappattr::TaskAttemptAttr::KEY, value),
+            TaskFinishedOption::HostName(value) => record.add_attribute(super::workerattr::HostNameAttr::KEY, value),
             TaskFinishedOption::Severity(_) | TaskFinishedOption::Timestamp(_) => continue,
-        };
-        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+        }
     }
     logger.inner().emit(record);
 }
@@ -82,7 +80,6 @@ pub fn r#emit_task_retried<L: ::opentelemetry::logs::Logger>(context: &::opentel
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    let attribute = ::opentelemetry::KeyValue::from(r#myapp_task_attempt);
-    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    record.add_attribute(super::myappattr::TaskAttemptAttr::KEY, r#myapp_task_attempt);
     logger.inner().emit(record);
 }

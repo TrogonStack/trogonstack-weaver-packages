@@ -43,6 +43,18 @@ impl From<MethodAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(MethodAttr::KEY, value)
     }
 }
+
+#[allow(deprecated)]
+impl From<MethodAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: MethodAttr) -> Self {
+        let value: &'static str = match value {
+            MethodAttr::Password => "password",
+            MethodAttr::Token => "token",
+        };
+        value.into()
+    }
+}
 /// Whether the attempt succeeded.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct SuccessAttr(bool);
@@ -73,5 +85,13 @@ impl From<SuccessAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: SuccessAttr) -> Self {
         ::opentelemetry::KeyValue::new(SuccessAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<SuccessAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: SuccessAttr) -> Self {
+        value.0.into()
     }
 }

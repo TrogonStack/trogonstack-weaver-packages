@@ -26,8 +26,14 @@ fn signal_metadata_preserves_literal_backslash_sequences() {
     provider.force_flush().unwrap();
     let exported = exporter.get_finished_metrics().unwrap();
     let scope = exported[0].scope_metrics().next().unwrap();
-    assert_eq!(scope.scope().name(), "generated_semconv");
-    assert_eq!(scope.scope().version(), Some("0.0.0"));
+    assert_eq!(
+        scope.scope().name(),
+        r#"literal \b \f \u1234 quote" double\\slash"#
+    );
+    assert_eq!(
+        scope.scope().version(),
+        Some("controls \u{0008} \u{000c} \u{0001} literal\\b quote\"")
+    );
     assert_eq!(
         scope.scope().schema_url(),
         Some(generated_semconv::SCHEMA_URL)

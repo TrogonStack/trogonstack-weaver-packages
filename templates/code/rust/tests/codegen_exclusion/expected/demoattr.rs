@@ -54,6 +54,14 @@ impl From<KeptAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(KeptAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<KeptAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: KeptAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Synthetic mode.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum ModeAttr {
@@ -92,5 +100,16 @@ impl From<ModeAttr> for ::opentelemetry::KeyValue {
             ModeAttr::Kept => "kept",
         };
         ::opentelemetry::KeyValue::new(ModeAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<ModeAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: ModeAttr) -> Self {
+        let value: &'static str = match value {
+            ModeAttr::Kept => "kept",
+        };
+        value.into()
     }
 }

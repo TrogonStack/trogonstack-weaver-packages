@@ -56,6 +56,14 @@ impl From<AssignedByAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(AssignedByAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<AssignedByAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: AssignedByAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Whether the task was cancelled.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct CancelledAttr(bool);
@@ -86,6 +94,14 @@ impl From<CancelledAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: CancelledAttr) -> Self {
         ::opentelemetry::KeyValue::new(CancelledAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<CancelledAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: CancelledAttr) -> Self {
+        value.0.into()
     }
 }
 /// Unique identifier of the task.
@@ -145,6 +161,14 @@ impl From<IdAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(IdAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<IdAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: IdAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Whether the scheduler may preempt the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum PreemptibleAttr {
@@ -182,6 +206,18 @@ impl From<PreemptibleAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(PreemptibleAttr::KEY, value)
     }
 }
+
+#[allow(deprecated)]
+impl From<PreemptibleAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: PreemptibleAttr) -> Self {
+        let value: bool = match value {
+            PreemptibleAttr::Allowed => true,
+            PreemptibleAttr::Forbidden => false,
+        };
+        value.into()
+    }
+}
 /// Number of times the task was retried.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct RetriesAttr(i64);
@@ -212,6 +248,14 @@ impl From<RetriesAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: RetriesAttr) -> Self {
         ::opentelemetry::KeyValue::new(RetriesAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<RetriesAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: RetriesAttr) -> Self {
+        value.0.into()
     }
 }
 /// Fraction of tasks whose telemetry is sampled.
@@ -249,6 +293,18 @@ impl From<SampleRateAttr> for ::opentelemetry::KeyValue {
             SampleRateAttr::All => 1_f64,
         };
         ::opentelemetry::KeyValue::new(SampleRateAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<SampleRateAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: SampleRateAttr) -> Self {
+        let value: f64 = match value {
+            SampleRateAttr::Tenth => 0.1_f64,
+            SampleRateAttr::All => 1_f64,
+        };
+        value.into()
     }
 }
 /// Shards the task touched.
@@ -297,6 +353,14 @@ impl From<ShardIdsAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(ShardIdsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::I64(value.0)))
     }
 }
+
+#[allow(deprecated)]
+impl From<ShardIdsAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: ShardIdsAttr) -> Self {
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
+    }
+}
 /// Current state of the task.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum StateAttr {
@@ -341,6 +405,18 @@ impl From<StateAttr> for ::opentelemetry::KeyValue {
             StateAttr::Running => "running",
         };
         ::opentelemetry::KeyValue::new(StateAttr::KEY, value)
+    }
+}
+
+#[allow(deprecated)]
+impl From<StateAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: StateAttr) -> Self {
+        let value: &'static str = match value {
+            StateAttr::Queued => "queued",
+            StateAttr::Running => "running",
+        };
+        value.into()
     }
 }
 /// Tags attached to the task.
@@ -393,5 +469,13 @@ impl From<TagsAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: TagsAttr) -> Self {
         ::opentelemetry::KeyValue::new(TagsAttr::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::String(value.0)))
+    }
+}
+
+#[allow(deprecated)]
+impl From<TagsAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: TagsAttr) -> Self {
+        value.0.into_iter().collect::<::opentelemetry::logs::AnyValue>()
     }
 }

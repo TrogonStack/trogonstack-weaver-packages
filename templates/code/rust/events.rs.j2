@@ -44,18 +44,16 @@ pub fn {{ h.ident('emit.' ~ def.short_name) }}<L: ::opentelemetry::logs::Logger>
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
 {% for req in def.required %}
-    let attribute = {{ h.attr_kv(req, h.ident(req.attr_param)) }};
-    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    {{ h.attr_log("record", req, h.ident(req.attr_param)) }};
 {% endfor %}
 {% if def.optional %}
     for option in attributes {
-        let attribute = match option {
+        match option {
 {% for opt in def.optional %}
-            {{ name }}Option::{{ h.exported(opt.attr_short_name) }}(value) => {{ h.attr_kv(opt, 'value') }},
+            {{ name }}Option::{{ h.exported(opt.attr_short_name) }}(value) => {{ h.attr_log('record', opt, 'value') }},
 {% endfor %}
             {{ name }}Option::Severity(_) | {{ name }}Option::Timestamp(_) => continue,
-        };
-        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+        }
     }
 {% endif %}
     logger.inner().emit(record);

@@ -30,14 +30,12 @@ pub fn r#emit_<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Cont
     let span = context.span();
     let span_context = span.span_context();
     if span_context.is_valid() { record.set_trace_context(span_context.trace_id(), span_context.span_id(), Some(span_context.trace_flags())); }
-    let attribute = ::opentelemetry::KeyValue::from(r#exception_type);
-    record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+    record.add_attribute(super::exceptionattr::TypeAttr::KEY, r#exception_type);
     for option in attributes {
-        let attribute = match option {
-            Option::Message(value) => ::opentelemetry::KeyValue::from(value),
+        match option {
+            Option::Message(value) => record.add_attribute(super::exceptionattr::MessageAttr::KEY, value),
             Option::Severity(_) | Option::Timestamp(_) => continue,
-        };
-        record.add_attribute(attribute.key, super::logger::log_value(attribute.value));
+        }
     }
     logger.inner().emit(record);
 }

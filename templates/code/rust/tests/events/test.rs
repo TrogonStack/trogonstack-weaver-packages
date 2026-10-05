@@ -65,8 +65,8 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
     assert!(log.record.observed_timestamp().is_some());
     assert!(log.record.body().is_none());
     assert_eq!(log.instrumentation.schema_url(), Some(SCHEMA_URL));
-    assert_eq!(log.instrumentation.name(), "generated_semconv");
-    assert_eq!(log.instrumentation.version(), Some("0.0.0"));
+    assert_eq!(log.instrumentation.name(), "generated-semconv");
+    assert_eq!(log.instrumentation.version(), None);
     assert!(log
         .instrumentation
         .attributes()

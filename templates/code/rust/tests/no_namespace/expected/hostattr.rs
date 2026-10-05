@@ -54,6 +54,14 @@ impl From<IdAttr> for ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(IdAttr::KEY, value.0)
     }
 }
+
+#[allow(deprecated)]
+impl From<IdAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: IdAttr) -> Self {
+        value.0.into()
+    }
+}
 /// Name of the host.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NameAttr(::opentelemetry::StringValue);
@@ -107,5 +115,13 @@ impl From<NameAttr> for ::opentelemetry::KeyValue {
     #[inline]
     fn from(value: NameAttr) -> Self {
         ::opentelemetry::KeyValue::new(NameAttr::KEY, value.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<NameAttr> for ::opentelemetry::logs::AnyValue {
+    #[inline]
+    fn from(value: NameAttr) -> Self {
+        value.0.into()
     }
 }

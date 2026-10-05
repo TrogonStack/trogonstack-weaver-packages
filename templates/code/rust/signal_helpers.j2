@@ -13,6 +13,9 @@
 {%- else -%}::opentelemetry::KeyValue::from({{ value }})
 {%- endif -%}
 {%- endmacro %}
+{% macro attr_log(record, a, value) -%}
+{{ record }}.add_attribute({% if a.imported %}{{ literal(a.key) }}{% else %}{{ attr_type(a) }}::KEY{% endif %}, {% if a.imported and '[]' in a.attr_type %}{{ value }}.into_iter().collect::<::opentelemetry::logs::AnyValue>(){% else %}{{ value }}{% endif %})
+{%- endmacro %}
 {% macro deprecated(def) -%}
 {%- if def.deprecated -%}#[deprecated(note = {{ literal((def.deprecated.note if def.deprecated.note else 'Deprecated by the semantic convention registry')) }})]
 {%- endif -%}
