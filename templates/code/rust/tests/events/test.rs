@@ -1,4 +1,6 @@
-use generated_semconv::{logger, myappattr, myappevent, workerattr, workerevent, SCHEMA_URL};
+use generated_semconv::{
+    logger, myappattr, myappevent, scope, workerattr, workerevent, SCHEMA_URL,
+};
 use opentelemetry::logs::{AnyValue, Severity};
 use opentelemetry::trace::{SpanContext, SpanId, TraceContextExt, TraceFlags, TraceId, TraceState};
 use opentelemetry_sdk::logs::{InMemoryLogExporter, SdkLoggerProvider};
@@ -9,13 +11,13 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
     let provider = SdkLoggerProvider::builder()
         .with_simple_exporter(exporter.clone())
         .build();
-    let logger = logger::Logger::new_with_scope(
+    let logger = logger::Logger::new(
         &provider,
-        opentelemetry::InstrumentationScope::builder("worker")
-            .with_version("1.2.3")
-            .with_schema_url("https://example.com/ignored/1.0.0")
-            .with_attributes([opentelemetry::KeyValue::new("scope.kind", "test")])
-            .build(),
+        scope::Scope {
+            name: "worker".into(),
+            version: Some("1.2.3".into()),
+            attributes: vec![opentelemetry::KeyValue::new("scope.kind", "test")],
+        },
     );
     let span = SpanContext::new(
         TraceId::from(7),
@@ -67,7 +69,7 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
     assert!(log
         .instrumentation
         .attributes()
-        .any(|kv| kv.key.as_str() == "scope.kind"));
+        .any(|kv| kv == &opentelemetry::KeyValue::new("scope.kind", "test")));
     assert_eq!(
         log.record.trace_context().unwrap().trace_id,
         span.trace_id()

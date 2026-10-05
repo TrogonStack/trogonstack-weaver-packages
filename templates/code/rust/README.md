@@ -42,21 +42,34 @@ the signal modules. Names use the first dotted
 segment as their namespace; `vendor_prefixes` removes a leading vendor segment
 before choosing that namespace.
 
-| Module              | API                                                                                          |
-| ------------------- | -------------------------------------------------------------------------------------------- |
-| `<namespace>attr`   | Attribute newtypes and enum variants, `KEY` and conversion into `KeyValue`.                  |
-| `meter`             | Schema-aware `Meter`, with `new`, `new_with_scope`, `inner`, and a no-op `Default`.          |
-| `tracer`            | Schema-aware `Tracer`, with `new`, `new_with_scope`, `inner`, and a no-op `Default`.         |
-| `logger`            | Schema-aware generic `Logger`, with `new`, `new_with_scope`, `inner`, and a no-op `Default`. |
-| `<namespace>metric` | Synchronous instruments and observable counters, up-down counters, and gauges.               |
-| `<namespace>span`   | Span starters, typed names, start attributes, and attributes allowed after starting.         |
-| `<namespace>event`  | Typed log event emitters and options for attributes, severity, and timestamp.                |
-| `<namespace>entity` | Typed entity values, attribute iterators, and resources carrying the registry schema URL.    |
+| Module              | API                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| `<namespace>attr`   | Attribute newtypes and enum variants, `KEY` and conversion into `KeyValue`.               |
+| `scope`             | Shared scope name, version, and attributes configuration.                                 |
+| `meter`             | Schema-aware `Meter`, with `new`, `inner`, and a no-op `Default`.                         |
+| `tracer`            | Schema-aware `Tracer`, with `new`, `inner`, and a no-op `Default`.                        |
+| `logger`            | Schema-aware generic `Logger`, with `new`, `inner`, and a no-op `Default`.                |
+| `<namespace>metric` | Synchronous instruments and observable counters, up-down counters, and gauges.            |
+| `<namespace>span`   | Span starters, typed names, start attributes, and attributes allowed after starting.      |
+| `<namespace>event`  | Typed log event emitters and options for attributes, severity, and timestamp.             |
+| `<namespace>entity` | Typed entity values, attribute iterators, and resources carrying the registry schema URL. |
 
 Handle modules are emitted when the registry includes their corresponding
-signals. They set the registry schema URL on their instrumentation scope.
-Use `new_with_scope` to preserve a supplied scope's name, version, and
-attributes; its schema URL is replaced by the registry's schema URL.
+signals. Their `new(provider, scope)` constructor accepts a static string, owned
+`String`, `Cow<'static, str>`, or the shared `scope::Scope` configuration:
+
+```rust
+let scope = semconv::scope::Scope {
+    name: "worker".into(),
+    version: Some("1.0.0".into()),
+    attributes: vec![opentelemetry::KeyValue::new("scope.kind", "worker")],
+};
+let tracer = semconv::tracer::Tracer::new(&provider, scope);
+```
+
+Scope values move into OpenTelemetry without rebuilding their metadata. The
+registry schema URL is always applied; it is not a configuration field. The
+shared scope module is emitted when a handle is needed.
 Attribute keys, metric names, and event names retain their full registry names.
 
 ### Typed attributes

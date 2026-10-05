@@ -1,4 +1,4 @@
-use generated_semconv::{logger, meter, probeattr, probeevent, probemetric};
+use generated_semconv::{logger, meter, probeattr, probeevent, probemetric, scope};
 use opentelemetry::logs::{AnyValue, LogRecord, Logger, LoggerProvider, Severity};
 use opentelemetry::metrics::{
     AsyncInstrument, AsyncInstrumentBuilder, Callback, Counter, InstrumentBuilder,
@@ -312,7 +312,7 @@ fn static_meter_and_logger_scope_names_remain_borrowed() {
 }
 
 #[test]
-fn matching_scopes_move_metadata_without_rebuilding_storage() {
+fn configured_scopes_move_metadata_without_rebuilding_storage() {
     let metric_provider = BorrowedMeterProvider {
         meter: Meter::new(Arc::new(MetricProvider(Arc::new(MetricState::default())))),
         scope: Mutex::new(None),
@@ -320,37 +320,74 @@ fn matching_scopes_move_metadata_without_rebuilding_storage() {
     let log_provider = LogProvider(Arc::new(LogState::default()));
     drop(metric_provider.scope.lock().unwrap());
     drop(log_provider.0.scope.lock().unwrap());
-    let scope = || {
-        InstrumentationScope::builder("allocation-test")
-            .with_version("1.2.3")
-            .with_schema_url(generated_semconv::SCHEMA_URL)
-            .with_attributes([KeyValue::new("scope.identity", 7_i64)])
-            .build()
+    let scope = || scope::Scope {
+        name: String::from("allocation-test").into(),
+        version: Some(String::from("1.2.3").into()),
+        attributes: vec![KeyValue::new("scope.identity", 7_i64)],
     };
     let metric_scope = scope();
     let log_scope = scope();
+    let original = |scope: &scope::Scope| {
+        (
+            scope.name.as_ptr(),
+            scope.version.as_ref().unwrap().as_ptr(),
+            scope.attributes.as_ptr(),
+        )
+    };
+    let original_metric = original(&metric_scope);
+    let original_log = original(&log_scope);
     let metric_count = allocations(|| {
-        black_box(meter::Meter::new_with_scope(&metric_provider, metric_scope));
+        black_box(meter::Meter::new(&metric_provider, metric_scope));
     });
     let log_count = allocations(|| {
-        black_box(logger::Logger::new_with_scope(&log_provider, log_scope));
+        black_box(logger::Logger::new(&log_provider, log_scope));
     });
     assert_eq!(metric_count, 0);
     assert_eq!(log_count, 0);
-    for stored in [
-        metric_provider.scope.lock().unwrap(),
-        log_provider.0.scope.lock().unwrap(),
+    for (stored, original) in [
+        (metric_provider.scope.lock().unwrap(), original_metric),
+        (log_provider.0.scope.lock().unwrap(), original_log),
     ] {
         let scope = stored.as_ref().unwrap();
         assert_eq!(scope.name(), "allocation-test");
         assert_eq!(scope.version(), Some("1.2.3"));
         assert_eq!(scope.schema_url(), Some(generated_semconv::SCHEMA_URL));
+        assert_eq!(scope.name().as_ptr(), original.0);
+        assert_eq!(scope.version().unwrap().as_ptr(), original.1);
+        assert_eq!(
+            scope.attributes().next().unwrap() as *const KeyValue,
+            original.2
+        );
         assert_eq!(
             scope.attributes().collect::<Vec<_>>(),
             [&KeyValue::new("scope.identity", 7_i64)]
         );
     }
-    println!("generated matching scope allocations: meter={metric_count}, logger={log_count}");
+    println!("generated configured scope allocations: meter={metric_count}, logger={log_count}");
+}
+
+#[test]
+fn scope_convenience_inputs_share_one_constructor() {
+    let metric_provider = BorrowedMeterProvider {
+        meter: Meter::new(Arc::new(MetricProvider(Arc::new(MetricState::default())))),
+        scope: Mutex::new(None),
+    };
+    for configuration in [
+        scope::Scope::from("static"),
+        scope::Scope::from(String::from("owned")),
+        scope::Scope::from(Cow::Borrowed("cow-borrowed")),
+        scope::Scope::from(Cow::Owned(String::from("cow-owned"))),
+        scope::Scope::default(),
+    ] {
+        let name = configuration.name.clone();
+        let _meter = meter::Meter::new(&metric_provider, configuration);
+        let stored = metric_provider.scope.lock().unwrap();
+        let stored = stored.as_ref().unwrap();
+        assert_eq!(stored.name(), name);
+        assert_eq!(stored.version(), None);
+        assert_eq!(stored.attributes().count(), 0);
+        assert_eq!(stored.schema_url(), Some(generated_semconv::SCHEMA_URL));
+    }
 }
 
 #[test]

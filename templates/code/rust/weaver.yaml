@@ -585,6 +585,16 @@ templates:
     application_mode: each
     file_name: "{{ ctx.namespace }}entity.rs"
 
+  - template: scope.rs.j2
+    filter: |-
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $o
+      | if ((semconv_grouped_metrics($o) | map(.metrics) | add // [] | length) > 0
+            or (.registry.spans // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | length) > 0
+            or ((.registry.events // []) + (.refinements.events // []) | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | length) > 0)
+        then [{}] else [] end
+    application_mode: each
+    file_name: scope.rs
+
   - template: meter.rs.j2
     filter: |-
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $o

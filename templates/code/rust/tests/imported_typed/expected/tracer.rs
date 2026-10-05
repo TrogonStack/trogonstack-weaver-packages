@@ -1,23 +1,14 @@
+use super::scope::Scope;
+
 pub struct Tracer<T: opentelemetry::trace::Tracer = opentelemetry::trace::noop::NoopTracer>(T);
 impl<T: opentelemetry::trace::Tracer> Tracer<T> {
-    pub fn new<P: opentelemetry::trace::TracerProvider<Tracer = T>>(provider: &P, scope: impl Into<std::borrow::Cow<'static, str>>) -> Self {
-        Self(provider.tracer_with_scope(opentelemetry::InstrumentationScope::builder(scope)
-            .with_schema_url(super::SCHEMA_URL).build()))
-    }
-    pub fn new_with_scope<P: opentelemetry::trace::TracerProvider<Tracer = T>>(provider: &P, scope: opentelemetry::InstrumentationScope) -> Self {
-        Self(provider.tracer_with_scope(registry_scope(scope)))
+    pub fn new<P: opentelemetry::trace::TracerProvider<Tracer = T>>(provider: &P, scope: impl Into<Scope>) -> Self {
+        let scope: Scope = scope.into();
+        let tracer = provider.tracer_with_scope(scope.into());
+        Self(tracer)
     }
     pub fn inner(&self) -> &T { &self.0 }
 }
 impl Default for Tracer {
-    fn default() -> Self { Self::new(&opentelemetry::trace::noop::NoopTracerProvider::new(), "") }
-}
-
-fn registry_scope(scope: opentelemetry::InstrumentationScope) -> opentelemetry::InstrumentationScope {
-    if scope.schema_url() == Some(super::SCHEMA_URL) { return scope; }
-    let mut builder = opentelemetry::InstrumentationScope::builder(scope.name().to_owned())
-        .with_schema_url(super::SCHEMA_URL)
-        .with_attributes(scope.attributes().cloned());
-    if let Some(version) = scope.version() { builder = builder.with_version(version.to_owned()); }
-    builder.build()
+    fn default() -> Self { Self::new(&opentelemetry::trace::noop::NoopTracerProvider::new(), Scope::default()) }
 }

@@ -3,6 +3,7 @@ pub const SCHEMA_URL: &str = "https://example.com/schemas/events/1.0.0";
 pub mod myappattr;
 pub mod workerattr;
 
+pub mod scope;
 pub mod logger;
 pub mod myappevent;
 pub mod workerevent;

@@ -103,13 +103,12 @@ fn untemplated_names_move_or_borrow_without_heap_allocations() {
 }
 
 #[test]
-fn matching_scope_schema_moves_existing_metadata_without_cloning() {
-    let scope = opentelemetry::InstrumentationScope::builder("worker")
-        .with_schema_url(generated_semconv::SCHEMA_URL)
-        .with_version("1.0.0")
-        .with_attributes([opentelemetry::KeyValue::new("scope.kind", "worker")])
-        .build();
-    let (_, count) =
-        allocations(|| tracer::Tracer::new_with_scope(&NoopTracerProvider::new(), scope));
+fn configured_scope_moves_existing_metadata_without_cloning() {
+    let scope = generated_semconv::scope::Scope {
+        name: "worker".into(),
+        version: Some("1.0.0".into()),
+        attributes: vec![opentelemetry::KeyValue::new("scope.kind", "worker")],
+    };
+    let (_, count) = allocations(|| tracer::Tracer::new(&NoopTracerProvider::new(), scope));
     assert_eq!(count, 0);
 }

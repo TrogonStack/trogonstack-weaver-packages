@@ -1,4 +1,4 @@
-use generated_semconv::{authattr, authmetric, meter, myappattr, myappmetric, workermetric};
+use generated_semconv::{authattr, authmetric, meter, myappattr, myappmetric, scope, workermetric};
 use opentelemetry::KeyValue;
 use opentelemetry_sdk::metrics::data::{AggregatedMetrics, MetricData};
 use opentelemetry_sdk::metrics::{InMemoryMetricExporter, PeriodicReader, SdkMeterProvider};
@@ -20,13 +20,13 @@ fn provider() -> (SdkMeterProvider, InMemoryMetricExporter) {
 #[allow(deprecated)]
 fn synchronous_metrics_export_types_values_attributes_and_refinements() {
     let (provider, exporter) = provider();
-    let meter = meter::Meter::new_with_scope(
+    let meter = meter::Meter::new(
         &provider,
-        opentelemetry::InstrumentationScope::builder("synthetic-worker")
-            .with_version("1.2.3")
-            .with_schema_url("https://example.com/other/1.0.0")
-            .with_attributes([opentelemetry::KeyValue::new("scope.kind", "worker")])
-            .build(),
+        scope::Scope {
+            name: "synthetic-worker".into(),
+            version: Some("1.2.3".into()),
+            attributes: vec![KeyValue::new("scope.kind", "worker")],
+        },
     );
     myappmetric::TaskDurationHistogram::new(&meter).record(
         0.1,

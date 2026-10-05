@@ -6,5 +6,6 @@ pub const SCHEMA_URL: &str = "https://example.com/schemas/params/1.0.0";
 pub mod billingattr;
 pub mod myappattr;
 
+pub mod scope;
 pub mod meter;
 pub mod billingmetric;

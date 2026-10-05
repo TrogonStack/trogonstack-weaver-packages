@@ -2,6 +2,7 @@
 pub const SCHEMA_URL: &str = "https://example.com/schemas/myapp/1.0.0";
 pub mod myappattr;
 
+pub mod scope;
 pub mod meter;
 pub mod tracer;
 pub mod logger;

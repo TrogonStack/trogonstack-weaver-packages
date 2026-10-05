@@ -8,13 +8,13 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     let provider = SdkTracerProvider::builder()
         .with_simple_exporter(exporter.clone())
         .build();
-    let tracer = tracer::Tracer::new_with_scope(
+    let tracer = tracer::Tracer::new(
         &provider,
-        opentelemetry::InstrumentationScope::builder("worker")
-            .with_version("1.2.3")
-            .with_schema_url("https://example.com/ignored/1.0.0")
-            .with_attributes([opentelemetry::KeyValue::new("scope.kind", "test")])
-            .build(),
+        generated_semconv::scope::Scope {
+            name: "worker".into(),
+            version: Some("1.2.3".into()),
+            attributes: vec![opentelemetry::KeyValue::new("scope.kind", "test")],
+        },
     );
     let _: &opentelemetry_sdk::trace::SdkTracer = tracer.inner();
     let mut parent = myappspan::start_task_dispatch(

@@ -12,6 +12,9 @@ pub const SCHEMA_URL: &str = {{ ctx.schema_literal }};
 pub mod {{ namespace }};
 {% endfor %}
 
+{% if ctx.has_metrics or ctx.has_spans or ctx.has_events %}
+pub mod scope;
+{% endif %}
 {% if ctx.has_metrics %}
 pub mod meter;
 {% endif %}

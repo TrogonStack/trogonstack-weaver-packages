@@ -2,5 +2,6 @@
 pub const SCHEMA_URL: &str = "https://example.com/schemas/histogram_boundaries_by_unit_params/1.0.0";
 pub mod myappattr;
 
+pub mod scope;
 pub mod meter;
 pub mod myappmetric;
