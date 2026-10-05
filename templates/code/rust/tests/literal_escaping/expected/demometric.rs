@@ -1,12 +1,4 @@
 #![allow(deprecated)]
-
-
-
-
-
-
-
-
 /// literal \b \f \u1234
 #[derive(Clone)]
 pub struct LiteralCountCounter { instrument: ::opentelemetry::metrics::Counter<u64> }
@@ -15,25 +7,20 @@ impl LiteralCountCounter {
         Self { instrument: meter.inner().u64_counter("demo.literal.count")
             .with_description("literal \\b \\f \\u1234")
             .with_unit("literal\\b\\u1234")
-
             .build() }
     }
     pub fn add(&self, value: u64, r#demo_literal: super::demoattr::LiteralAttr) {
         let attributes = vec![r#demo_literal.key_value()];
-
         self.instrument.add(value, &attributes);
     }
 }
 impl Default for LiteralCountCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-
-
 pub struct LiteralCountCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
 impl LiteralCountCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#demo_literal: super::demoattr::LiteralAttr) {
         let attributes = vec![r#demo_literal.key_value()];
-
         self.observer.observe(value, &attributes);
     }
 }

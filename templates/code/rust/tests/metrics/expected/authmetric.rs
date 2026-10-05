@@ -1,12 +1,4 @@
 #![allow(deprecated)]
-
-
-
-
-
-
-
-
 /// Number of authentication attempts.
 #[derive(Clone)]
 pub struct AttemptsCounter { instrument: ::opentelemetry::metrics::Counter<u64> }
@@ -15,25 +7,20 @@ impl AttemptsCounter {
         Self { instrument: meter.inner().u64_counter("auth.attempts")
             .with_description("Number of authentication attempts.")
             .with_unit("{attempt}")
-
             .build() }
     }
     pub fn add(&self, value: u64, r#auth_method: super::authattr::MethodAttr, r#auth_success: super::authattr::SuccessAttr) {
         let attributes = vec![r#auth_method.key_value(), r#auth_success.key_value()];
-
         self.instrument.add(value, &attributes);
     }
 }
 impl Default for AttemptsCounter {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
-
-
 pub struct AttemptsCounterObserver<'a> { observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<u64> }
 impl AttemptsCounterObserver<'_> {
     pub fn observe(&self, value: u64, r#auth_method: super::authattr::MethodAttr, r#auth_success: super::authattr::SuccessAttr) {
         let attributes = vec![r#auth_method.key_value(), r#auth_success.key_value()];
-
         self.observer.observe(value, &attributes);
     }
 }

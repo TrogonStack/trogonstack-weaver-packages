@@ -1,3 +1,7 @@
+whitespace_control:
+  trim_blocks: true
+  lstrip_blocks: true
+
 params:
   module_description: ""
   histogram_boundaries_by_unit:

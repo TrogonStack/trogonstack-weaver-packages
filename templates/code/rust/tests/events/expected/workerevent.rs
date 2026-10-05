@@ -1,12 +1,8 @@
 #![allow(deprecated)]
-
-
-
 #[derive(Clone, Debug)]
 pub enum HostStartedOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
-
 }
 /// A worker host started taking tasks.
 pub fn r#emit_host_started<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, options: impl IntoIterator<Item = HostStartedOption>) {
@@ -20,7 +16,6 @@ pub fn r#emit_host_started<L: ::opentelemetry::logs::Logger>(context: &::opentel
         match option {
             HostStartedOption::Severity(value) => severity = value,
             HostStartedOption::Timestamp(value) => timestamp = Some(value),
-
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("worker.host.started")) { return; }
@@ -35,28 +30,20 @@ pub fn r#emit_host_started<L: ::opentelemetry::logs::Logger>(context: &::opentel
     for attribute in attributes { record.add_attribute(attribute.key, super::logger::log_value(attribute.value)); }
     logger.inner().emit(record);
 }
-
-
 #[derive(Clone, Debug)]
 pub enum TaskFinishedOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
 
-
     BoolValues(super::myappattr::BoolValuesAttr),
-
 
     DoubleValues(super::myappattr::DoubleValuesAttr),
 
-
     IntValues(super::myappattr::IntValuesAttr),
 
-
     StringValues(super::myappattr::StringValuesAttr),
-
 /// Recommended: When the task ran more than once.
     TaskAttempt(super::myappattr::TaskAttemptAttr),
-
 }
 /// A task reached a final state on a worker.
 ///
@@ -72,17 +59,11 @@ pub fn r#emit_task_finished<L: ::opentelemetry::logs::Logger>(context: &::opente
         match option {
             TaskFinishedOption::Severity(value) => severity = value,
             TaskFinishedOption::Timestamp(value) => timestamp = Some(value),
-
             TaskFinishedOption::BoolValues(value) => attributes.push(value.key_value()),
-
             TaskFinishedOption::DoubleValues(value) => attributes.push(value.key_value()),
-
             TaskFinishedOption::IntValues(value) => attributes.push(value.key_value()),
-
             TaskFinishedOption::StringValues(value) => attributes.push(value.key_value()),
-
             TaskFinishedOption::TaskAttempt(value) => attributes.push(value.key_value()),
-
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("worker.task.finished")) { return; }

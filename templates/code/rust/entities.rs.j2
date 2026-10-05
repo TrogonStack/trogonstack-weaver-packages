@@ -36,7 +36,8 @@ pub struct {{ name }} {
 
 impl {{ name }} {
     pub fn new({% for req in def.required %}{{ s.ident(req.attr_param) }}: {{ s.attr_type(req) }}, {% endfor %}{% if def.optional %}options: impl IntoIterator<Item = {{ name }}Attr>{% endif %}) -> Self {
-        {% if def.required or def.optional %}let {% if def.optional %}mut {% endif %}attributes = vec![
+{% if def.required or def.optional %}
+        let {% if def.optional %}mut {% endif %}attributes = vec![
 {% for req in def.required %}
             {{ s.attr_kv(req, s.ident(req.attr_param)) }},
 {% endfor %}

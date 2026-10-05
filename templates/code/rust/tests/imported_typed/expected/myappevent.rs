@@ -1,15 +1,10 @@
 #![allow(deprecated)]
-
-
-
 #[derive(Clone, Debug)]
 pub enum TaskErroredOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
 
-
     ServerPort(i64),
-
 }
 /// A task failed with an error.
 pub fn r#emit_task_errored<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#error_type: upstream::errorattr::TypeAttr, options: impl IntoIterator<Item = TaskErroredOption>) {
@@ -23,9 +18,7 @@ pub fn r#emit_task_errored<L: ::opentelemetry::logs::Logger>(context: &::opentel
         match option {
             TaskErroredOption::Severity(value) => severity = value,
             TaskErroredOption::Timestamp(value) => timestamp = Some(value),
-
             TaskErroredOption::ServerPort(value) => attributes.push(::opentelemetry::KeyValue::new("server.port", value)),
-
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("myapp.task.errored")) { return; }

@@ -12,9 +12,15 @@ pub const SCHEMA_URL: &str = {{ ctx.schema_literal }};
 pub mod {{ namespace }};
 {% endfor %}
 
-{% if ctx.has_metrics %}pub mod meter;{% endif %}
-{% if ctx.has_spans %}pub mod tracer;{% endif %}
-{% if ctx.has_events %}pub mod logger;{% endif %}
+{% if ctx.has_metrics %}
+pub mod meter;
+{% endif %}
+{% if ctx.has_spans %}
+pub mod tracer;
+{% endif %}
+{% if ctx.has_events %}
+pub mod logger;
+{% endif %}
 {% for module in ctx.signal_modules %}
 pub mod {{ module }};
 {% endfor %}

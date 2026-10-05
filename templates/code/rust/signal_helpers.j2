@@ -19,7 +19,6 @@
 {%- endmacro %}
 {% macro docs(def) -%}
 {{ ([def.brief, def.note] | select | join('\n\n')) | comment | trim }}
-{%- if def.requirement_level == 'opt_in' %}
-/// Opt-in: record only when the user requests it.
+{%- if def.requirement_level == 'opt_in' %}{{ "\n" }}/// Opt-in: record only when the user requests it.
 {%- endif -%}
 {%- endmacro %}

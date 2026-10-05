@@ -1,15 +1,10 @@
 #![allow(deprecated)]
-
-
-
 #[derive(Clone, Debug)]
 pub enum UpstreamFailedOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
 
-
     ServerAddress(String),
-
 }
 /// A request to an upstream server failed.
 pub fn r#emit_upstream_failed<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#error_type: String, options: impl IntoIterator<Item = UpstreamFailedOption>) {
@@ -23,9 +18,7 @@ pub fn r#emit_upstream_failed<L: ::opentelemetry::logs::Logger>(context: &::open
         match option {
             UpstreamFailedOption::Severity(value) => severity = value,
             UpstreamFailedOption::Timestamp(value) => timestamp = Some(value),
-
             UpstreamFailedOption::ServerAddress(value) => attributes.push(::opentelemetry::KeyValue::new("server.address", value)),
-
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("edge.upstream.failed")) { return; }

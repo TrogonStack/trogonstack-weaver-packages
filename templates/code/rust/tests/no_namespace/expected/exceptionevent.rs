@@ -1,15 +1,10 @@
 #![allow(deprecated)]
-
-
-
 #[derive(Clone, Debug)]
 pub enum Option {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
 
-
     Message(super::exceptionattr::MessageAttr),
-
 }
 /// A noteworthy exception occurred.
 pub fn r#emit_<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#exception_type: super::exceptionattr::TypeAttr, options: impl IntoIterator<Item = Option>) {
@@ -23,9 +18,7 @@ pub fn r#emit_<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Cont
         match option {
             Option::Severity(value) => severity = value,
             Option::Timestamp(value) => timestamp = Some(value),
-
             Option::Message(value) => attributes.push(value.key_value()),
-
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("exception")) { return; }

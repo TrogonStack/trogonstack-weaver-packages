@@ -1,11 +1,4 @@
 #![allow(deprecated)]
-
-
-
-
-
-
-
 /// Synthetic escaped name.
 pub struct NameApostropheSpan { span: ::opentelemetry::global::BoxedSpan }
 impl NameApostropheSpan {
@@ -18,7 +11,6 @@ impl NameApostropheSpan {
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
-
 }
 impl Default for NameApostropheSpan {
     fn default() -> Self {
@@ -29,34 +21,16 @@ impl Default for NameApostropheSpan {
 
 pub fn r#start_name_apostrophe(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#worker_host_port: super::workerattr::HostPortAttr) -> NameApostropheSpan {
     use ::opentelemetry::trace::Tracer;
-
     let mut name = String::new();
-
-
-
     name.push('\u{0027}');
-
-
-
-
     name.push_str(&r#worker_host_port.clone().key_value().value.to_string());
-
-
-
     let attributes = vec![r#worker_host_port.key_value()];
-
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Internal)
         .with_attributes(attributes)
         .start_with_context(tracer.inner(), context);
     NameApostropheSpan { span }
 }
-
-
-
-
-
-
 /// Synthetic escaped name.
 pub struct NameBackslashSpan { span: ::opentelemetry::global::BoxedSpan }
 impl NameBackslashSpan {
@@ -69,7 +43,6 @@ impl NameBackslashSpan {
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
-
 }
 impl Default for NameBackslashSpan {
     fn default() -> Self {
@@ -80,34 +53,16 @@ impl Default for NameBackslashSpan {
 
 pub fn r#start_name_backslash(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#worker_host_port: super::workerattr::HostPortAttr) -> NameBackslashSpan {
     use ::opentelemetry::trace::Tracer;
-
     let mut name = String::new();
-
-
-
     name.push('\\');
-
-
-
-
     name.push_str(&r#worker_host_port.clone().key_value().value.to_string());
-
-
-
     let attributes = vec![r#worker_host_port.key_value()];
-
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Internal)
         .with_attributes(attributes)
         .start_with_context(tracer.inner(), context);
     NameBackslashSpan { span }
 }
-
-
-
-
-
-
 /// Synthetic escaped name.
 pub struct NameControlSpan { span: ::opentelemetry::global::BoxedSpan }
 impl NameControlSpan {
@@ -120,7 +75,6 @@ impl NameControlSpan {
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
-
 }
 impl Default for NameControlSpan {
     fn default() -> Self {
@@ -131,34 +85,16 @@ impl Default for NameControlSpan {
 
 pub fn r#start_name_control(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#worker_host_port: super::workerattr::HostPortAttr) -> NameControlSpan {
     use ::opentelemetry::trace::Tracer;
-
     let mut name = String::new();
-
-
-
     name.push('\u{0008}');
-
-
-
-
     name.push_str(&r#worker_host_port.clone().key_value().value.to_string());
-
-
-
     let attributes = vec![r#worker_host_port.key_value()];
-
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Internal)
         .with_attributes(attributes)
         .start_with_context(tracer.inner(), context);
     NameControlSpan { span }
 }
-
-
-
-
-
-
 /// Synthetic escaped name.
 pub struct NameUnicodeSpan { span: ::opentelemetry::global::BoxedSpan }
 impl NameUnicodeSpan {
@@ -171,7 +107,6 @@ impl NameUnicodeSpan {
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
-
 }
 impl Default for NameUnicodeSpan {
     fn default() -> Self {
@@ -182,40 +117,21 @@ impl Default for NameUnicodeSpan {
 
 pub fn r#start_name_unicode(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#worker_host_port: super::workerattr::HostPortAttr) -> NameUnicodeSpan {
     use ::opentelemetry::trace::Tracer;
-
     let mut name = String::new();
-
-
-
     name.push('é');
-
-
-
-
     name.push_str(&r#worker_host_port.clone().key_value().value.to_string());
-
-
-
     let attributes = vec![r#worker_host_port.key_value()];
-
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Internal)
         .with_attributes(attributes)
         .start_with_context(tracer.inner(), context);
     NameUnicodeSpan { span }
 }
-
-
-
-
-
-
 #[derive(Clone, Debug, Default)]
 pub struct QueueDrainName(String);
 impl QueueDrainName {
     pub fn new(value: impl Into<String>) -> Self { Self(value.into()) }
 }
-
 /// Removing every task from a queue.
 /// Opt-in: record only when the user requests it.
 #[deprecated(note = "Drain queues by dispatching their tasks instead.")]
@@ -230,7 +146,6 @@ impl QueueDrainSpan {
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
-
 }
 impl Default for QueueDrainSpan {
     fn default() -> Self {
@@ -241,70 +156,45 @@ impl Default for QueueDrainSpan {
 #[deprecated(note = "Drain queues by dispatching their tasks instead.")]
 pub fn r#start_queue_drain(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, name: QueueDrainName) -> QueueDrainSpan {
     use ::opentelemetry::trace::Tracer;
-
     let name = if name.0.is_empty() { "myapp.queue.drain".to_owned() } else { name.0 };
-
     let attributes = vec![];
-
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Consumer)
         .with_attributes(attributes)
         .start_with_context(tracer.inner(), context);
     QueueDrainSpan { span }
 }
-
-
-
-
 #[derive(Clone, Debug)]
 pub enum TaskDispatchStartAttr {
-
 /// Recommended: When the task came from a named queue.
     QueueName(super::myappattr::QueueNameAttr),
-
 /// Opt-in: the convention records it only when a user asks for it.
     TaskAttempt(super::myappattr::TaskAttemptAttr),
 
-
     TaskId(super::myappattr::TaskIdAttr),
-
 }
 impl TaskDispatchStartAttr {
     fn key_value(self) -> ::opentelemetry::KeyValue {
         match self {
-
             Self::QueueName(value) => value.key_value(),
-
             Self::TaskAttempt(value) => value.key_value(),
-
             Self::TaskId(value) => value.key_value(),
-
         }
     }
 }
-
-
 #[derive(Clone, Debug)]
 pub enum TaskDispatchAttr {
-
     QueueName(super::myappattr::QueueNameAttr),
-
     TaskAttempt(super::myappattr::TaskAttemptAttr),
-
 }
 impl From<TaskDispatchAttr> for TaskDispatchStartAttr {
     fn from(value: TaskDispatchAttr) -> Self {
         match value {
-
             TaskDispatchAttr::QueueName(value) => Self::QueueName(value),
-
             TaskDispatchAttr::TaskAttempt(value) => Self::TaskAttempt(value),
-
         }
     }
 }
-
-
 /// The scheduler handing a task to a worker.
 ///
 /// Ends when the worker accepts the task.
@@ -319,11 +209,9 @@ impl TaskDispatchSpan {
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
-
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = TaskDispatchAttr>) {
         for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, TaskDispatchStartAttr::from(attribute).key_value()); }
     }
-
 }
 impl Default for TaskDispatchSpan {
     fn default() -> Self {
@@ -334,85 +222,47 @@ impl Default for TaskDispatchSpan {
 
 pub fn r#start_task_dispatch(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, r#worker_host_name: super::workerattr::HostNameAttr, r#worker_host_port: super::workerattr::HostPortAttr, options: impl IntoIterator<Item = TaskDispatchStartAttr>) -> TaskDispatchSpan {
     use ::opentelemetry::trace::Tracer;
-
     let mut name = String::new();
-
-
-
     name.push_str("dispatch ");
-
-
-
-
     name.push_str(&r#worker_host_name.clone().key_value().value.to_string());
-
-
-
-
     name.push(':');
-
-
-
-
     name.push_str(&r#worker_host_port.clone().key_value().value.to_string());
-
-
-
     let mut attributes = vec![r#worker_host_name.key_value(), r#worker_host_port.key_value()];
-
     attributes.extend(options.into_iter().map(TaskDispatchStartAttr::key_value));
-
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Client)
         .with_attributes(attributes)
         .start_with_context(tracer.inner(), context);
     TaskDispatchSpan { span }
 }
-
-
-
-
 #[derive(Clone, Debug)]
 pub enum TaskRunStartAttr {
 
-
     TaskId(super::myappattr::TaskIdAttr),
-
 }
 impl TaskRunStartAttr {
     fn key_value(self) -> ::opentelemetry::KeyValue {
         match self {
-
             Self::TaskId(value) => value.key_value(),
-
         }
     }
 }
-
-
 #[derive(Clone, Debug)]
 pub enum TaskRunAttr {
-
     TaskId(super::myappattr::TaskIdAttr),
-
 }
 impl From<TaskRunAttr> for TaskRunStartAttr {
     fn from(value: TaskRunAttr) -> Self {
         match value {
-
             TaskRunAttr::TaskId(value) => Self::TaskId(value),
-
         }
     }
 }
-
-
 #[derive(Clone, Debug, Default)]
 pub struct TaskRunName(String);
 impl TaskRunName {
     pub fn new(value: impl Into<String>) -> Self { Self(value.into()) }
 }
-
 /// One run of a task.
 pub struct TaskRunSpan { span: ::opentelemetry::global::BoxedSpan }
 impl TaskRunSpan {
@@ -425,11 +275,9 @@ impl TaskRunSpan {
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
-
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = TaskRunAttr>) {
         for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, TaskRunStartAttr::from(attribute).key_value()); }
     }
-
 }
 impl Default for TaskRunSpan {
     fn default() -> Self {
@@ -440,13 +288,9 @@ impl Default for TaskRunSpan {
 
 pub fn r#start_task_run(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer, name: TaskRunName, r#myapp_task_state: super::myappattr::TaskStateAttr, options: impl IntoIterator<Item = TaskRunStartAttr>) -> TaskRunSpan {
     use ::opentelemetry::trace::Tracer;
-
     let name = if name.0.is_empty() { "myapp.task.run".to_owned() } else { name.0 };
-
     let mut attributes = vec![r#myapp_task_state.key_value()];
-
     attributes.extend(options.into_iter().map(TaskRunStartAttr::key_value));
-
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Internal)
         .with_attributes(attributes)

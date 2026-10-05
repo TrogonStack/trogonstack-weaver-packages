@@ -1,30 +1,20 @@
 #![allow(deprecated)]
-
-
-
 #[derive(Clone, Debug)]
 pub enum TaskFinishedOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
 
-
     BoolValues(super::myappattr::BoolValuesAttr),
-
 
     DoubleValues(super::myappattr::DoubleValuesAttr),
 
-
     IntValues(super::myappattr::IntValuesAttr),
 
-
     StringValues(super::myappattr::StringValuesAttr),
-
 /// Recommended: When the task ran more than once.
     TaskAttempt(super::myappattr::TaskAttemptAttr),
-
 /// Opt-in: the convention records it only when a user asks for it.
     HostName(super::workerattr::HostNameAttr),
-
 }
 /// A task reached a final state.
 ///
@@ -40,19 +30,12 @@ pub fn r#emit_task_finished<L: ::opentelemetry::logs::Logger>(context: &::opente
         match option {
             TaskFinishedOption::Severity(value) => severity = value,
             TaskFinishedOption::Timestamp(value) => timestamp = Some(value),
-
             TaskFinishedOption::BoolValues(value) => attributes.push(value.key_value()),
-
             TaskFinishedOption::DoubleValues(value) => attributes.push(value.key_value()),
-
             TaskFinishedOption::IntValues(value) => attributes.push(value.key_value()),
-
             TaskFinishedOption::StringValues(value) => attributes.push(value.key_value()),
-
             TaskFinishedOption::TaskAttempt(value) => attributes.push(value.key_value()),
-
             TaskFinishedOption::HostName(value) => attributes.push(value.key_value()),
-
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("myapp.task.finished")) { return; }
@@ -67,13 +50,10 @@ pub fn r#emit_task_finished<L: ::opentelemetry::logs::Logger>(context: &::opente
     for attribute in attributes { record.add_attribute(attribute.key, super::logger::log_value(attribute.value)); }
     logger.inner().emit(record);
 }
-
-
 #[derive(Clone, Debug)]
 pub enum TaskRetriedOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
-
 }
 /// A task is about to run again.
 /// Opt-in: record only when the user requests it.
@@ -89,7 +69,6 @@ pub fn r#emit_task_retried<L: ::opentelemetry::logs::Logger>(context: &::opentel
         match option {
             TaskRetriedOption::Severity(value) => severity = value,
             TaskRetriedOption::Timestamp(value) => timestamp = Some(value),
-
         }
     }
     if !logger.inner().event_enabled(severity, "", Some("myapp.task.retried")) { return; }
