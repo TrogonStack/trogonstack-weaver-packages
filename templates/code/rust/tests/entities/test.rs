@@ -3,7 +3,7 @@ use generated_semconv::{myappattr, myappentity, SCHEMA_URL};
 #[test]
 fn entity_resource_keeps_identity_description_and_schema() {
     let entity = myappentity::HostEntity::new(
-        myappattr::HostNameAttr::new("worker-1"),
+        myappattr::HostNameAttr::from("worker-1"),
         [myappentity::HostEntityAttr::HostType(
             myappattr::HostTypeAttr::Virtual,
         )],
@@ -24,8 +24,8 @@ fn entity_resource_keeps_identity_description_and_schema() {
 #[test]
 fn refinement_requires_its_description_attribute() {
     let entity = myappentity::HostWorkerEntity::new(
-        myappattr::HostNameAttr::new("worker-2"),
-        myappattr::HostRoleAttr::new("worker"),
+        myappattr::HostNameAttr::from("worker-2"),
+        myappattr::HostRoleAttr::from("worker"),
         [],
     );
     assert_eq!(entity.attributes().len(), 2);

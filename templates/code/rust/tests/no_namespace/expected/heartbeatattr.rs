@@ -6,12 +6,16 @@ pub struct SequenceAttr(i64);
 #[allow(deprecated)]
 impl SequenceAttr {
     pub const KEY: &'static str = "heartbeat.sequence";
-    pub fn new(value: i64) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<i64> for SequenceAttr {
+    fn from(value: i64) -> Self {
+        Self(value)
     }
 }
 
@@ -28,12 +32,22 @@ pub struct SourceAttr(String);
 #[allow(deprecated)]
 impl SourceAttr {
     pub const KEY: &'static str = "heartbeat.source";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for SourceAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for SourceAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 

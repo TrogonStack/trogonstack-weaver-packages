@@ -6,12 +6,22 @@ pub struct IdAttr(String);
 #[allow(deprecated)]
 impl IdAttr {
     pub const KEY: &'static str = "host.id";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for IdAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for IdAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
@@ -28,12 +38,22 @@ pub struct NameAttr(String);
 #[allow(deprecated)]
 impl NameAttr {
     pub const KEY: &'static str = "host.name";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for NameAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for NameAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 

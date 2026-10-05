@@ -6,12 +6,22 @@ pub struct Http2STATUSApiIDAttr(String);
 #[allow(deprecated)]
 impl Http2STATUSApiIDAttr {
     pub const KEY: &'static str = "caps.http2_STATUS.api_ID";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for Http2STATUSApiIDAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for Http2STATUSApiIDAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 

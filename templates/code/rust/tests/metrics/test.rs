@@ -30,7 +30,7 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
     );
     myappmetric::TaskDurationHistogram::new(&meter).record(
         0.1,
-        myappattr::TaskIdAttr::new("base"),
+        myappattr::TaskIdAttr::from("base"),
         [
             myappmetric::TaskDurationHistogramAttr::TaskState(myappattr::TaskStateAttr::Queued),
             myappmetric::TaskDurationHistogramAttr::Method(authattr::MethodAttr::Password),
@@ -38,7 +38,7 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
     );
     myappmetric::TaskRetryDurationHistogram::new(&meter).record(
         0.2,
-        myappattr::TaskIdAttr::new("retry"),
+        myappattr::TaskIdAttr::from("retry"),
         myappattr::TaskStateAttr::Done,
         [myappmetric::TaskRetryDurationHistogramAttr::Method(
             authattr::MethodAttr::Token,
@@ -46,13 +46,13 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
     );
     workermetric::TaskDurationHistogram::new(&meter).record(
         0.3,
-        myappattr::TaskIdAttr::new("worker"),
+        myappattr::TaskIdAttr::from("worker"),
         [],
     );
     myappmetric::TaskStartedCounter::new(&meter).add(
         7,
         [myappmetric::TaskStartedCounterAttr::TaskId(
-            myappattr::TaskIdAttr::new("started"),
+            myappattr::TaskIdAttr::from("started"),
         )],
     );
     myappmetric::TaskActiveUpDownCounter::new(&meter).add(-2, myappattr::TaskStateAttr::Queued);
@@ -60,7 +60,7 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
     authmetric::AttemptsCounter::new(&meter).add(
         3,
         authattr::MethodAttr::Password,
-        authattr::SuccessAttr::new(true),
+        authattr::SuccessAttr::from(true),
     );
 
     provider.force_flush().unwrap();
@@ -193,7 +193,7 @@ fn observable_callbacks_export_values_and_typed_attributes() {
         observer.observe(
             11,
             [myappmetric::TaskStartedCounterAttr::TaskId(
-                myappattr::TaskIdAttr::new("observed"),
+                myappattr::TaskIdAttr::from("observed"),
             )],
         );
     });
@@ -207,7 +207,7 @@ fn observable_callbacks_export_values_and_typed_attributes() {
         observer.observe(
             13,
             authattr::MethodAttr::Token,
-            authattr::SuccessAttr::new(false),
+            authattr::SuccessAttr::from(false),
         );
     });
     provider.force_flush().unwrap();

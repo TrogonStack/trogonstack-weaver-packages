@@ -6,12 +6,22 @@ pub struct InvoiceIdAttr(String);
 #[allow(deprecated)]
 impl InvoiceIdAttr {
     pub const KEY: &'static str = "acme.billing.invoice.id";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for InvoiceIdAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for InvoiceIdAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
@@ -28,12 +38,22 @@ pub struct CurrencyAttr(String);
 #[allow(deprecated)]
 impl CurrencyAttr {
     pub const KEY: &'static str = "billing.currency";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for CurrencyAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for CurrencyAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 

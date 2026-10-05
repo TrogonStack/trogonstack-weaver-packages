@@ -61,8 +61,11 @@ Attribute keys, metric names, and event names retain their full registry names.
 ### Typed attributes
 
 An attribute such as `myapp.task.id` becomes
-`myappattr::TaskIdAttr::new("task-1")`. Its `key_value()` method consumes the
-value and returns an OpenTelemetry `KeyValue`. Enums expose named variants,
+`myappattr::TaskIdAttr::from("task-1")`. Its `key_value()` method consumes the
+value and returns an OpenTelemetry `KeyValue`. String attributes implement
+`From<String>` and `From<&str>`; scalar and array attributes implement `From`
+for their exact backing types. Use `Attr::from(value)` or `value.into()` when
+the attribute type is known. Enums expose named variants,
 such as `myappattr::TaskStateAttr::Running`, rather than arbitrary constructors.
 
 Supported backing types are `String`, `i64`, `f64`, `bool`, and their `Vec`

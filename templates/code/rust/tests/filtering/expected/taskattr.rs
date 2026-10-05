@@ -8,12 +8,22 @@ pub struct AssignedByAttr(String);
 #[allow(deprecated)]
 impl AssignedByAttr {
     pub const KEY: &'static str = "myapp.task.assigned_by";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for AssignedByAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for AssignedByAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
@@ -30,12 +40,16 @@ pub struct CancelledAttr(bool);
 #[allow(deprecated)]
 impl CancelledAttr {
     pub const KEY: &'static str = "myapp.task.cancelled";
-    pub fn new(value: bool) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<bool> for CancelledAttr {
+    fn from(value: bool) -> Self {
+        Self(value)
     }
 }
 
@@ -54,12 +68,22 @@ pub struct IdAttr(String);
 #[allow(deprecated)]
 impl IdAttr {
     pub const KEY: &'static str = "myapp.task.id";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for IdAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for IdAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
@@ -104,12 +128,16 @@ pub struct RetriesAttr(i64);
 #[allow(deprecated)]
 impl RetriesAttr {
     pub const KEY: &'static str = "myapp.task.retries";
-    pub fn new(value: i64) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<i64> for RetriesAttr {
+    fn from(value: i64) -> Self {
+        Self(value)
     }
 }
 
@@ -154,12 +182,16 @@ pub struct ShardIdsAttr(Vec<i64>);
 #[allow(deprecated)]
 impl ShardIdsAttr {
     pub const KEY: &'static str = "myapp.task.shard_ids";
-    pub fn new(value: Vec<i64>) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::I64(self.0)))
+    }
+}
+
+#[allow(deprecated)]
+impl From<Vec<i64>> for ShardIdsAttr {
+    fn from(value: Vec<i64>) -> Self {
+        Self(value)
     }
 }
 
@@ -206,12 +238,16 @@ pub struct TagsAttr(Vec<String>);
 #[allow(deprecated)]
 impl TagsAttr {
     pub const KEY: &'static str = "myapp.task.tags";
-    pub fn new(value: Vec<String>) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::String(self.0.into_iter().map(Into::into).collect())))
+    }
+}
+
+#[allow(deprecated)]
+impl From<Vec<String>> for TagsAttr {
+    fn from(value: Vec<String>) -> Self {
+        Self(value)
     }
 }
 

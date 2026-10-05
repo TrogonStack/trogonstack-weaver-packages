@@ -6,12 +6,22 @@ pub struct MessageAttr(String);
 #[allow(deprecated)]
 impl MessageAttr {
     pub const KEY: &'static str = "exception.message";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for MessageAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for MessageAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
@@ -28,12 +38,22 @@ pub struct TypeAttr(String);
 #[allow(deprecated)]
 impl TypeAttr {
     pub const KEY: &'static str = "exception.type";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for TypeAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for TypeAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 

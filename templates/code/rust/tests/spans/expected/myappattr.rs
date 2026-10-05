@@ -6,12 +6,22 @@ pub struct QueueNameAttr(String);
 #[allow(deprecated)]
 impl QueueNameAttr {
     pub const KEY: &'static str = "myapp.queue.name";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for QueueNameAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for QueueNameAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
@@ -28,12 +38,16 @@ pub struct TaskAttemptAttr(i64);
 #[allow(deprecated)]
 impl TaskAttemptAttr {
     pub const KEY: &'static str = "myapp.task.attempt";
-    pub fn new(value: i64) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<i64> for TaskAttemptAttr {
+    fn from(value: i64) -> Self {
+        Self(value)
     }
 }
 
@@ -50,12 +64,22 @@ pub struct TaskIdAttr(String);
 #[allow(deprecated)]
 impl TaskIdAttr {
     pub const KEY: &'static str = "myapp.task.id";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for TaskIdAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for TaskIdAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 

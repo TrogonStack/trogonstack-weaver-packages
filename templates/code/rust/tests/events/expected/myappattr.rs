@@ -6,12 +6,16 @@ pub struct BoolValuesAttr(Vec<bool>);
 #[allow(deprecated)]
 impl BoolValuesAttr {
     pub const KEY: &'static str = "myapp.bool.values";
-    pub fn new(value: Vec<bool>) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::Bool(self.0)))
+    }
+}
+
+#[allow(deprecated)]
+impl From<Vec<bool>> for BoolValuesAttr {
+    fn from(value: Vec<bool>) -> Self {
+        Self(value)
     }
 }
 
@@ -28,12 +32,16 @@ pub struct DoubleValuesAttr(Vec<f64>);
 #[allow(deprecated)]
 impl DoubleValuesAttr {
     pub const KEY: &'static str = "myapp.double.values";
-    pub fn new(value: Vec<f64>) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::F64(self.0)))
+    }
+}
+
+#[allow(deprecated)]
+impl From<Vec<f64>> for DoubleValuesAttr {
+    fn from(value: Vec<f64>) -> Self {
+        Self(value)
     }
 }
 
@@ -50,12 +58,16 @@ pub struct IntValuesAttr(Vec<i64>);
 #[allow(deprecated)]
 impl IntValuesAttr {
     pub const KEY: &'static str = "myapp.int.values";
-    pub fn new(value: Vec<i64>) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::I64(self.0)))
+    }
+}
+
+#[allow(deprecated)]
+impl From<Vec<i64>> for IntValuesAttr {
+    fn from(value: Vec<i64>) -> Self {
+        Self(value)
     }
 }
 
@@ -72,12 +84,16 @@ pub struct StringValuesAttr(Vec<String>);
 #[allow(deprecated)]
 impl StringValuesAttr {
     pub const KEY: &'static str = "myapp.string.values";
-    pub fn new(value: Vec<String>) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::String(self.0.into_iter().map(Into::into).collect())))
+    }
+}
+
+#[allow(deprecated)]
+impl From<Vec<String>> for StringValuesAttr {
+    fn from(value: Vec<String>) -> Self {
+        Self(value)
     }
 }
 
@@ -94,12 +110,16 @@ pub struct TaskAttemptAttr(i64);
 #[allow(deprecated)]
 impl TaskAttemptAttr {
     pub const KEY: &'static str = "myapp.task.attempt";
-    pub fn new(value: i64) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<i64> for TaskAttemptAttr {
+    fn from(value: i64) -> Self {
+        Self(value)
     }
 }
 

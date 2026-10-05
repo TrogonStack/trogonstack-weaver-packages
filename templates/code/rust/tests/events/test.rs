@@ -31,16 +31,16 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
         &logger,
         myappattr::TaskStateAttr::Done,
         [
-            myappevent::TaskFinishedOption::TaskAttempt(myappattr::TaskAttemptAttr::new(2)),
-            myappevent::TaskFinishedOption::HostName(workerattr::HostNameAttr::new("worker-1")),
+            myappevent::TaskFinishedOption::TaskAttempt(myappattr::TaskAttemptAttr::from(2)),
+            myappevent::TaskFinishedOption::HostName(workerattr::HostNameAttr::from("worker-1")),
             myappevent::TaskFinishedOption::Severity(Severity::Warn),
             myappevent::TaskFinishedOption::Timestamp(timestamp),
-            myappevent::TaskFinishedOption::BoolValues(myappattr::BoolValuesAttr::new(vec![true])),
-            myappevent::TaskFinishedOption::IntValues(myappattr::IntValuesAttr::new(vec![1])),
-            myappevent::TaskFinishedOption::DoubleValues(myappattr::DoubleValuesAttr::new(vec![
+            myappevent::TaskFinishedOption::BoolValues(myappattr::BoolValuesAttr::from(vec![true])),
+            myappevent::TaskFinishedOption::IntValues(myappattr::IntValuesAttr::from(vec![1])),
+            myappevent::TaskFinishedOption::DoubleValues(myappattr::DoubleValuesAttr::from(vec![
                 1.5,
             ])),
-            myappevent::TaskFinishedOption::StringValues(myappattr::StringValuesAttr::new(vec![
+            myappevent::TaskFinishedOption::StringValues(myappattr::StringValuesAttr::from(vec![
                 "fetch".into(),
             ])),
         ],
@@ -49,7 +49,7 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
         &context,
         &logger,
         myappattr::TaskStateAttr::Done,
-        workerattr::HostNameAttr::new("worker-1"),
+        workerattr::HostNameAttr::from("worker-1"),
         [],
     );
     provider.force_flush().unwrap();

@@ -34,12 +34,16 @@ pub struct SuccessAttr(bool);
 #[allow(deprecated)]
 impl SuccessAttr {
     pub const KEY: &'static str = "auth.success";
-    pub fn new(value: bool) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<bool> for SuccessAttr {
+    fn from(value: bool) -> Self {
+        Self(value)
     }
 }
 

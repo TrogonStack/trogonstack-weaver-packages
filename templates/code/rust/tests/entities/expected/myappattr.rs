@@ -7,12 +7,16 @@ pub struct HostCpuCountAttr(i64);
 #[allow(deprecated)]
 impl HostCpuCountAttr {
     pub const KEY: &'static str = "myapp.host.cpu.count";
-    pub fn new(value: i64) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<i64> for HostCpuCountAttr {
+    fn from(value: i64) -> Self {
+        Self(value)
     }
 }
 
@@ -29,12 +33,22 @@ pub struct HostNameAttr(String);
 #[allow(deprecated)]
 impl HostNameAttr {
     pub const KEY: &'static str = "myapp.host.name";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for HostNameAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for HostNameAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
@@ -51,12 +65,22 @@ pub struct HostRoleAttr(String);
 #[allow(deprecated)]
 impl HostRoleAttr {
     pub const KEY: &'static str = "myapp.host.role";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for HostRoleAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for HostRoleAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
@@ -101,12 +125,22 @@ pub struct QueueNameAttr(String);
 #[allow(deprecated)]
 impl QueueNameAttr {
     pub const KEY: &'static str = "myapp.queue.name";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for QueueNameAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for QueueNameAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
@@ -123,12 +157,16 @@ pub struct QueueSizeAttr(i64);
 #[allow(deprecated)]
 impl QueueSizeAttr {
     pub const KEY: &'static str = "myapp.queue.size";
-    pub fn new(value: i64) -> Self {
-        Self(value)
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<i64> for QueueSizeAttr {
+    fn from(value: i64) -> Self {
+        Self(value)
     }
 }
 

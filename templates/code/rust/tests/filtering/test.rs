@@ -4,7 +4,7 @@ use opentelemetry::{KeyValue, Value};
 #[test]
 fn vendor_prefix_changes_types_but_preserves_telemetry_keys() {
     assert_eq!(
-        IdAttr::new("task").key_value(),
+        IdAttr::from("task").key_value(),
         KeyValue::new("myapp.task.id", "task")
     );
     assert_eq!(

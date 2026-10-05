@@ -20,11 +20,6 @@ pub struct {{ attr.name }}({{ attr.value_type | map_text("rust_type") }});
 #[allow(deprecated)]
 impl {{ attr.name }} {
     pub const KEY: &'static str = {{ attr.key_literal }};
-{% if attr.type is not mapping %}
-    pub fn new(value: {% if attr.value_type == "string" %}impl Into<String>{% else %}{{ attr.value_type | map_text("rust_type") }}{% endif %}) -> Self {
-        Self(value{% if attr.value_type == "string" %}.into(){% endif %})
-    }
-{% endif %}
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
 {% if attr.type is mapping %}
@@ -41,6 +36,23 @@ impl {{ attr.name }} {
 {% endif %}
     }
 }
+{% if attr.type is not mapping %}
+
+#[allow(deprecated)]
+impl From<{{ attr.value_type | map_text("rust_type") }}> for {{ attr.name }} {
+    fn from(value: {{ attr.value_type | map_text("rust_type") }}) -> Self {
+        Self(value)
+    }
+}
+{% if attr.value_type == "string" %}
+#[allow(deprecated)]
+impl From<&str> for {{ attr.name }} {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
+    }
+}
+{% endif %}
+{% endif %}
 
 #[allow(deprecated)]
 impl From<{{ attr.name }}> for ::opentelemetry::KeyValue {

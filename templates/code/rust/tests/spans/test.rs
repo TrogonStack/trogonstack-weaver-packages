@@ -19,10 +19,10 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     let parent = myappspan::start_task_dispatch(
         &opentelemetry::Context::new(),
         &tracer,
-        workerattr::HostNameAttr::new("worker-1"),
-        workerattr::HostPortAttr::new(8080),
+        workerattr::HostNameAttr::from("worker-1"),
+        workerattr::HostPortAttr::from(8080),
         [myappspan::TaskDispatchStartAttr::TaskId(
-            myappattr::TaskIdAttr::new("task-1"),
+            myappattr::TaskIdAttr::from("task-1"),
         )],
     );
     let context = parent.into_context(&opentelemetry::Context::new());
@@ -33,7 +33,7 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         myappattr::TaskStateAttr::Done,
         [],
     );
-    child.set_attributes([myappspan::TaskRunAttr::TaskId(myappattr::TaskIdAttr::new(
+    child.set_attributes([myappspan::TaskRunAttr::TaskId(myappattr::TaskIdAttr::from(
         "task-1",
     ))]);
     child.set_status(opentelemetry::trace::Status::Ok);
@@ -42,9 +42,9 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     let mut refined = workerspan::start_task_dispatch(
         &opentelemetry::Context::new(),
         &tracer,
-        myappattr::TaskAttemptAttr::new(3),
-        workerattr::HostNameAttr::new("worker-2"),
-        workerattr::HostPortAttr::new(9090),
+        myappattr::TaskAttemptAttr::from(3),
+        workerattr::HostNameAttr::from("worker-2"),
+        workerattr::HostPortAttr::from(9090),
         [],
     );
     refined.end();
@@ -59,25 +59,25 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     myappspan::start_name_apostrophe(
         &opentelemetry::Context::new(),
         &tracer,
-        workerattr::HostPortAttr::new(1),
+        workerattr::HostPortAttr::from(1),
     )
     .end();
     myappspan::start_name_backslash(
         &opentelemetry::Context::new(),
         &tracer,
-        workerattr::HostPortAttr::new(1),
+        workerattr::HostPortAttr::from(1),
     )
     .end();
     myappspan::start_name_unicode(
         &opentelemetry::Context::new(),
         &tracer,
-        workerattr::HostPortAttr::new(1),
+        workerattr::HostPortAttr::from(1),
     )
     .end();
     myappspan::start_name_control(
         &opentelemetry::Context::new(),
         &tracer,
-        workerattr::HostPortAttr::new(1),
+        workerattr::HostPortAttr::from(1),
     )
     .end();
     provider.force_flush().unwrap();

@@ -34,12 +34,22 @@ pub struct UserIdAttr(String);
 #[allow(deprecated)]
 impl UserIdAttr {
     pub const KEY: &'static str = "auth.user.id";
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
 
     pub fn key_value(self) -> ::opentelemetry::KeyValue {
         ::opentelemetry::KeyValue::new(Self::KEY, self.0)
+    }
+}
+
+#[allow(deprecated)]
+impl From<String> for UserIdAttr {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+#[allow(deprecated)]
+impl From<&str> for UserIdAttr {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
