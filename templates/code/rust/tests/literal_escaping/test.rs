@@ -1,4 +1,5 @@
 use generated_semconv::demoattr::LiteralAttr;
+use generated_semconv::options::InstrumentationOptions;
 use generated_semconv::{demometric::LiteralCountCounter, meter::Meter};
 use opentelemetry::Value;
 use opentelemetry_sdk::metrics::{InMemoryMetricExporter, PeriodicReader, SdkMeterProvider};
@@ -20,7 +21,13 @@ fn signal_metadata_preserves_literal_backslash_sequences() {
     let provider = SdkMeterProvider::builder()
         .with_reader(PeriodicReader::builder(exporter.clone()).build())
         .build();
-    LiteralCountCounter::new(&Meter::new(&provider, "escaping")).add(1, LiteralAttr::Literal);
+    LiteralCountCounter::new(&Meter::new(
+        &provider,
+        InstrumentationOptions {
+            scope: "escaping".into(),
+        },
+    ))
+    .add(1, LiteralAttr::Literal);
     provider.force_flush().unwrap();
     let exported = exporter.get_finished_metrics().unwrap();
     let scope = exported[0].scope_metrics().next().unwrap();

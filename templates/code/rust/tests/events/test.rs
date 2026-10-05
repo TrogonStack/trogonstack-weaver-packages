@@ -1,3 +1,4 @@
+use generated_semconv::options::InstrumentationOptions;
 use generated_semconv::{
     logger, myappattr, myappevent, scope, workerattr, workerevent, SCHEMA_URL,
 };
@@ -13,10 +14,12 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
         .build();
     let logger = logger::Logger::new(
         &provider,
-        scope::Scope {
-            name: "worker".into(),
-            version: Some("1.2.3".into()),
-            attributes: vec![opentelemetry::KeyValue::new("scope.kind", "test")],
+        InstrumentationOptions {
+            scope: scope::Scope {
+                name: "worker".into(),
+                version: Some("1.2.3".into()),
+                attributes: vec![opentelemetry::KeyValue::new("scope.kind", "test")],
+            },
         },
     );
     let span = SpanContext::new(
@@ -129,7 +132,12 @@ impl opentelemetry::logs::Logger for DisabledLogger {
 fn disabled_events_are_checked_before_record_creation() {
     myappevent::emit_task_finished(
         &opentelemetry::Context::new(),
-        &logger::Logger::new(&DisabledProvider, "test"),
+        &logger::Logger::new(
+            &DisabledProvider,
+            InstrumentationOptions {
+                scope: "test".into(),
+            },
+        ),
         myappattr::TaskStateAttr::Done,
         [myappevent::TaskFinishedOption::Severity(Severity::Error)],
     );

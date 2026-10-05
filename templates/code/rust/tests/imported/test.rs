@@ -1,3 +1,4 @@
+use generated_semconv::options::InstrumentationOptions;
 use generated_semconv::{edgeevent, edgespan, logger, myappattr, myappmetric, tracer};
 use opentelemetry::{Array, KeyValue, StringValue, Value};
 
@@ -50,7 +51,12 @@ fn imported_native_string_arrays_format_derived_span_names() {
     let provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
         .with_simple_exporter(exporter.clone())
         .build();
-    let tracer = tracer::Tracer::new(&provider, "synthetic-upstream");
+    let tracer = tracer::Tracer::new(
+        &provider,
+        InstrumentationOptions {
+            scope: "synthetic-upstream".into(),
+        },
+    );
     let mut span = edgespan::start_upstream_methods(
         &opentelemetry::Context::new(),
         &tracer,

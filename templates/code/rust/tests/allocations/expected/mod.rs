@@ -3,6 +3,7 @@ pub const SCHEMA_URL: &str = "https://example.com/schemas/allocations/1.0.0";
 pub mod probeattr;
 
 pub mod scope;
+pub mod options;
 pub mod meter;
 pub mod logger;
 pub mod probeevent;

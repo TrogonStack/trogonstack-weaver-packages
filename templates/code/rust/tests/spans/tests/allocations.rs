@@ -37,7 +37,14 @@ fn allocations<T>(operation: impl FnOnce() -> T) -> (T, usize) {
 }
 #[test]
 fn static_scope_constructor_has_no_generated_heap_allocations() {
-    let (_, count) = allocations(|| tracer::Tracer::new(&NoopTracerProvider::new(), "worker"));
+    let (_, count) = allocations(|| {
+        tracer::Tracer::new(
+            &NoopTracerProvider::new(),
+            generated_semconv::options::InstrumentationOptions {
+                scope: "worker".into(),
+            },
+        )
+    });
     assert_eq!(count, 0);
 }
 #[test]
@@ -109,6 +116,11 @@ fn configured_scope_moves_existing_metadata_without_cloning() {
         version: Some("1.0.0".into()),
         attributes: vec![opentelemetry::KeyValue::new("scope.kind", "worker")],
     };
-    let (_, count) = allocations(|| tracer::Tracer::new(&NoopTracerProvider::new(), scope));
+    let (_, count) = allocations(|| {
+        tracer::Tracer::new(
+            &NoopTracerProvider::new(),
+            generated_semconv::options::InstrumentationOptions { scope },
+        )
+    });
     assert_eq!(count, 0);
 }

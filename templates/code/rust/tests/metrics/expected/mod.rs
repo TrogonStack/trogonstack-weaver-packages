@@ -4,6 +4,7 @@ pub mod authattr;
 pub mod myappattr;
 
 pub mod scope;
+pub mod options;
 pub mod meter;
 pub mod authmetric;
 pub mod myappmetric;

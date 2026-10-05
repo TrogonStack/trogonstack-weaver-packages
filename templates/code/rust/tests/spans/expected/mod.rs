@@ -4,6 +4,7 @@ pub mod myappattr;
 pub mod workerattr;
 
 pub mod scope;
+pub mod options;
 pub mod tracer;
 pub mod myappspan;
 pub mod workerspan;

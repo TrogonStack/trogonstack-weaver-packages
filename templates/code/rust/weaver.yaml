@@ -586,7 +586,7 @@ templates:
     file_name: "{{ ctx.namespace }}entity.rs"
 
   - template: scope.rs.j2
-    filter: |-
+    filter: &instrumentation_filter |-
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $o
       | if ((semconv_grouped_metrics($o) | map(.metrics) | add // [] | length) > 0
             or (.registry.spans // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | length) > 0
@@ -594,6 +594,11 @@ templates:
         then [{}] else [] end
     application_mode: each
     file_name: scope.rs
+
+  - template: options.rs.j2
+    filter: *instrumentation_filter
+    application_mode: each
+    file_name: options.rs
 
   - template: meter.rs.j2
     filter: |-

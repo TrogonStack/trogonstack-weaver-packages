@@ -1,15 +1,14 @@
-use super::scope::Scope;
+use super::options::InstrumentationOptions;
 
 #[derive(Clone, Debug)]
 pub struct Meter(opentelemetry::metrics::Meter);
 impl Meter {
-    pub fn new(provider: &impl opentelemetry::metrics::MeterProvider, scope: impl Into<Scope>) -> Self {
-        let scope: Scope = scope.into();
-        let meter = provider.meter_with_scope(scope.into());
+    pub fn new(provider: &impl opentelemetry::metrics::MeterProvider, options: InstrumentationOptions) -> Self {
+        let meter = provider.meter_with_scope(options.scope.into());
         Self(meter)
     }
     pub fn inner(&self) -> &opentelemetry::metrics::Meter { &self.0 }
 }
 impl Default for Meter {
-    fn default() -> Self { Self::new(&opentelemetry::metrics::noop::NoopMeterProvider::new(), Scope::default()) }
+    fn default() -> Self { Self::new(&opentelemetry::metrics::noop::NoopMeterProvider::new(), InstrumentationOptions::default()) }
 }

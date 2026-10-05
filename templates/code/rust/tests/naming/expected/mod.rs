@@ -3,5 +3,6 @@ pub const SCHEMA_URL: &str = "https://example.com/schemas/naming/1.0.0";
 pub mod capsattr;
 
 pub mod scope;
+pub mod options;
 pub mod meter;
 pub mod capsmetric;

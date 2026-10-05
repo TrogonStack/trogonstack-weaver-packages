@@ -1,3 +1,4 @@
+use generated_semconv::options::InstrumentationOptions;
 use generated_semconv::{logger, probeevent};
 use opentelemetry::logs::Severity;
 use opentelemetry_sdk::logs::{InMemoryLogExporter, SdkLoggerProvider};
@@ -8,7 +9,12 @@ fn events_without_attributes_export_cleanly() {
     let provider = SdkLoggerProvider::builder()
         .with_simple_exporter(exporter.clone())
         .build();
-    let logger = logger::Logger::new(&provider, "synthetic-clock");
+    let logger = logger::Logger::new(
+        &provider,
+        InstrumentationOptions {
+            scope: "synthetic-clock".into(),
+        },
+    );
     probeevent::emit_tick(
         &opentelemetry::Context::new(),
         &logger,

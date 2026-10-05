@@ -5,6 +5,7 @@ pub mod heartbeatattr;
 pub mod hostattr;
 
 pub mod scope;
+pub mod options;
 pub mod tracer;
 pub mod logger;
 pub mod exceptionevent;

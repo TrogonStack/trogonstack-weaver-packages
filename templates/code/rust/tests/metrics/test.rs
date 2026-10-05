@@ -1,3 +1,4 @@
+use generated_semconv::options::InstrumentationOptions;
 use generated_semconv::{authattr, authmetric, meter, myappattr, myappmetric, scope, workermetric};
 use opentelemetry::KeyValue;
 use opentelemetry_sdk::metrics::data::{AggregatedMetrics, MetricData};
@@ -22,10 +23,12 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
     let (provider, exporter) = provider();
     let meter = meter::Meter::new(
         &provider,
-        scope::Scope {
-            name: "synthetic-worker".into(),
-            version: Some("1.2.3".into()),
-            attributes: vec![KeyValue::new("scope.kind", "worker")],
+        InstrumentationOptions {
+            scope: scope::Scope {
+                name: "synthetic-worker".into(),
+                version: Some("1.2.3".into()),
+                attributes: vec![KeyValue::new("scope.kind", "worker")],
+            },
         },
     );
     myappmetric::TaskDurationHistogram::new(&meter).record(
@@ -188,7 +191,12 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
 #[allow(deprecated)]
 fn observable_callbacks_export_values_and_typed_attributes() {
     let (provider, exporter) = provider();
-    let meter = meter::Meter::new(&provider, "synthetic-observer");
+    let meter = meter::Meter::new(
+        &provider,
+        InstrumentationOptions {
+            scope: "synthetic-observer".into(),
+        },
+    );
     let _started = myappmetric::TaskStartedObservableCounter::new(&meter, |observer| {
         observer.observe(
             11,
@@ -256,12 +264,22 @@ fn observable_callbacks_export_values_and_typed_attributes() {
 #[test]
 fn alternate_numeric_types_export_sync_and_observable_measurements() {
     let (provider, exporter) = provider();
-    let sync_meter = meter::Meter::new(&provider, "synthetic-float-sync");
+    let sync_meter = meter::Meter::new(
+        &provider,
+        InstrumentationOptions {
+            scope: "synthetic-float-sync".into(),
+        },
+    );
     myappmetric::TaskFloatStartedCounter::new(&sync_meter).add(0.5);
     myappmetric::TaskFloatActiveUpDownCounter::new(&sync_meter).add(-1.25);
     myappmetric::TaskFloatDepthGauge::new(&sync_meter).record(2.5);
     myappmetric::TaskPayloadHistogram::new(&sync_meter).record(512);
-    let async_meter = meter::Meter::new(&provider, "synthetic-float-async");
+    let async_meter = meter::Meter::new(
+        &provider,
+        InstrumentationOptions {
+            scope: "synthetic-float-async".into(),
+        },
+    );
     let _started = myappmetric::TaskFloatStartedObservableCounter::new(&async_meter, |observer| {
         observer.observe(0.75);
     });

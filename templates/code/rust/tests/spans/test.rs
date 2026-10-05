@@ -10,10 +10,12 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         .build();
     let tracer = tracer::Tracer::new(
         &provider,
-        generated_semconv::scope::Scope {
-            name: "worker".into(),
-            version: Some("1.2.3".into()),
-            attributes: vec![opentelemetry::KeyValue::new("scope.kind", "test")],
+        generated_semconv::options::InstrumentationOptions {
+            scope: generated_semconv::scope::Scope {
+                name: "worker".into(),
+                version: Some("1.2.3".into()),
+                attributes: vec![opentelemetry::KeyValue::new("scope.kind", "test")],
+            },
         },
     );
     let _: &opentelemetry_sdk::trace::SdkTracer = tracer.inner();

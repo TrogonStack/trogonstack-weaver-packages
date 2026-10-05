@@ -45,6 +45,7 @@ before choosing that namespace.
 | Module              | API                                                                                       |
 | ------------------- | ----------------------------------------------------------------------------------------- |
 | `<namespace>attr`   | Attribute newtypes and enum variants, `KEY` and conversion into `KeyValue`.               |
+| `options`           | Typed instrumentation options containing scope configuration.                             |
 | `scope`             | Shared scope name, version, and attributes configuration.                                 |
 | `meter`             | Schema-aware `Meter`, with `new`, `inner`, and a no-op `Default`.                         |
 | `tracer`            | Schema-aware `Tracer`, with `new`, `inner`, and a no-op `Default`.                        |
@@ -55,21 +56,25 @@ before choosing that namespace.
 | `<namespace>entity` | Typed entity values, attribute iterators, and resources carrying the registry schema URL. |
 
 Handle modules are emitted when the registry includes their corresponding
-signals. Their `new(provider, scope)` constructor accepts a static string, owned
-`String`, `Cow<'static, str>`, or the shared `scope::Scope` configuration:
+signals. Their `new(provider, options)` constructor takes the exact
+`options::InstrumentationOptions` type, with metadata nested under `scope`:
 
 ```rust
-let scope = semconv::scope::Scope {
-    name: "worker".into(),
-    version: Some("1.0.0".into()),
-    attributes: vec![opentelemetry::KeyValue::new("scope.kind", "worker")],
+let options = semconv::options::InstrumentationOptions {
+    scope: semconv::scope::Scope {
+        name: "worker".into(),
+        version: Some("1.0.0".into()),
+        attributes: vec![opentelemetry::KeyValue::new("scope.kind", "worker")],
+    },
 };
-let tracer = semconv::tracer::Tracer::new(&provider, scope);
+let tracer = semconv::tracer::Tracer::new(&provider, options);
 ```
 
-Scope values move into OpenTelemetry without rebuilding their metadata. The
-registry schema URL is always applied; it is not a configuration field. The
-shared scope module is emitted when a handle is needed.
+Use `InstrumentationOptions::default()` for default metadata. `Scope` accepts
+static strings, owned `String`, or `Cow<'static, str>` through `From` when only a
+name is needed. Scope values move into OpenTelemetry without rebuilding their
+metadata. The registry schema URL is always applied; it is not a configuration
+field. The shared scope and options modules are emitted when a handle is needed.
 Attribute keys, metric names, and event names retain their full registry names.
 
 ### Typed attributes
