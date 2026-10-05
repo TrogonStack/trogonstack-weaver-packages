@@ -14,6 +14,33 @@ templates:
     application_mode: single
     file_name: mod.rs
     filter: |-
+      def ns: split(".") as $s
+        | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0]))
+          then {namespace: $s[1], short_name: ($s[2:] | join("."))}
+          else {namespace: $s[0], short_name: ($s[1:] | join("."))} end | if (.namespace | test("^[a-z][a-z0-9_]*$") | not)
+          then error("namespace \(.namespace) is not a supported Rust module name") else . end;
+      def rust_literal:
+        if type == "string" then explode | map([.] | implode | tojson | gsub("\\\\b"; "\\u{0008}") | gsub("\\\\f"; "\\u{000c}") | gsub("\\\\u(?<code>[0-9a-fA-F]{4})"; "\\u{\(.code)}") | .[1:-1]) | join("") | "\"" + . + "\""
+        else tostring end;
+      .schema_url as $schema
+      | if $schema == null or $schema == "https://unknown/unknown" or ($schema | test("^https?://[^/]+(/[^/]+)*/[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$") | not)
+        then error("the registry schema_url must name a schema version") else . end
+      | {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
+      | (semconv_grouped_metrics($opts) | map(.metrics) | add // [] | map(.name)) as $metrics
+      | (.registry.spans // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.type)) as $spans
+      | (.registry.entities // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.type)) as $entities
+      | ([($metrics + (.refinements.metrics // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .name and (.name as $base | $metrics | any(. == $base))) | .id)))[] | ns | .namespace + "metric"]
+          + [($spans + (.refinements.spans // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .type and (.type as $base | $spans | any(. == $base))) | .id)))[] | ns | .namespace + "span"]
+          + [((.registry.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.name)) + (.refinements.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.id)))[] | ns | .namespace + "event"]
+          + [($entities + (.refinements.entities // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .type and (.type as $base | $entities | any(. == $base))) | .id)))[] | ns | .namespace + "entity"] | unique) as $signal_modules
+      | semconv_grouped_attributes($opts)
+      | map(.attributes) | add // [] | map(.key | ns | .namespace + "attr") | unique
+      | {signal_modules: $signal_modules, has_metrics: ($signal_modules | any(endswith("metric"))), has_spans: ($signal_modules | any(endswith("span"))), has_events: ($signal_modules | any(endswith("event"))), schema_literal: ($schema | rust_literal), namespaces: .}
+
+  - template: attributes.rs.j2
+    application_mode: each
+    file_name: "{{ ctx.name }}.rs"
+    filter: |-
       def title: split(".") | map(split("_")) | flatten | map(.[0:1] as $first | ($first | ascii_upcase) + .[1:]) | join("");
       def keyword: . as $name | ["as", "break", "const", "continue", "crate", "else", "enum", "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type", "unsafe", "use", "where", "while", "async", "await", "dyn", "abstract", "become", "box", "do", "final", "gen", "macro", "override", "priv", "try", "typeof", "unsized", "virtual", "yield"] | any(. == $name);
       def valid_name: test("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*$");
@@ -33,17 +60,7 @@ templates:
       def rust_literal:
         if type == "string" then explode | map([.] | implode | tojson | gsub("\\\\b"; "\\u{0008}") | gsub("\\\\f"; "\\u{000c}") | gsub("\\\\u(?<code>[0-9a-fA-F]{4})"; "\\u{\(.code)}") | .[1:-1]) | join("") | "\"" + . + "\""
         else tostring end;
-      .schema_url as $schema
-      | if $schema == null or $schema == "https://unknown/unknown" or ($schema | test("^https?://[^/]+(/[^/]+)*/[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$") | not)
-        then error("the registry schema_url must name a schema version") else . end
-      | {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
-      | (semconv_grouped_metrics($opts) | map(.metrics) | add // [] | map(.name)) as $metrics
-      | (.registry.spans // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.type)) as $spans
-      | (.registry.entities // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.type)) as $entities
-      | ([($metrics + (.refinements.metrics // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .name and (.name as $base | $metrics | any(. == $base))) | .id)))[] | ns | .namespace + "metric"]
-          + [($spans + (.refinements.spans // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .type and (.type as $base | $spans | any(. == $base))) | .id)))[] | ns | .namespace + "span"]
-          + [((.registry.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.name)) + (.refinements.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.id)))[] | ns | .namespace + "event"]
-          + [($entities + (.refinements.entities // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .type and (.type as $base | $entities | any(. == $base))) | .id)))[] | ns | .namespace + "entity"] | unique) as $signal_modules
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | semconv_grouped_attributes($opts)
       | map(.attributes) | add // []
       | map(if (.key | valid_name | not) then error("attribute \(.key) is not a supported Rust attribute name") else . end)
@@ -65,7 +82,8 @@ templates:
           else . end)
       | group_by(.namespace)
       | map(if (group_by(.name) | any(length > 1)) then error("namespace \(.[0].namespace) has attributes that render to the same Rust identifier") else . end)
-      | {signal_modules: $signal_modules, has_metrics: ($signal_modules | any(endswith("metric"))), has_spans: ($signal_modules | any(endswith("span"))), has_events: ($signal_modules | any(endswith("event"))), schema_literal: ($schema | rust_literal), namespaces: map({name: (.[0].namespace + "attr"), attributes: sort_by(.key)})}
+
+      | map({name: (.[0].namespace + "attr"), attributes: sort_by(.key)})
 
   - template: metrics.rs.j2
     filter: |-

@@ -9,54 +9,7 @@
 {% endif %}
 pub const SCHEMA_URL: &str = {{ ctx.schema_literal }};
 {% for namespace in ctx.namespaces %}
-pub mod {{ namespace.name }} {
-{% for attr in namespace.attributes %}
-    {{ [attr.brief, attr.note] | select | join("\n\n") | comment | indent(4) }}
-    {{ ("#[deprecated(note = " ~ attr.deprecated_literal ~ ")]\n    ") if attr.deprecated_literal else "" }}#[derive(Debug, Clone, PartialEq{% if attr.type is mapping %}, Copy{% endif %})]
-{% if attr.type is mapping %}
-    pub enum {{ attr.name }} {
-{% for member in attr.type.members %}
-        {{ [member.brief, member.note] | select | join("\n\n") | comment | indent(8) }}
-        {{ ("#[deprecated(note = " ~ member.deprecated_literal ~ ")]\n        ") if member.deprecated_literal else "" }}{{ member.name }},
-{% endfor %}
-    }
-{% else %}
-    pub struct {{ attr.name }}({{ attr.value_type | map_text("rust_type") }});
-{% endif %}
-
-    #[allow(deprecated)]
-    impl {{ attr.name }} {
-        pub const KEY: &'static str = {{ attr.key_literal }};
-{% if attr.type is not mapping %}
-        pub fn new(value: {% if attr.value_type == "string" %}impl Into<String>{% else %}{{ attr.value_type | map_text("rust_type") }}{% endif %}) -> Self {
-            Self(value{% if attr.value_type == "string" %}.into(){% endif %})
-        }
-{% endif %}
-
-        pub fn key_value(self) -> ::opentelemetry::KeyValue {
-{% if attr.type is mapping %}
-            let value: {{ attr.value_type | map_text("rust_type") }} = match self {
-{% for member in attr.type.members %}
-                Self::{{ member.name }} => {{ member.literal }}{% if attr.value_type == "string" %}.into(){% elif attr.value_type == "double" %}_f64{% endif %},
-{% endfor %}
-            };
-            ::opentelemetry::KeyValue::new(Self::KEY, value)
-{% elif "[]" in attr.value_type %}
-            ::opentelemetry::KeyValue::new(Self::KEY, ::opentelemetry::Value::Array(::opentelemetry::Array::{{ attr.value_type | map_text("rust_array") }}(self.0{% if attr.value_type == "string[]" %}.into_iter().map(Into::into).collect(){% endif %})))
-{% else %}
-            ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-{% endif %}
-        }
-    }
-
-    #[allow(deprecated)]
-    impl From<{{ attr.name }}> for ::opentelemetry::KeyValue {
-        fn from(value: {{ attr.name }}) -> Self {
-            value.key_value()
-        }
-    }
-{% endfor %}
-}
+pub mod {{ namespace }};
 {% endfor %}
 
 {% if ctx.has_metrics %}pub mod meter;{% endif %}

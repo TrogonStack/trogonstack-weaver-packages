@@ -3,46 +3,4 @@
 
 pub const SCHEMA_URL: &str = "https://example.com/schemas/1.0.0";
 
-pub mod demoattr {
-
-    /// Synthetic integer limits.
-    #[derive(Debug, Clone, PartialEq, Copy)]
-
-    pub enum BoundaryAttr {
-
-        /// Lowest signed 64-bit integer.
-        Minimum,
-
-        /// Highest signed 64-bit integer.
-        Maximum,
-
-    }
-
-
-    #[allow(deprecated)]
-    impl BoundaryAttr {
-        pub const KEY: &'static str = "demo.boundary";
-
-
-        pub fn key_value(self) -> ::opentelemetry::KeyValue {
-
-            let value: i64 = match self {
-
-                Self::Minimum => -9223372036854775808,
-
-                Self::Maximum => 9223372036854775807,
-
-            };
-            ::opentelemetry::KeyValue::new(Self::KEY, value)
-
-        }
-    }
-
-    #[allow(deprecated)]
-    impl From<BoundaryAttr> for ::opentelemetry::KeyValue {
-        fn from(value: BoundaryAttr) -> Self {
-            value.key_value()
-        }
-    }
-
-}
+pub mod demoattr;

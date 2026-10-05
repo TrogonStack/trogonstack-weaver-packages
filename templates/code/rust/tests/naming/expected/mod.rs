@@ -3,73 +3,7 @@
 
 pub const SCHEMA_URL: &str = "https://example.com/schemas/naming/1.0.0";
 
-pub mod capsattr {
-
-    /// Synthetic identifier.
-    #[derive(Debug, Clone, PartialEq)]
-
-    pub struct Http2STATUSApiIDAttr(String);
-
-
-    #[allow(deprecated)]
-    impl Http2STATUSApiIDAttr {
-        pub const KEY: &'static str = "caps.http2_STATUS.api_ID";
-
-        pub fn new(value: impl Into<String>) -> Self {
-            Self(value.into())
-        }
-
-
-        pub fn key_value(self) -> ::opentelemetry::KeyValue {
-
-            ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-
-        }
-    }
-
-    #[allow(deprecated)]
-    impl From<Http2STATUSApiIDAttr> for ::opentelemetry::KeyValue {
-        fn from(value: Http2STATUSApiIDAttr) -> Self {
-            value.key_value()
-        }
-    }
-
-    /// Synthetic mode.
-    #[derive(Debug, Clone, PartialEq, Copy)]
-
-    pub enum Mode2STATEAttr {
-
-        /// Synthetic state.
-        HTTP2ReadySTATE,
-
-    }
-
-
-    #[allow(deprecated)]
-    impl Mode2STATEAttr {
-        pub const KEY: &'static str = "caps.mode2_STATE";
-
-
-        pub fn key_value(self) -> ::opentelemetry::KeyValue {
-
-            let value: String = match self {
-
-                Self::HTTP2ReadySTATE => "ready".into(),
-
-            };
-            ::opentelemetry::KeyValue::new(Self::KEY, value)
-
-        }
-    }
-
-    #[allow(deprecated)]
-    impl From<Mode2STATEAttr> for ::opentelemetry::KeyValue {
-        fn from(value: Mode2STATEAttr) -> Self {
-            value.key_value()
-        }
-    }
-
-}
+pub mod capsattr;
 
 
 pub mod meter;

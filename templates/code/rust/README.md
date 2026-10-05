@@ -35,8 +35,9 @@ Keep the consuming crate's files outside that directory.
 
 ## Generated API
 
-The root `mod.rs` carries `SCHEMA_URL` and inline attribute modules. Signals
-live in sibling files declared by the root module. Names use the first dotted
+The root `mod.rs` carries `SCHEMA_URL` and declares the generated modules.
+Each attribute namespace lives in a sibling `<namespace>attr.rs` file, alongside
+the signal modules. Names use the first dotted
 segment as their namespace; `vendor_prefixes` removes a leading vendor segment
 before choosing that namespace.
 

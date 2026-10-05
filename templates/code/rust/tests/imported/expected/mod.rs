@@ -3,38 +3,7 @@
 
 pub const SCHEMA_URL: &str = "https://example.com/schemas/myapp/1.0.0";
 
-pub mod myappattr {
-
-    /// Unique identifier of the task.
-    #[derive(Debug, Clone, PartialEq)]
-
-    pub struct TaskIdAttr(String);
-
-
-    #[allow(deprecated)]
-    impl TaskIdAttr {
-        pub const KEY: &'static str = "myapp.task.id";
-
-        pub fn new(value: impl Into<String>) -> Self {
-            Self(value.into())
-        }
-
-
-        pub fn key_value(self) -> ::opentelemetry::KeyValue {
-
-            ::opentelemetry::KeyValue::new(Self::KEY, self.0)
-
-        }
-    }
-
-    #[allow(deprecated)]
-    impl From<TaskIdAttr> for ::opentelemetry::KeyValue {
-        fn from(value: TaskIdAttr) -> Self {
-            value.key_value()
-        }
-    }
-
-}
+pub mod myappattr;
 
 
 pub mod meter;
