@@ -1,0 +1,15 @@
+file_format: definition/2
+attributes:
+  - key: span.context
+    type: int
+    stability: stable
+    brief: A synthetic numeric span context attribute.
+    examples: 1
+events:
+  - name: probe.recorded
+    requirement_level: recommended
+    stability: stable
+    brief: A synthetic record event.
+    attributes:
+      - ref: span.context
+        requirement_level: required

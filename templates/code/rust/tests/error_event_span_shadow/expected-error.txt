@@ -1,0 +1,1 @@
+event probe.recorded has required attributes whose Rust parameter would shadow a name its Emit function declares: span

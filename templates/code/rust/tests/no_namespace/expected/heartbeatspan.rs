@@ -57,7 +57,7 @@ impl Default for Span {
     }
 }
 
-pub fn r#start_<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, name: Name, r#heartbeat_sequence: super::heartbeatattr::SequenceAttr, options: impl IntoIterator<Item = StartAttr>) -> Span<T::Span> {
+pub fn r#start<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, name: Name, r#heartbeat_sequence: super::heartbeatattr::SequenceAttr, options: impl IntoIterator<Item = StartAttr>) -> Span<T::Span> {
     let name = if name.0.is_empty() { ::std::borrow::Cow::Borrowed("heartbeat") } else { name.0 };
     let attributes: [::opentelemetry::KeyValue; 1] = [::opentelemetry::KeyValue::from(r#heartbeat_sequence)];
     let span = tracer.inner().span_builder(name)

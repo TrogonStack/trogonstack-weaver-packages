@@ -1,0 +1,10 @@
+file_format: definition/2
+events:
+  - name: exception
+    stability: stable
+    requirement_level: recommended
+    brief: A synthetic exception occurred.
+  - name: exception.event
+    stability: stable
+    requirement_level: recommended
+    brief: Another synthetic exception occurred.

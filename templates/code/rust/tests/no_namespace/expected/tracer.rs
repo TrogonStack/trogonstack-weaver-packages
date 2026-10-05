@@ -1,5 +1,6 @@
 use super::options::InstrumentationOptions;
 
+#[derive(Clone, Debug)]
 pub struct Tracer<T: opentelemetry::trace::Tracer = opentelemetry::trace::noop::NoopTracer>(T);
 impl<T: opentelemetry::trace::Tracer> Tracer<T> {
     pub fn new<P: opentelemetry::trace::TracerProvider<Tracer = T>>(provider: &P, options: InstrumentationOptions) -> Self {

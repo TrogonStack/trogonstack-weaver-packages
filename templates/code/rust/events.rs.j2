@@ -5,7 +5,7 @@ use ::opentelemetry::trace::TraceContextExt;
 
 {% import "signal_helpers.j2" as h %}
 {% for def in ctx.events %}
-{% set name = h.exported(def.short_name) %}
+{% set name = h.exported(def.short_name) or 'Event' %}
 #[derive(Clone, Debug)]
 pub enum {{ name }}Option {
     Severity(::opentelemetry::logs::Severity),
@@ -18,7 +18,7 @@ pub enum {{ name }}Option {
 {% endfor %}
 }
 {{ (h.docs(def) ~ "\n" ~ h.deprecated(def)) | trim }}
-pub fn {{ h.ident('emit.' ~ def.short_name) }}<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}, options: impl IntoIterator<Item = {{ name }}Option>) {
+pub fn {{ h.signal_fn('emit', def.short_name) }}<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}, options: impl IntoIterator<Item = {{ name }}Option>) {
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
 {% if def.optional %}

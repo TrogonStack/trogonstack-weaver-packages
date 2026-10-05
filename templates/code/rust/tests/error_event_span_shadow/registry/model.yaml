@@ -1,0 +1,9 @@
+file_format: definition/2
+events:
+  - name: probe.recorded
+    requirement_level: recommended
+    stability: stable
+    brief: A synthetic record event.
+    attributes:
+      - ref: span
+        requirement_level: required

@@ -3,6 +3,7 @@
 {%- endmacro %}
 {% macro exported(value) -%}{% for dotted in value.split(".") %}{% for segment in dotted.split("_") %}{{ segment[:1] | upper }}{{ segment[1:] }}{% endfor %}{% endfor %}{%- endmacro %}
 {% macro ident(value) -%}r#{{ value | snake_case }}{%- endmacro %}
+{% macro signal_fn(prefix, short_name) -%}{{ ident(prefix ~ ('.' ~ short_name if short_name else '')) }}{%- endmacro %}
 {% macro attr_type(a) -%}
 {%- if a.imported -%}{{ "::opentelemetry::StringValue" if a.attr_type == "string" else ("Vec<::opentelemetry::StringValue>" if a.attr_type == "string[]" else a.attr_type | map_text("rust_type")) }}
 {%- else -%}{{ a.attr_import_path if a.attr_import_path else 'super::' ~ a.attr_namespace ~ 'attr' }}::{{ exported(a.attr_short_name) }}Attr

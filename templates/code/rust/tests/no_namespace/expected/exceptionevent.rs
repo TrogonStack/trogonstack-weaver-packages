@@ -3,20 +3,20 @@ use ::opentelemetry::logs::LogRecord;
 use ::opentelemetry::trace::TraceContextExt;
 
 #[derive(Clone, Debug)]
-pub enum Option {
+pub enum EventOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
     Message(super::exceptionattr::MessageAttr),
 }
 /// A noteworthy exception occurred.
-pub fn r#emit_<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#exception_type: super::exceptionattr::TypeAttr, options: impl IntoIterator<Item = Option>) {
+pub fn r#emit<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>, r#exception_type: super::exceptionattr::TypeAttr, options: impl IntoIterator<Item = EventOption>) {
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
-    let mut attributes = ::smallvec::SmallVec::<[Option; 1]>::new();
+    let mut attributes = ::smallvec::SmallVec::<[EventOption; 1]>::new();
     for option in options {
         match option {
-            Option::Severity(value) => severity = value,
-            Option::Timestamp(value) => timestamp = Some(value),
+            EventOption::Severity(value) => severity = value,
+            EventOption::Timestamp(value) => timestamp = Some(value),
             attribute => attributes.push(attribute),
         }
     }
@@ -33,8 +33,8 @@ pub fn r#emit_<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Cont
     record.add_attribute(super::exceptionattr::TypeAttr::KEY, r#exception_type);
     for option in attributes {
         match option {
-            Option::Message(value) => record.add_attribute(super::exceptionattr::MessageAttr::KEY, value),
-            Option::Severity(_) | Option::Timestamp(_) => continue,
+            EventOption::Message(value) => record.add_attribute(super::exceptionattr::MessageAttr::KEY, value),
+            EventOption::Severity(_) | EventOption::Timestamp(_) => continue,
         }
     }
     logger.inner().emit(record);

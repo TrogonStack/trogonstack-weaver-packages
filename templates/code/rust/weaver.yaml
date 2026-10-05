@@ -447,7 +447,7 @@ templates:
              | group_by(.attr_short_name | norm)
              | map(select(length > 1) | map(.key) | join(" and "))) as $optional_collisions
           | (.optional | map(select(.attr_short_name | norm | . as $p | ["severity", "timestamp"] | any(. == $p))) | map(.key)) as $reserved
-          | (.required | map(select(.attr_param | norm | . as $p | ["context", "logger", "options", "option", "record", "attributes", "severity", "timestamp"] | any(. == $p))) | map(.key)) as $shadowing
+          | (.required | map(select(.attr_param | norm | . as $p | ["context", "logger", "options", "option", "record", "attributes", "severity", "timestamp", "span", "spancontext"] | any(. == $p))) | map(.key)) as $shadowing
           | if ($required_collisions | length) > 0
             then error("event \(.id) has required attributes that render to the same Rust parameter: \($required_collisions | join("; "))")
             elif ($optional_collisions | length) > 0
@@ -461,7 +461,7 @@ templates:
       | group_by(.namespace)
       | map(
           ([.[] | . as $def | .id as $event | (.short_name | norm) as $short
-            | (["P:emit" + $short, "P:" + $short + "option",
+            | (["P:emit" + $short, "P:" + (if $short == "" then "event" else $short end) + "option",
                 "P:with" + $short + "severity", "P:with" + $short + "timestamp",
                 "p:" + $short + "option", "p:" + $short + "eventseverity", "p:" + $short + "eventtimestamp"]
                + ($def.optional | map(.attr_short_name | norm) | map("P:with" + $short + ., "p:" + $short + "event" + .)))[]

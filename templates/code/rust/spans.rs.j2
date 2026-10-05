@@ -109,7 +109,7 @@ impl Default for {{ span }} {
     }
 }
 {{ h.deprecated(def) }}
-pub fn {{ h.ident('start.' ~ def.short_name) }}<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>{% if not def.name_parts %}, name: {{ name }}Name{% endif %}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}StartAttr>{% endif %}) -> {{ span }}<T::Span> {
+pub fn {{ h.signal_fn('start', def.short_name) }}<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>{% if not def.name_parts %}, name: {{ name }}Name{% endif %}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}StartAttr>{% endif %}) -> {{ span }}<T::Span> {
 {% if def.name_parts %}
     let mut name = String::with_capacity({% for part in def.name_parts %}{% if not loop.first %} + {% endif %}{% if part.attr %}{{ name_capacity(part.attr, h.ident(part.attr.attr_param)) }}{% else %}{{ h.literal(part.text) }}.len(){% endif %}{% endfor %});
 {% for part in def.name_parts %}
