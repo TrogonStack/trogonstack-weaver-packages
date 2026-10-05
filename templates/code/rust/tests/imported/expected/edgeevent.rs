@@ -3,7 +3,6 @@
 pub enum UpstreamFailedOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
-
     ServerAddress(String),
 }
 /// A request to an upstream server failed.

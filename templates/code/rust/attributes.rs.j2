@@ -6,7 +6,10 @@
 {% if attr.type is mapping %}
 pub enum {{ attr.name }} {
 {% for member in attr.type.members %}
-    {{ [member.brief, member.note] | select | join("\n\n") | comment | indent(4) }}
+{% set member_doc = [member.brief, member.note] | select | join("\n\n") %}
+{% if member_doc %}
+    {{ member_doc | comment | indent(4) }}
+{% endif %}
     {{ ("#[deprecated(note = " ~ member.deprecated_literal ~ ")]\n    ") if member.deprecated_literal else "" }}{{ member.name }},
 {% endfor %}
 }

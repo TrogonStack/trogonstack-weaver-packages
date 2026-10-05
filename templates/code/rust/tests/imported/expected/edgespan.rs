@@ -1,9 +1,8 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum UpstreamRequestStartAttr {
-/// Conditionally required: If the request failed.
+    /// Conditionally required: If the request failed.
     ErrorType(String),
-
     HttpRequestMethodList(Vec<String>),
 }
 impl UpstreamRequestStartAttr {

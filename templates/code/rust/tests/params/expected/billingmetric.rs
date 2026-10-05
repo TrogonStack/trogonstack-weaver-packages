@@ -1,9 +1,7 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum InvoiceAmountHistogramAttr {
-
     Currency(super::billingattr::CurrencyAttr),
-
     RequestUrl(super::myappattr::RequestUrlAttr),
 }
 impl InvoiceAmountHistogramAttr {

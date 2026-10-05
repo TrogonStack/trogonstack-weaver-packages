@@ -1,7 +1,6 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum TaskFailedCounterAttr {
-
     ServerPort(i64),
 }
 impl TaskFailedCounterAttr {

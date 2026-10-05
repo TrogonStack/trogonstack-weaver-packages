@@ -1,7 +1,6 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum UpstreamDurationHistogramAttr {
-
     ServerPort(i64),
 }
 impl UpstreamDurationHistogramAttr {

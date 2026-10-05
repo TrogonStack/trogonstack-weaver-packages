@@ -3,7 +3,6 @@
 pub enum TaskErroredOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
-
     ServerPort(i64),
 }
 /// A task failed with an error.

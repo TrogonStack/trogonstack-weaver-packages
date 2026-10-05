@@ -1,9 +1,8 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum TaskDispatchStartAttr {
-/// Recommended: When the task came from a named queue.
+    /// Recommended: When the task came from a named queue.
     QueueName(super::myappattr::QueueNameAttr),
-
     TaskId(super::myappattr::TaskIdAttr),
 }
 impl TaskDispatchStartAttr {

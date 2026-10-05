@@ -82,9 +82,9 @@ impl Default for TaskActiveObservableUpDownCounter {
 }
 #[derive(Clone, Debug)]
 pub enum TaskDurationHistogramAttr {
-/// Opt-in: the convention records it only when a user asks for it.
+    /// Opt-in: the convention records it only when a user asks for it.
     Method(super::authattr::MethodAttr),
-/// Conditionally required: If the task reached a final state.
+    /// Conditionally required: If the task reached a final state.
     TaskState(super::myappattr::TaskStateAttr),
 }
 impl TaskDurationHistogramAttr {
@@ -258,7 +258,7 @@ impl Default for TaskPayloadHistogram {
 }
 #[derive(Clone, Debug)]
 pub enum TaskRetryDurationHistogramAttr {
-/// Opt-in: the convention records it only when a user asks for it.
+    /// Opt-in: the convention records it only when a user asks for it.
     Method(super::authattr::MethodAttr),
 }
 impl TaskRetryDurationHistogramAttr {
@@ -292,7 +292,7 @@ impl Default for TaskRetryDurationHistogram {
 }
 #[derive(Clone, Debug)]
 pub enum TaskStartedCounterAttr {
-/// Recommended: When the scheduler assigned an id before the task started.
+    /// Recommended: When the scheduler assigned an id before the task started.
     TaskId(super::myappattr::TaskIdAttr),
 }
 impl TaskStartedCounterAttr {

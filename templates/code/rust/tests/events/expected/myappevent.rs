@@ -3,17 +3,13 @@
 pub enum TaskFinishedOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
-
     BoolValues(super::myappattr::BoolValuesAttr),
-
     DoubleValues(super::myappattr::DoubleValuesAttr),
-
     IntValues(super::myappattr::IntValuesAttr),
-
     StringValues(super::myappattr::StringValuesAttr),
-/// Recommended: When the task ran more than once.
+    /// Recommended: When the task ran more than once.
     TaskAttempt(super::myappattr::TaskAttemptAttr),
-/// Opt-in: the convention records it only when a user asks for it.
+    /// Opt-in: the convention records it only when a user asks for it.
     HostName(super::workerattr::HostNameAttr),
 }
 /// A task reached a final state.

@@ -1,7 +1,6 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum TaskFailedCounterAttr {
-
     HttpRequestMethodList(Vec<String>),
 }
 impl TaskFailedCounterAttr {

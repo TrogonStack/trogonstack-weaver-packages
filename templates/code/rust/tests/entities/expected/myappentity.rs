@@ -2,9 +2,8 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum HostEntityAttr {
-/// Opt-in: the convention records it only when a user asks for it.
+    /// Opt-in: the convention records it only when a user asks for it.
     HostCpuCount(super::myappattr::HostCpuCountAttr),
-
     HostType(super::myappattr::HostTypeAttr),
 }
 
@@ -47,9 +46,8 @@ impl HostEntity {
 }
 #[derive(Clone, Debug)]
 pub enum HostWorkerEntityAttr {
-/// Opt-in: the convention records it only when a user asks for it.
+    /// Opt-in: the convention records it only when a user asks for it.
     HostCpuCount(super::myappattr::HostCpuCountAttr),
-
     HostType(super::myappattr::HostTypeAttr),
 }
 
@@ -94,7 +92,6 @@ impl HostWorkerEntity {
 }
 #[derive(Clone, Debug)]
 pub enum QueueEntityAttr {
-
     QueueSize(super::myappattr::QueueSizeAttr),
 }
 

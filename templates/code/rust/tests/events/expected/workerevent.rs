@@ -34,15 +34,11 @@ pub fn r#emit_host_started<L: ::opentelemetry::logs::Logger>(context: &::opentel
 pub enum TaskFinishedOption {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
-
     BoolValues(super::myappattr::BoolValuesAttr),
-
     DoubleValues(super::myappattr::DoubleValuesAttr),
-
     IntValues(super::myappattr::IntValuesAttr),
-
     StringValues(super::myappattr::StringValuesAttr),
-/// Recommended: When the task ran more than once.
+    /// Recommended: When the task ran more than once.
     TaskAttempt(super::myappattr::TaskAttemptAttr),
 }
 /// A task reached a final state on a worker.

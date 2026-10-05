@@ -3,7 +3,6 @@
 pub enum Option {
     Severity(::opentelemetry::logs::Severity),
     Timestamp(::std::time::SystemTime),
-
     Message(super::exceptionattr::MessageAttr),
 }
 /// A noteworthy exception occurred.

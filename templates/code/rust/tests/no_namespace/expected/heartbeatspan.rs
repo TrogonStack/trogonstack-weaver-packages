@@ -1,7 +1,6 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum StartAttr {
-
     Source(super::heartbeatattr::SourceAttr),
 }
 impl StartAttr {

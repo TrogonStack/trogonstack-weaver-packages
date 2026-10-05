@@ -1,9 +1,9 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum TaskDurationHistogramAttr {
-/// Opt-in: the convention records it only when a user asks for it.
+    /// Opt-in: the convention records it only when a user asks for it.
     Method(super::authattr::MethodAttr),
-/// Conditionally required: If the task reached a final state.
+    /// Conditionally required: If the task reached a final state.
     TaskState(super::myappattr::TaskStateAttr),
 }
 impl TaskDurationHistogramAttr {

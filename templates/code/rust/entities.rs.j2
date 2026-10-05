@@ -9,7 +9,9 @@
 #[derive(Clone, Debug)]
 pub enum {{ name }}Attr {
 {% for opt in def.optional %}
-{{ opt.requirement_doc | comment if opt.requirement_doc else '' }}
+{% if opt.requirement_doc %}
+    {{ opt.requirement_doc | comment | indent(4) }}
+{% endif %}
     {{ s.exported(opt.attr_short_name) }}({{ s.attr_type(opt) }}),
 {% endfor %}
 }

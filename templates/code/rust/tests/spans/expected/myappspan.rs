@@ -166,11 +166,10 @@ pub fn r#start_queue_drain(context: &::opentelemetry::Context, tracer: &super::t
 }
 #[derive(Clone, Debug)]
 pub enum TaskDispatchStartAttr {
-/// Recommended: When the task came from a named queue.
+    /// Recommended: When the task came from a named queue.
     QueueName(super::myappattr::QueueNameAttr),
-/// Opt-in: the convention records it only when a user asks for it.
+    /// Opt-in: the convention records it only when a user asks for it.
     TaskAttempt(super::myappattr::TaskAttemptAttr),
-
     TaskId(super::myappattr::TaskIdAttr),
 }
 impl TaskDispatchStartAttr {
@@ -237,7 +236,6 @@ pub fn r#start_task_dispatch(context: &::opentelemetry::Context, tracer: &super:
 }
 #[derive(Clone, Debug)]
 pub enum TaskRunStartAttr {
-
     TaskId(super::myappattr::TaskIdAttr),
 }
 impl TaskRunStartAttr {

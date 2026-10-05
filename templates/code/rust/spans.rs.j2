@@ -8,7 +8,9 @@
 #[derive(Clone, Debug)]
 pub enum {{ name }}StartAttr {
 {% for opt in def.optional %}
-{{ opt.requirement_doc | comment if opt.requirement_doc else '' }}
+{% if opt.requirement_doc %}
+    {{ opt.requirement_doc | comment | indent(4) }}
+{% endif %}
     {{ h.exported(opt.attr_short_name) }}({{ h.attr_type(opt) }}),
 {% endfor %}
 }

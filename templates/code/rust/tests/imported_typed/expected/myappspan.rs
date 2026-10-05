@@ -1,7 +1,6 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum TaskDispatchStartAttr {
-
     ServerPort(i64),
 }
 impl TaskDispatchStartAttr {

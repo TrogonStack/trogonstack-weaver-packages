@@ -2,7 +2,6 @@
 #![allow(deprecated)]
 #[derive(Clone, Debug)]
 pub enum EntityAttr {
-
     Name(super::hostattr::NameAttr),
 }
 
