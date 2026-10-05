@@ -21,16 +21,17 @@ fn signal_metadata_preserves_literal_backslash_sequences() {
     let provider = SdkMeterProvider::builder()
         .with_reader(PeriodicReader::builder(exporter.clone()).build())
         .build();
-    LiteralCountCounter::new(&Meter::new(
-        &provider,
-        InstrumentationOptions {
-            scope: "escaping".into(),
-        },
-    ))
-    .add(1, LiteralAttr::Literal);
+    LiteralCountCounter::new(&Meter::new(&provider, InstrumentationOptions::default()))
+        .add(1, LiteralAttr::Literal);
     provider.force_flush().unwrap();
     let exported = exporter.get_finished_metrics().unwrap();
     let scope = exported[0].scope_metrics().next().unwrap();
+    assert_eq!(scope.scope().name(), "generated_semconv");
+    assert_eq!(scope.scope().version(), Some("0.0.0"));
+    assert_eq!(
+        scope.scope().schema_url(),
+        Some(generated_semconv::SCHEMA_URL)
+    );
     let metric = scope.metrics().next().unwrap();
     assert_eq!(metric.description(), r"literal \b \f \u1234");
     assert_eq!(metric.unit(), r"literal\b\u1234");

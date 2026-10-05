@@ -36,13 +36,11 @@ fn allocations<T>(operation: impl FnOnce() -> T) -> (T, usize) {
     (value, count)
 }
 #[test]
-fn static_scope_constructor_has_no_generated_heap_allocations() {
+fn fixed_scope_identity_has_no_generated_heap_allocations() {
     let (_, count) = allocations(|| {
         tracer::Tracer::new(
             &NoopTracerProvider::new(),
-            generated_semconv::options::InstrumentationOptions {
-                scope: "worker".into(),
-            },
+            generated_semconv::options::InstrumentationOptions::default(),
         )
     });
     assert_eq!(count, 0);
@@ -110,10 +108,8 @@ fn untemplated_names_move_or_borrow_without_heap_allocations() {
 }
 
 #[test]
-fn configured_scope_moves_existing_metadata_without_cloning() {
+fn scope_attributes_move_without_cloning() {
     let scope = generated_semconv::scope::Scope {
-        name: "worker".into(),
-        version: Some("1.0.0".into()),
         attributes: vec![opentelemetry::KeyValue::new("scope.kind", "worker")],
     };
     let (_, count) = allocations(|| {

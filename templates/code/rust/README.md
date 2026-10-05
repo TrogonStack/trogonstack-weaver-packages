@@ -46,7 +46,7 @@ before choosing that namespace.
 | ------------------- | ----------------------------------------------------------------------------------------- |
 | `<namespace>attr`   | Attribute newtypes and enum variants, `KEY` and conversion into `KeyValue`.               |
 | `options`           | Typed instrumentation options containing scope configuration.                             |
-| `scope`             | Shared scope name, version, and attributes configuration.                                 |
+| `scope`             | Scope attributes configuration; package identity is fixed.                                |
 | `meter`             | Schema-aware `Meter`, with `new`, `inner`, and a no-op `Default`.                         |
 | `tracer`            | Schema-aware `Tracer`, with `new`, `inner`, and a no-op `Default`.                        |
 | `logger`            | Schema-aware generic `Logger`, with `new`, `inner`, and a no-op `Default`.                |
@@ -62,19 +62,22 @@ signals. Their `new(provider, options)` constructor takes the exact
 ```rust
 let options = semconv::options::InstrumentationOptions {
     scope: semconv::scope::Scope {
-        name: "worker".into(),
-        version: Some("1.0.0".into()),
         attributes: vec![opentelemetry::KeyValue::new("scope.kind", "worker")],
     },
 };
 let tracer = semconv::tracer::Tracer::new(&provider, options);
 ```
 
-Use `InstrumentationOptions::default()` for default metadata. `Scope` accepts
-static strings, owned `String`, or `Cow<'static, str>` through `From` when only a
-name is needed. Scope values move into OpenTelemetry without rebuilding their
-metadata. The registry schema URL is always applied; it is not a configuration
-field. The shared scope and options modules are emitted when a handle is needed.
+Use `InstrumentationOptions::default()` when no scope attributes are needed.
+The instrumentation name and version come from the containing Cargo package's
+`CARGO_PKG_NAME` and `CARGO_PKG_VERSION` at compile time. If generated code lives
+in a library crate, that library supplies the identity; if it lives in the
+application crate, the application supplies it. The registry schema URL is also
+fixed. These values are not configuration fields.
+
+Configured scope attributes move into OpenTelemetry without rebuilding their
+storage. The shared scope and options modules are emitted when a handle is
+needed.
 Attribute keys, metric names, and event names retain their full registry names.
 
 ### Typed attributes

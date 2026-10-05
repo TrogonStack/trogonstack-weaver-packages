@@ -16,8 +16,6 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
         &provider,
         InstrumentationOptions {
             scope: scope::Scope {
-                name: "worker".into(),
-                version: Some("1.2.3".into()),
                 attributes: vec![opentelemetry::KeyValue::new("scope.kind", "test")],
             },
         },
@@ -67,8 +65,8 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
     assert!(log.record.observed_timestamp().is_some());
     assert!(log.record.body().is_none());
     assert_eq!(log.instrumentation.schema_url(), Some(SCHEMA_URL));
-    assert_eq!(log.instrumentation.name(), "worker");
-    assert_eq!(log.instrumentation.version(), Some("1.2.3"));
+    assert_eq!(log.instrumentation.name(), "generated_semconv");
+    assert_eq!(log.instrumentation.version(), Some("0.0.0"));
     assert!(log
         .instrumentation
         .attributes()
@@ -132,12 +130,7 @@ impl opentelemetry::logs::Logger for DisabledLogger {
 fn disabled_events_are_checked_before_record_creation() {
     myappevent::emit_task_finished(
         &opentelemetry::Context::new(),
-        &logger::Logger::new(
-            &DisabledProvider,
-            InstrumentationOptions {
-                scope: "test".into(),
-            },
-        ),
+        &logger::Logger::new(&DisabledProvider, InstrumentationOptions::default()),
         myappattr::TaskStateAttr::Done,
         [myappevent::TaskFinishedOption::Severity(Severity::Error)],
     );

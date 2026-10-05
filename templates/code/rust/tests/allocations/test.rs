@@ -224,9 +224,7 @@ fn metrics_use_no_generated_heap_for_required_or_typical_optional_attributes() {
     let state = Arc::new(MetricState::default());
     let meter = meter::Meter::new(
         &MetricProvider(state.clone()),
-        InstrumentationOptions {
-            scope: "allocation-test".into(),
-        },
+        InstrumentationOptions::default(),
     );
     let required = probemetric::RequiredCounter::new(&meter);
     let optional = probemetric::OptionalCounter::new(&meter);
@@ -272,12 +270,7 @@ fn metrics_use_no_generated_heap_for_required_or_typical_optional_attributes() {
 fn observable_measurements_use_stack_attribute_storage() {
     let state = Arc::new(MetricState::default());
     let provider = MetricProvider(state.clone());
-    let meter = meter::Meter::new(
-        &provider,
-        InstrumentationOptions {
-            scope: "allocation-test".into(),
-        },
-    );
+    let meter = meter::Meter::new(&provider, InstrumentationOptions::default());
     let _required = probemetric::RequiredObservableCounter::new(&meter, |observer| {
         observer.observe(1, probeattr::RequiredAttr::from(3));
     });
@@ -303,7 +296,7 @@ fn observable_measurements_use_stack_attribute_storage() {
 }
 
 #[test]
-fn static_meter_and_logger_scope_names_remain_borrowed() {
+fn fixed_scope_identity_uses_no_generated_heap() {
     let metric_provider = BorrowedMeterProvider {
         meter: Meter::new(Arc::new(MetricProvider(Arc::new(MetricState::default())))),
         scope: Mutex::new(None),
@@ -312,9 +305,7 @@ fn static_meter_and_logger_scope_names_remain_borrowed() {
     let metric_count = allocations(|| {
         black_box(meter::Meter::new(
             &metric_provider,
-            InstrumentationOptions {
-                scope: "allocation-test".into(),
-            },
+            InstrumentationOptions::default(),
         ));
     });
     let log_provider = LogProvider(Arc::new(LogState::default()));
@@ -322,9 +313,7 @@ fn static_meter_and_logger_scope_names_remain_borrowed() {
     let log_count = allocations(|| {
         black_box(logger::Logger::new(
             &log_provider,
-            InstrumentationOptions {
-                scope: "allocation-test".into(),
-            },
+            InstrumentationOptions::default(),
         ));
     });
     assert_eq!(metric_count, 0);
@@ -333,7 +322,7 @@ fn static_meter_and_logger_scope_names_remain_borrowed() {
 }
 
 #[test]
-fn configured_scopes_move_metadata_without_rebuilding_storage() {
+fn scope_attributes_move_without_rebuilding_storage() {
     let metric_provider = BorrowedMeterProvider {
         meter: Meter::new(Arc::new(MetricProvider(Arc::new(MetricState::default())))),
         scope: Mutex::new(None),
@@ -342,21 +331,12 @@ fn configured_scopes_move_metadata_without_rebuilding_storage() {
     drop(metric_provider.scope.lock().unwrap());
     drop(log_provider.0.scope.lock().unwrap());
     let scope = || scope::Scope {
-        name: String::from("allocation-test").into(),
-        version: Some(String::from("1.2.3").into()),
         attributes: vec![KeyValue::new("scope.identity", 7_i64)],
     };
     let metric_scope = scope();
     let log_scope = scope();
-    let original = |scope: &scope::Scope| {
-        (
-            scope.name.as_ptr(),
-            scope.version.as_ref().unwrap().as_ptr(),
-            scope.attributes.as_ptr(),
-        )
-    };
-    let original_metric = original(&metric_scope);
-    let original_log = original(&log_scope);
+    let original_metric = metric_scope.attributes.as_ptr();
+    let original_log = log_scope.attributes.as_ptr();
     let metric_count = allocations(|| {
         black_box(meter::Meter::new(
             &metric_provider,
@@ -378,14 +358,12 @@ fn configured_scopes_move_metadata_without_rebuilding_storage() {
         (log_provider.0.scope.lock().unwrap(), original_log),
     ] {
         let scope = stored.as_ref().unwrap();
-        assert_eq!(scope.name(), "allocation-test");
-        assert_eq!(scope.version(), Some("1.2.3"));
+        assert_eq!(scope.name(), "generated_semconv");
+        assert_eq!(scope.version(), Some("0.0.0"));
         assert_eq!(scope.schema_url(), Some(generated_semconv::SCHEMA_URL));
-        assert_eq!(scope.name().as_ptr(), original.0);
-        assert_eq!(scope.version().unwrap().as_ptr(), original.1);
         assert_eq!(
             scope.attributes().next().unwrap() as *const KeyValue,
-            original.2
+            original
         );
         assert_eq!(
             scope.attributes().collect::<Vec<_>>(),
@@ -396,30 +374,18 @@ fn configured_scopes_move_metadata_without_rebuilding_storage() {
 }
 
 #[test]
-fn scope_convenience_inputs_are_nested_in_instrumentation_options() {
+fn default_options_apply_fixed_package_identity() {
     let metric_provider = BorrowedMeterProvider {
         meter: Meter::new(Arc::new(MetricProvider(Arc::new(MetricState::default())))),
         scope: Mutex::new(None),
     };
-    for options in [
-        scope::Scope::from("static"),
-        scope::Scope::from(String::from("owned")),
-        scope::Scope::from(Cow::Borrowed("cow-borrowed")),
-        scope::Scope::from(Cow::Owned(String::from("cow-owned"))),
-    ]
-    .into_iter()
-    .map(|scope| InstrumentationOptions { scope })
-    .chain(std::iter::once(InstrumentationOptions::default()))
-    {
-        let name = options.scope.name.clone();
-        let _meter = meter::Meter::new(&metric_provider, options);
-        let stored = metric_provider.scope.lock().unwrap();
-        let stored = stored.as_ref().unwrap();
-        assert_eq!(stored.name(), name);
-        assert_eq!(stored.version(), None);
-        assert_eq!(stored.attributes().count(), 0);
-        assert_eq!(stored.schema_url(), Some(generated_semconv::SCHEMA_URL));
-    }
+    let _meter = meter::Meter::new(&metric_provider, InstrumentationOptions::default());
+    let stored = metric_provider.scope.lock().unwrap();
+    let stored = stored.as_ref().unwrap();
+    assert_eq!(stored.name(), "generated_semconv");
+    assert_eq!(stored.version(), Some("0.0.0"));
+    assert_eq!(stored.attributes().count(), 0);
+    assert_eq!(stored.schema_url(), Some(generated_semconv::SCHEMA_URL));
 }
 
 #[test]
@@ -428,9 +394,7 @@ fn enabled_events_use_no_generated_heap_and_preserve_duplicate_attributes() {
     state.enabled.store(true, Ordering::Relaxed);
     let logger = logger::Logger::new(
         &LogProvider(state.clone()),
-        InstrumentationOptions {
-            scope: "allocation-test".into(),
-        },
+        InstrumentationOptions::default(),
     );
     let context = Context::new();
     probeevent::emit_recorded(&context, &logger, probeattr::RequiredAttr::from(3), []);
@@ -490,9 +454,7 @@ fn disabled_events_defer_context_attachment_and_attribute_conversion() {
     let state = Arc::new(LogState::default());
     let logger = logger::Logger::new(
         &LogProvider(state.clone()),
-        InstrumentationOptions {
-            scope: "allocation-test".into(),
-        },
+        InstrumentationOptions::default(),
     );
     let context = Context::new().with_value(ExplicitContext);
     let values = probeattr::ValuesAttr::from(vec![1, 2, 3]);

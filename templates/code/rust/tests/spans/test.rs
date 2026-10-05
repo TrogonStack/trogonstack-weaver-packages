@@ -12,8 +12,6 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         &provider,
         generated_semconv::options::InstrumentationOptions {
             scope: generated_semconv::scope::Scope {
-                name: "worker".into(),
-                version: Some("1.2.3".into()),
                 attributes: vec![opentelemetry::KeyValue::new("scope.kind", "test")],
             },
         },
@@ -127,8 +125,8 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         .iter()
         .any(|kv| kv.key.as_str() == "myapp.task.id" && kv.value.as_str() == "task-1"));
     assert_eq!(parent.instrumentation_scope.schema_url(), Some(SCHEMA_URL));
-    assert_eq!(parent.instrumentation_scope.name(), "worker");
-    assert_eq!(parent.instrumentation_scope.version(), Some("1.2.3"));
+    assert_eq!(parent.instrumentation_scope.name(), "generated_semconv");
+    assert_eq!(parent.instrumentation_scope.version(), Some("0.0.0"));
     assert!(parent
         .instrumentation_scope
         .attributes()

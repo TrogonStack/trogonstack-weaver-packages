@@ -51,12 +51,7 @@ fn imported_native_string_arrays_format_derived_span_names() {
     let provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
         .with_simple_exporter(exporter.clone())
         .build();
-    let tracer = tracer::Tracer::new(
-        &provider,
-        InstrumentationOptions {
-            scope: "synthetic-upstream".into(),
-        },
-    );
+    let tracer = tracer::Tracer::new(&provider, InstrumentationOptions::default());
     let mut span = edgespan::start_upstream_methods(
         &opentelemetry::Context::new(),
         &tracer,
@@ -66,5 +61,11 @@ fn imported_native_string_arrays_format_derived_span_names() {
     provider.force_flush().unwrap();
     let spans = exporter.get_finished_spans().unwrap();
     assert_eq!(spans.len(), 1);
+    assert_eq!(spans[0].instrumentation_scope.name(), "generated_semconv");
+    assert_eq!(spans[0].instrumentation_scope.version(), Some("0.0.0"));
+    assert_eq!(
+        spans[0].instrumentation_scope.schema_url(),
+        Some(generated_semconv::SCHEMA_URL)
+    );
     assert_eq!(spans[0].name, "[\"GET\",\"POST\"]");
 }

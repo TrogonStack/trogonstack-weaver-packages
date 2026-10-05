@@ -25,8 +25,6 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
         &provider,
         InstrumentationOptions {
             scope: scope::Scope {
-                name: "synthetic-worker".into(),
-                version: Some("1.2.3".into()),
                 attributes: vec![KeyValue::new("scope.kind", "worker")],
             },
         },
@@ -69,13 +67,13 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
     provider.force_flush().unwrap();
     let exported = exporter.get_finished_metrics().unwrap();
     let scope = exported[0].scope_metrics().next().unwrap();
-    assert_eq!(scope.scope().version(), Some("1.2.3"));
+    assert_eq!(scope.scope().version(), Some("0.0.0"));
     assert!(scope
         .scope()
         .attributes()
         .any(|attribute| attribute.key.as_str() == "scope.kind"
             && attribute.value.as_str() == "worker"));
-    assert_eq!(scope.scope().name(), "synthetic-worker");
+    assert_eq!(scope.scope().name(), "generated_semconv");
     assert_eq!(
         scope.scope().schema_url(),
         Some(generated_semconv::SCHEMA_URL)
@@ -191,12 +189,7 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
 #[allow(deprecated)]
 fn observable_callbacks_export_values_and_typed_attributes() {
     let (provider, exporter) = provider();
-    let meter = meter::Meter::new(
-        &provider,
-        InstrumentationOptions {
-            scope: "synthetic-observer".into(),
-        },
-    );
+    let meter = meter::Meter::new(&provider, InstrumentationOptions::default());
     let _started = myappmetric::TaskStartedObservableCounter::new(&meter, |observer| {
         observer.observe(
             11,
@@ -221,6 +214,8 @@ fn observable_callbacks_export_values_and_typed_attributes() {
     provider.force_flush().unwrap();
     let exported = exporter.get_finished_metrics().unwrap();
     let scope = exported[0].scope_metrics().next().unwrap();
+    assert_eq!(scope.scope().name(), "generated_semconv");
+    assert_eq!(scope.scope().version(), Some("0.0.0"));
     assert_eq!(
         scope.scope().schema_url(),
         Some(generated_semconv::SCHEMA_URL)
@@ -267,7 +262,9 @@ fn alternate_numeric_types_export_sync_and_observable_measurements() {
     let sync_meter = meter::Meter::new(
         &provider,
         InstrumentationOptions {
-            scope: "synthetic-float-sync".into(),
+            scope: scope::Scope {
+                attributes: vec![KeyValue::new("measurement.mode", "sync")],
+            },
         },
     );
     myappmetric::TaskFloatStartedCounter::new(&sync_meter).add(0.5);
@@ -277,7 +274,9 @@ fn alternate_numeric_types_export_sync_and_observable_measurements() {
     let async_meter = meter::Meter::new(
         &provider,
         InstrumentationOptions {
-            scope: "synthetic-float-async".into(),
+            scope: scope::Scope {
+                attributes: vec![KeyValue::new("measurement.mode", "async")],
+            },
         },
     );
     let _started = myappmetric::TaskFloatStartedObservableCounter::new(&async_meter, |observer| {
@@ -292,14 +291,20 @@ fn alternate_numeric_types_export_sync_and_observable_measurements() {
     });
     provider.force_flush().unwrap();
     let exported = exporter.get_finished_metrics().unwrap();
-    for (name, started_value, active_value, depth_value) in [
-        ("synthetic-float-sync", 0.5, -1.25, 2.5),
-        ("synthetic-float-async", 0.75, -2.5, 3.75),
-    ] {
+    for (mode, started_value, active_value, depth_value) in
+        [("sync", 0.5, -1.25, 2.5), ("async", 0.75, -2.5, 3.75)]
+    {
         let scope = exported[0]
             .scope_metrics()
-            .find(|scope| scope.scope().name() == name)
+            .find(|scope| {
+                scope
+                    .scope()
+                    .attributes()
+                    .any(|attribute| attribute == &KeyValue::new("measurement.mode", mode))
+            })
             .unwrap();
+        assert_eq!(scope.scope().name(), "generated_semconv");
+        assert_eq!(scope.scope().version(), Some("0.0.0"));
         assert_eq!(
             scope.scope().schema_url(),
             Some(generated_semconv::SCHEMA_URL)
@@ -328,7 +333,7 @@ fn alternate_numeric_types_export_sync_and_observable_measurements() {
             panic!("double gauge must export a floating gauge");
         };
         assert_eq!(depth.data_points().next().unwrap().value(), depth_value);
-        if name == "synthetic-float-sync" {
+        if mode == "sync" {
             let payload = find("myapp.task.payload");
             assert_eq!(payload.unit(), "By");
             let AggregatedMetrics::U64(MetricData::Histogram(histogram)) = payload.data() else {
