@@ -4,7 +4,7 @@ use super::options::InstrumentationOptions;
 pub struct Tracer<T: opentelemetry::trace::Tracer = opentelemetry::trace::noop::NoopTracer>(T);
 
 impl<T: opentelemetry::trace::Tracer> Tracer<T> {
-    pub fn new<P: opentelemetry::trace::TracerProvider<Tracer = T>>(provider: &P, options: InstrumentationOptions) -> Self {
+    pub fn new<P: opentelemetry::trace::TracerProvider<Tracer = T> + ?Sized>(provider: &P, options: InstrumentationOptions) -> Self {
         let tracer = provider.tracer_with_scope(options.scope.into());
         Self(tracer)
     }
