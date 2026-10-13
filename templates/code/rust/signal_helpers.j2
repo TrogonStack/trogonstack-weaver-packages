@@ -6,7 +6,7 @@
 {% macro signal_fn(prefix, short_name) -%}{{ ident(prefix ~ ('.' ~ short_name if short_name else '')) }}{%- endmacro %}
 {% macro attr_type(a) -%}
 {%- if a.imported -%}{{ "::opentelemetry::StringValue" if a.attr_type == "string" else ("Vec<::opentelemetry::StringValue>" if a.attr_type == "string[]" else a.attr_type | map_text("rust_type")) }}
-{%- else -%}{{ a.attr_import_path if a.attr_import_path else 'super::' ~ a.attr_namespace ~ 'attr' }}::{{ exported(a.attr_short_name) }}Attr
+{%- else -%}{{ a.attr_import_path if a.attr_import_path else 'super::attribute' }}::{{ exported(a.attr_param) }}
 {%- endif -%}
 {%- endmacro %}
 {% macro attr_kv(a, value) -%}

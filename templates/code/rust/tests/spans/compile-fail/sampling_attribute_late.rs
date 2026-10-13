@@ -1,7 +1,7 @@
-use generated_semconv::{myappattr, myappspan};
+use generated_semconv::{attribute, trace};
 fn main() {
-    let mut span = myappspan::TaskDispatchSpan::default();
-    span.set_attributes([myappspan::TaskDispatchStartAttr::TaskId(
-        myappattr::TaskIdAttr::from("task-1"),
+    let mut span = trace::MyappTaskDispatch::default();
+    span.set_attributes([trace::MyappTaskDispatchStartAttr::TaskId(
+        attribute::MyappTaskId::from("task-1"),
     )]);
 }

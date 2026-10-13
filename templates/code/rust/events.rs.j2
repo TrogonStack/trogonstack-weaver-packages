@@ -5,7 +5,15 @@ use ::opentelemetry::trace::TraceContextExt;
 
 {% import "signal_helpers.j2" as h %}
 {% for def in ctx.events %}
-{% set name = h.exported(def.short_name) or 'Event' %}
+{% set name = h.exported(def.qualified) %}
+{{ (h.docs(def) ~ "\n" ~ h.deprecated(def)) | trim }}
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct {{ name }};
+
+impl {{ name }} {
+    pub const NAME: &'static str = {{ h.literal(def.name) }};
+}
+
 #[derive(Clone, Debug)]
 pub enum {{ name }}Option {
     Severity(::opentelemetry::logs::Severity),
@@ -18,7 +26,7 @@ pub enum {{ name }}Option {
 {% endfor %}
 }
 {{ (h.docs(def) ~ "\n" ~ h.deprecated(def)) | trim }}
-pub fn {{ h.signal_fn('emit', def.short_name) }}<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}, options: impl IntoIterator<Item = {{ name }}Option>) {
+pub fn {{ h.signal_fn('emit', def.qualified) }}<L: ::opentelemetry::logs::Logger>(context: &::opentelemetry::Context, logger: &super::logger::Logger<L>{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}, options: impl IntoIterator<Item = {{ name }}Option>) {
     let mut severity = ::opentelemetry::logs::Severity::Info;
     let mut timestamp = None;
 {% if def.optional %}
@@ -33,10 +41,10 @@ pub fn {{ h.signal_fn('emit', def.short_name) }}<L: ::opentelemetry::logs::Logge
 {% endif %}
         }
     }
-    if !logger.inner().event_enabled(severity, "", Some({{ h.literal(def.name) }})) { return; }
+    if !logger.inner().event_enabled(severity, "", Some({{ name }}::NAME)) { return; }
     let _context_guard = context.clone().attach();
     let mut record = logger.inner().create_log_record();
-    record.set_event_name({{ h.literal(def.name) }});
+    record.set_event_name({{ name }}::NAME);
     record.set_severity_number(severity);
     record.set_observed_timestamp(::std::time::SystemTime::now());
     if let Some(timestamp) = timestamp { record.set_timestamp(timestamp); }

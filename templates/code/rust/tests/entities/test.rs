@@ -1,13 +1,13 @@
-use generated_semconv::{myappattr, myappentity, SCHEMA_URL};
+use generated_semconv::{attribute, resource, SCHEMA_URL};
 use opentelemetry::{Key, Value};
 use opentelemetry_sdk::Resource;
 
 #[test]
 fn entity_exports_identity_description_and_schema() {
-    let entity = myappentity::HostEntity::new(
-        myappattr::HostNameAttr::from("worker-1"),
-        [myappentity::HostEntityAttr::HostType(
-            myappattr::HostTypeAttr::Virtual,
+    let entity = resource::MyappHost::new(
+        attribute::MyappHostName::from("worker-1"),
+        [resource::MyappHostAttr::HostType(
+            attribute::MyappHostType::Virtual,
         )],
     );
     let attributes: Vec<_> = entity.attributes().collect();
@@ -23,9 +23,9 @@ fn entity_exports_identity_description_and_schema() {
 
 #[test]
 fn refinement_requires_its_description_attribute() {
-    let entity = myappentity::HostWorkerEntity::new(
-        myappattr::HostNameAttr::from("worker-2"),
-        myappattr::HostRoleAttr::from("worker"),
+    let entity = resource::MyappHostWorker::new(
+        attribute::MyappHostName::from("worker-2"),
+        attribute::MyappHostRole::from("worker"),
         [],
     );
     assert_eq!(entity.attributes().count(), 2);
@@ -41,7 +41,7 @@ fn consuming_export_preserves_owned_string_storage() {
     let mut owned = String::from("dynamic-worker");
     owned.shrink_to_fit();
     let original = owned.as_ptr();
-    let entity = myappentity::HostEntity::new(myappattr::HostNameAttr::from(owned), []);
+    let entity = resource::MyappHost::new(attribute::MyappHostName::from(owned), []);
     let resource: Resource = entity.into();
     let value = resource
         .iter()
@@ -56,7 +56,7 @@ fn consuming_export_preserves_owned_string_storage() {
 
 #[test]
 fn default_is_available_when_no_attributes_are_required() {
-    let empty = myappentity::OptionalEntity::default();
+    let empty = resource::MyappOptional::default();
     assert_eq!(empty.attributes().count(), 0);
     let resource = Resource::from(empty);
     assert_eq!(resource.len(), 0);
@@ -66,13 +66,13 @@ fn default_is_available_when_no_attributes_are_required() {
 #[test]
 fn optional_attribute_overflow_preserves_values_and_order() {
     let options = (0..15).map(|index| {
-        myappentity::HostEntityAttr::HostType(if index == 14 {
-            myappattr::HostTypeAttr::Physical
+        resource::MyappHostAttr::HostType(if index == 14 {
+            attribute::MyappHostType::Physical
         } else {
-            myappattr::HostTypeAttr::Virtual
+            attribute::MyappHostType::Virtual
         })
     });
-    let entity = myappentity::HostEntity::new(myappattr::HostNameAttr::from("overflow"), options);
+    let entity = resource::MyappHost::new(attribute::MyappHostName::from("overflow"), options);
     let attributes: Vec<_> = entity.attributes().collect();
     assert_eq!(attributes.len(), 16);
     assert_eq!(
@@ -84,4 +84,12 @@ fn optional_attribute_overflow_preserves_values_and_order() {
         resource.get(&Key::from("myapp.host.type")),
         Some(Value::String("physical".into()))
     );
+}
+
+const _: &str = resource::MyappHost::NAME;
+
+#[test]
+fn entities_expose_their_type_as_a_constant() {
+    assert_eq!(resource::MyappHost::NAME, "myapp.host");
+    assert_eq!(resource::MyappHostWorker::NAME, resource::MyappHost::NAME);
 }

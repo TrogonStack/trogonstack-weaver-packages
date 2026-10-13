@@ -1,5 +1,5 @@
-use generated_semconv::{myappattr, myappmetric};
+use generated_semconv::{attribute, metric};
 
 fn main() {
-    myappmetric::TaskDurationHistogram::default().record(0.1, myappattr::TaskStateAttr::Done, []);
+    metric::MyappTaskDuration::default().record(0.1, attribute::MyappTaskState::Done, []);
 }

@@ -1,6 +1,14 @@
 use generated_semconv::{
-    billingattr, billingevent, billingmetric, billingspan, logger, meter,
-    options::InstrumentationOptions, scope::Scope, tracer, SCHEMA_URL,
+    attribute,
+    event,
+    metric,
+    trace,
+    logger,
+    meter,
+    options::InstrumentationOptions,
+    scope::Scope,
+    tracer,
+    SCHEMA_URL,
 };
 use opentelemetry::{InstrumentationScope, KeyValue};
 use opentelemetry_sdk::logs::{InMemoryLogExporter, SdkLoggerProvider};
@@ -36,8 +44,8 @@ fn configured_identity_is_shared_by_metrics_spans_and_events() {
                 .build(),
         )
         .build();
-    billingmetric::InvoiceAmountHistogram::new(&meter::Meter::new(&metric_provider, options()))
-        .record(12.5, billingattr::InvoiceIdAttr::from("invoice-1"), []);
+    metric::BillingInvoiceAmount::new(&meter::Meter::new(&metric_provider, options()))
+        .record(12.5, attribute::BillingInvoiceId::from("invoice-1"), []);
     metric_provider.force_flush().unwrap();
     let metrics = metric_exporter.get_finished_metrics().unwrap();
     configured_identity(metrics[0].scope_metrics().next().unwrap().scope());
@@ -48,10 +56,10 @@ fn configured_identity_is_shared_by_metrics_spans_and_events() {
         .build();
     let tracer = tracer::Tracer::new(&span_provider, options());
     let context = opentelemetry::Context::new();
-    let mut span = billingspan::start_invoice_issue(
+    let mut span = trace::start_billing_invoice_issue(
         &context,
         &tracer,
-        billingattr::InvoiceIdAttr::from("invoice-1"),
+        attribute::BillingInvoiceId::from("invoice-1"),
     );
     span.end();
     span_provider.force_flush().unwrap();
@@ -63,10 +71,10 @@ fn configured_identity_is_shared_by_metrics_spans_and_events() {
     let log_provider = SdkLoggerProvider::builder()
         .with_simple_exporter(log_exporter.clone())
         .build();
-    billingevent::emit_invoice_issued(
+    event::emit_billing_invoice_issued(
         &context,
         &logger::Logger::new(&log_provider, options()),
-        billingattr::InvoiceIdAttr::from("invoice-1"),
+        attribute::BillingInvoiceId::from("invoice-1"),
         [],
     );
     log_provider.force_flush().unwrap();

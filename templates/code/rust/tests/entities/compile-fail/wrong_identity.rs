@@ -1,5 +1,5 @@
-use generated_semconv::{myappattr, myappentity};
+use generated_semconv::{attribute, resource};
 
 fn main() {
-    let _ = myappentity::HostEntity::new(myappattr::QueueNameAttr::from("queue-1"), []);
+    let _ = resource::MyappHost::new(attribute::MyappQueueName::from("queue-1"), []);
 }

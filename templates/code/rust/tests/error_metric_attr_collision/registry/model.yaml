@@ -1,0 +1,18 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.duration
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Synthetic task duration.
+    annotations:
+      code_generation:
+        metric_value_type: double
+  - name: myapp.task.duration.attr
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Synthetic counter whose name ends in attr.
+    annotations:
+      code_generation:
+        metric_value_type: int

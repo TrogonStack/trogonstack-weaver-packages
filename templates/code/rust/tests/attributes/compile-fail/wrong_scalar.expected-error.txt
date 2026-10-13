@@ -1,1 +1,1 @@
-the trait bound `TaskRetriesAttr: From<&str>` is not satisfied
+the trait bound `MyappTaskRetries: From<&str>` is not satisfied

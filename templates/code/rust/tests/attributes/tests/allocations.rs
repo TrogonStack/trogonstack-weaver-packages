@@ -1,4 +1,4 @@
-use generated_semconv::myappattr;
+use generated_semconv::attribute;
 use opentelemetry::{KeyValue, Value};
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
@@ -40,7 +40,7 @@ fn allocations<T>(operation: impl FnOnce() -> T) -> (T, usize) {
 #[test]
 fn string_enum_conversion_has_no_heap_allocation() {
     let (value, count) =
-        allocations(|| KeyValue::from(black_box(myappattr::TaskStateAttr::Running)));
+        allocations(|| KeyValue::from(black_box(attribute::MyappTaskState::Running)));
     assert_eq!(black_box(count), 0);
     assert_eq!(value.value, Value::String("running".into()));
 }
@@ -48,7 +48,7 @@ fn string_enum_conversion_has_no_heap_allocation() {
 #[test]
 fn static_string_construction_and_conversion_have_no_heap_allocation() {
     let (value, count) = allocations(|| {
-        let attribute = myappattr::TaskIdAttr::from(black_box("static-task"));
+        let attribute = attribute::MyappTaskId::from(black_box("static-task"));
         black_box(KeyValue::from(attribute))
     });
     assert_eq!(black_box(count), 0);
@@ -60,7 +60,7 @@ fn exact_capacity_owned_string_moves_without_another_allocation() {
     let mut text = String::from("owned-task");
     text.shrink_to_fit();
     let (value, count) =
-        allocations(|| KeyValue::from(myappattr::TaskIdAttr::from(black_box(text))));
+        allocations(|| KeyValue::from(attribute::MyappTaskId::from(black_box(text))));
     assert_eq!(black_box(count), 0);
     assert_eq!(value.value, Value::String("owned-task".into()));
 }
@@ -69,6 +69,6 @@ fn exact_capacity_owned_string_moves_without_another_allocation() {
 fn native_string_array_moves_without_another_allocation() {
     let values = vec![opentelemetry::StringValue::from("static-tag")];
     let (_, count) =
-        allocations(|| KeyValue::from(myappattr::TaskTagsAttr::from(black_box(values))));
+        allocations(|| KeyValue::from(attribute::MyappTaskTags::from(black_box(values))));
     assert_eq!(black_box(count), 0);
 }

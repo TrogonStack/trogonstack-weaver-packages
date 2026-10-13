@@ -3,7 +3,7 @@
 {% import "signal_helpers.j2" as h %}
 {% for def in ctx.metrics %}
 {% set suffix = def.instrument | map_text("metric_instrument") %}
-{% set name = h.exported(def.short_name) ~ suffix %}
+{% set name = h.exported(def.qualified) %}
 {% set method = 'add' if def.instrument in ['counter','updowncounter'] else 'record' %}
 {% set value_type = 'f64' if def.annotations.code_generation.metric_value_type == 'double' else ('i64' if def.instrument in ['updowncounter','gauge'] else 'u64') %}
 {% set builder = value_type ~ '_' ~ ('up_down_counter' if def.instrument == 'updowncounter' else def.instrument) %}
@@ -35,10 +35,14 @@ pub struct {{ name }} {
 }
 
 impl {{ name }} {
+    pub const NAME: &'static str = {{ h.literal(def.instrument_name) }};
+    pub const UNIT: &'static str = {{ h.literal(def.unit or '') }};
+    pub const DESCRIPTION: &'static str = {{ h.literal((def.description or '') | trim) }};
+
     pub fn new(meter: &super::meter::Meter) -> Self {
-        let instrument = meter.inner().{{ builder }}({{ h.literal(def.instrument_name) }})
-            .with_description({{ h.literal(def.description | trim) }})
-            .with_unit({{ h.literal(def.unit) }})
+        let instrument = meter.inner().{{ builder }}(Self::NAME)
+            .with_description(Self::DESCRIPTION)
+            .with_unit(Self::UNIT)
 {% if def.bucket_boundaries %}
             .with_boundaries(vec![{% for bound in def.bucket_boundaries %}{{ bound }}_f64{% if not loop.last %}, {% endif %}{% endfor %}])
 {% endif %}
@@ -63,7 +67,7 @@ impl Default for {{ name }} {
     fn default() -> Self { Self::new(&super::meter::Meter::default()) }
 }
 {% if def.instrument != 'histogram' %}
-{% set observable = h.exported(def.short_name) ~ 'Observable' ~ suffix %}
+{% set observable = name ~ 'Observable' %}
 pub struct {{ name }}Observer<'a> {
     observer: &'a dyn ::opentelemetry::metrics::AsyncInstrument<{{ value_type }}>,
 }
@@ -89,10 +93,14 @@ pub struct {{ observable }} {
 }
 
 impl {{ observable }} {
+    pub const NAME: &'static str = {{ name }}::NAME;
+    pub const UNIT: &'static str = {{ name }}::UNIT;
+    pub const DESCRIPTION: &'static str = {{ name }}::DESCRIPTION;
+
     pub fn new(meter: &super::meter::Meter, callback: impl Fn({{ name }}Observer<'_>) + Send + Sync + 'static) -> Self {
-        let instrument = meter.inner().{{ value_type }}_observable_{{ 'up_down_counter' if def.instrument == 'updowncounter' else def.instrument }}({{ h.literal(def.instrument_name) }})
-            .with_description({{ h.literal(def.description | trim) }})
-            .with_unit({{ h.literal(def.unit) }})
+        let instrument = meter.inner().{{ value_type }}_observable_{{ 'up_down_counter' if def.instrument == 'updowncounter' else def.instrument }}(Self::NAME)
+            .with_description(Self::DESCRIPTION)
+            .with_unit(Self::UNIT)
             .with_callback(move |observer| callback({{ name }}Observer { observer }))
             .build();
         Self { _instrument: instrument }

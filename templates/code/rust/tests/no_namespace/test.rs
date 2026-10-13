@@ -1,6 +1,10 @@
 use generated_semconv::{
-    exceptionattr, exceptionevent, heartbeatattr, heartbeatspan, logger,
-    options::InstrumentationOptions, tracer,
+    attribute,
+    event,
+    trace,
+    logger,
+    options::InstrumentationOptions,
+    tracer,
 };
 use opentelemetry::logs::{AnyValue, Severity};
 use opentelemetry_sdk::logs::{InMemoryLogExporter, SdkLoggerProvider};
@@ -14,13 +18,13 @@ fn empty_short_names_expose_bare_functions_and_unambiguous_options() {
         .with_simple_exporter(logs.clone())
         .build();
     let logger = logger::Logger::new(&logger_provider, InstrumentationOptions::default());
-    exceptionevent::emit(
+    event::emit_exception(
         &context,
         &logger,
-        exceptionattr::TypeAttr::from("ValueError"),
+        attribute::ExceptionType::from("ValueError"),
         [
-            exceptionevent::EventOption::Message(exceptionattr::MessageAttr::from("failed")),
-            exceptionevent::EventOption::Severity(Severity::Warn),
+            event::ExceptionOption::Message(attribute::ExceptionMessage::from("failed")),
+            event::ExceptionOption::Severity(Severity::Warn),
         ],
     );
     logger_provider.force_flush().unwrap();
@@ -37,13 +41,13 @@ fn empty_short_names_expose_bare_functions_and_unambiguous_options() {
         .with_simple_exporter(spans.clone())
         .build();
     let tracer = tracer::Tracer::new(&tracer_provider, InstrumentationOptions::default());
-    let mut span = heartbeatspan::start(
+    let mut span = trace::start_heartbeat(
         &context,
         &tracer,
-        heartbeatspan::Name::default(),
-        heartbeatattr::SequenceAttr::from(7),
-        [heartbeatspan::StartAttr::Source(
-            heartbeatattr::SourceAttr::from("worker"),
+        trace::HeartbeatName::default(),
+        attribute::HeartbeatSequence::from(7),
+        [trace::HeartbeatStartAttr::Source(
+            attribute::HeartbeatSource::from("worker"),
         )],
     );
     span.end();

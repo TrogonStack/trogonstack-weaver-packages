@@ -1,6 +1,6 @@
 {%- filter trim %}
 #![allow(deprecated)]
-use ::opentelemetry::trace::{TraceContextExt, Tracer};
+use ::opentelemetry::trace::{TraceContextExt as _, Tracer as _};
 {% macro needs_name_formatting(definitions) -%}
 {%- for definition in definitions -%}
 {%- for part in definition.name_parts or [] -%}
@@ -9,7 +9,7 @@ use ::opentelemetry::trace::{TraceContextExt, Tracer};
 {%- endfor -%}
 {%- endmacro %}
 {% if needs_name_formatting(ctx.spans) %}
-use ::std::fmt::Write;
+use ::std::fmt::Write as _;
 {% endif %}
 
 {% import "signal_helpers.j2" as h %}
@@ -32,8 +32,8 @@ use ::std::fmt::Write;
 {%- endif -%}
 {%- endmacro %}
 {% for def in ctx.spans %}
-{% set name = h.exported(def.short_name) %}
-{% set span = name ~ 'Span' %}
+{% set name = h.exported(def.qualified) %}
+{% set span = name %}
 {% if def.optional %}
 #[derive(Clone, Debug)]
 pub enum {{ name }}StartAttr {
@@ -112,13 +112,17 @@ impl<S: ::opentelemetry::trace::Span> {{ span }}<S> {
 {% endif %}
 }
 
+impl {{ span }} {
+    pub const NAME: &'static str = {{ h.literal(def.type) }};
+}
+
 impl Default for {{ span }} {
     fn default() -> Self {
-        Self { span: super::tracer::Tracer::default().inner().start({{ h.literal(def.type) }}) }
+        Self { span: super::tracer::Tracer::default().inner().start(Self::NAME) }
     }
 }
 {{ h.deprecated(def) }}
-pub fn {{ h.signal_fn('start', def.short_name) }}<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>{% if not def.name_parts %}, name: {{ name }}Name{% endif %}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}StartAttr>{% endif %}) -> {{ span }}<T::Span> {
+pub fn {{ h.signal_fn('start', def.qualified) }}<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>{% if not def.name_parts %}, name: {{ name }}Name{% endif %}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}StartAttr>{% endif %}) -> {{ span }}<T::Span> {
 {% if def.name_parts %}
     let mut name = String::with_capacity({% for part in def.name_parts %}{% if not loop.first %} + {% endif %}{% if part.attr %}{{ name_capacity(part.attr, h.ident(part.attr.attr_param)) }}{% else %}{{ h.literal(part.text) }}.len(){% endif %}{% endfor %});
 {% for part in def.name_parts %}
@@ -142,7 +146,7 @@ pub fn {{ h.signal_fn('start', def.short_name) }}<T: ::opentelemetry::trace::Tra
 {% endif %}
 {% endfor %}
 {% else %}
-    let name = if name.0.is_empty() { ::std::borrow::Cow::Borrowed({{ h.literal(def.type) }}) } else { name.0 };
+    let name = if name.0.is_empty() { ::std::borrow::Cow::Borrowed({{ span }}::NAME) } else { name.0 };
 {% endif %}
     let attributes: [::opentelemetry::KeyValue; {{ def.required | length }}] = [{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
     let span = tracer.inner().span_builder(name)

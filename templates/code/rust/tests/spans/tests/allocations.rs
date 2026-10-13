@@ -1,4 +1,4 @@
-use generated_semconv::{myappattr, myappspan, tracer, workerattr};
+use generated_semconv::{attribute, trace, tracer};
 use opentelemetry::trace::noop::NoopTracerProvider;
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
@@ -49,10 +49,10 @@ fn fixed_scope_identity_has_no_generated_heap_allocations() {
 fn derived_name_only_allocates_output_and_attribute_vector() {
     let tracer = tracer::Tracer::default();
     let context = opentelemetry::Context::new();
-    let host = workerattr::HostNameAttr::from("worker-1");
-    let port = workerattr::HostPortAttr::from(8080);
+    let host = attribute::WorkerHostName::from("worker-1");
+    let port = attribute::WorkerHostPort::from(8080);
     let (_, count) =
-        allocations(|| myappspan::start_task_dispatch(&context, &tracer, host, port, []));
+        allocations(|| trace::start_myapp_task_dispatch(&context, &tracer, host, port, []));
     assert_eq!(count, 2);
 }
 
@@ -61,8 +61,8 @@ fn extreme_float_names_do_not_reallocate_the_output() {
     let tracer = tracer::Tracer::default();
     let context = opentelemetry::Context::new();
     for value in [f64::MAX, -f64::from_bits(1)] {
-        let attribute = myappattr::NumberValueAttr::from(value);
-        let (_, count) = allocations(|| myappspan::start_name_float(&context, &tracer, attribute));
+        let attribute = attribute::MyappNumberValue::from(value);
+        let (_, count) = allocations(|| trace::start_myapp_name_float(&context, &tracer, attribute));
         assert_eq!(count, 2);
     }
 }
@@ -70,25 +70,25 @@ fn extreme_float_names_do_not_reallocate_the_output() {
 fn long_owned_string_names_do_not_clone_or_reallocate() {
     let tracer = tracer::Tracer::default();
     let context = opentelemetry::Context::new();
-    let host = workerattr::HostNameAttr::from("worker".repeat(1000));
-    let port = workerattr::HostPortAttr::from(8080);
+    let host = attribute::WorkerHostName::from("worker".repeat(1000));
+    let port = attribute::WorkerHostPort::from(8080);
     let (_, count) =
-        allocations(|| myappspan::start_task_dispatch(&context, &tracer, host, port, []));
+        allocations(|| trace::start_myapp_task_dispatch(&context, &tracer, host, port, []));
     assert_eq!(count, 2);
 }
 #[test]
 fn array_names_only_allocate_output_and_builder_attributes() {
     let tracer = tracer::Tracer::default();
     let context = opentelemetry::Context::new();
-    let flags = myappattr::ArrayFlagsAttr::from(vec![true, false]);
-    let indices = myappattr::ArrayIndicesAttr::from(vec![-1, 2]);
-    let samples = myappattr::ArraySamplesAttr::from(vec![f64::MAX, -f64::from_bits(1)]);
-    let tags = myappattr::ArrayTagsAttr::from(vec![
+    let flags = attribute::MyappArrayFlags::from(vec![true, false]);
+    let indices = attribute::MyappArrayIndices::from(vec![-1, 2]);
+    let samples = attribute::MyappArraySamples::from(vec![f64::MAX, -f64::from_bits(1)]);
+    let tags = attribute::MyappArrayTags::from(vec![
         opentelemetry::StringValue::from("a"),
         opentelemetry::StringValue::from("b"),
     ]);
     let (_, count) = allocations(|| {
-        myappspan::start_name_arrays(&context, &tracer, flags, indices, samples, tags)
+        trace::start_myapp_name_arrays(&context, &tracer, flags, indices, samples, tags)
     });
     assert_eq!(count, 2);
 }
@@ -98,11 +98,11 @@ fn untemplated_names_move_or_borrow_without_heap_allocations() {
     let tracer = tracer::Tracer::default();
     let context = opentelemetry::Context::new();
     for name in [
-        myappspan::NameStaticName::default(),
-        myappspan::NameStaticName::from("explicit static"),
-        myappspan::NameStaticName::from(String::from("owned dynamic")),
+        trace::MyappNameStaticName::default(),
+        trace::MyappNameStaticName::from("explicit static"),
+        trace::MyappNameStaticName::from(String::from("owned dynamic")),
     ] {
-        let (_, count) = allocations(|| myappspan::start_name_static(&context, &tracer, name));
+        let (_, count) = allocations(|| trace::start_myapp_name_static(&context, &tracer, name));
         assert_eq!(count, 0);
     }
 }

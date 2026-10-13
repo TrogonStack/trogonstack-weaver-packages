@@ -36,24 +36,26 @@ Keep the consuming crate's files outside that directory.
 
 ## Generated API
 
-The root `mod.rs` carries `SCHEMA_URL` and declares the generated modules.
-Each attribute namespace lives in a sibling `<namespace>attr.rs` file, alongside
-the signal modules. Names use the first dotted
-segment as their namespace; `vendor_prefixes` removes a leading vendor segment
-before choosing that namespace.
+The root `mod.rs` carries `SCHEMA_URL` and declares the generated modules. The
+layout mirrors the `opentelemetry-semantic-conventions` crate: one flat module
+per signal, holding every namespace. Each generated type and function name
+starts with its namespace, the first dotted segment of the registry name;
+`vendor_prefixes` removes a leading vendor segment before choosing that
+namespace. For example, `myapp.task.id` becomes `attribute::MyappTaskId`,
+and the `myapp.task.run` span starter becomes `trace::start_myapp_task_run`.
 
-| Module              | API                                                                                            |
-| ------------------- | ---------------------------------------------------------------------------------------------- |
-| `<namespace>attr`   | Attribute newtypes and enum variants, `KEY` and conversions into `KeyValue` or log `AnyValue`. |
-| `options`           | Typed instrumentation options containing scope configuration.                                  |
-| `scope`             | Scope attributes configuration; package identity is fixed.                                     |
-| `meter`             | Schema-aware `Meter`, with `new`, `inner`, and a no-op `Default`.                              |
-| `tracer`            | Schema-aware `Tracer`, with `new`, `inner`, and a no-op `Default`.                             |
-| `logger`            | Schema-aware generic `Logger`, with `new`, `inner`, and a no-op `Default`.                     |
-| `<namespace>metric` | Synchronous instruments and observable counters, up-down counters, and gauges.                 |
-| `<namespace>span`   | Span starters, typed names, start attributes, and attributes allowed after starting.           |
-| `<namespace>event`  | Typed log event emitters and options for attributes, severity, and timestamp.                  |
-| `<namespace>entity` | Typed entity values, attribute iterators, and resources carrying the registry schema URL.      |
+| Module      | API                                                                                            |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| `attribute` | Attribute newtypes and enum variants, `KEY` and conversions into `KeyValue` or log `AnyValue`. |
+| `options`   | Typed instrumentation options containing scope configuration.                                  |
+| `scope`     | Scope attributes configuration; package identity is fixed.                                     |
+| `meter`     | Schema-aware `Meter`, with `new`, `inner`, and a no-op `Default`.                              |
+| `tracer`    | Schema-aware `Tracer`, with `new`, `inner`, and a no-op `Default`.                             |
+| `logger`    | Schema-aware generic `Logger`, with `new`, `inner`, and a no-op `Default`.                     |
+| `metric`    | Synchronous instruments and observable counters, up-down counters, and gauges.                 |
+| `trace`     | Span starters, typed names, start attributes, and attributes allowed after starting.           |
+| `event`     | Typed log event emitters and options for attributes, severity, and timestamp.                  |
+| `resource`  | Typed entity values, attribute iterators, and resources carrying the registry schema URL.      |
 
 Handle modules are emitted when the registry includes their corresponding
 signals. Their `new(provider, options)` constructor takes the exact
@@ -83,16 +85,16 @@ Attribute keys, metric names, and event names retain their full registry names.
 ### Typed attributes
 
 An attribute such as `myapp.task.id` becomes
-`myappattr::TaskIdAttr::from("task-1")`. Convert the attribute into an OpenTelemetry `KeyValue` with
+`attribute::MyappTaskId::from("task-1")`. Convert the attribute into an OpenTelemetry `KeyValue` with
 `KeyValue::from(attribute)` or `attribute.into()`. String attributes implement
 `From<String>`, `From<&'static str>`, and `From<opentelemetry::StringValue>`.
 Static strings retain their static storage. Own a dynamic borrowed string
-explicitly, such as `Attr::from(text.to_owned())`. Scalar and array attributes
+explicitly, such as `MyappTaskId::from(text.to_owned())`. Scalar and array attributes
 implement `From` for their backing types; string arrays accept `Vec<String>`
 and native `Vec<opentelemetry::StringValue>`. Native storage moves into the SDK
-without rebuilding the vector. Use `Attr::from(value)` or `value.into()` when
+without rebuilding the vector. Use `MyappTaskId::from(value)` or `value.into()` when
 the attribute type is known. Enums expose named variants,
-such as `myappattr::TaskStateAttr::Running`, rather than arbitrary constructors.
+such as `attribute::MyappTaskState::Running`, rather than arbitrary constructors.
 
 Supported backing types are `StringValue`, `i64`, `f64`, `bool`, and their `Vec`
 forms. Enums can have string, integer, fractional, or boolean values.
@@ -103,14 +105,14 @@ formatting. Boolean, integer, floating-point and enum attributes are `Copy`.
 Deprecation metadata becomes Rust deprecation annotations.
 
 Attributes also convert directly into `opentelemetry::logs::AnyValue` through
-`From`. Generated event emitters pass `Attr::KEY` and the typed attribute to
+`From`. Generated event emitters pass the attribute type's `KEY` and the typed attribute to
 the SDK log record.
 
 ### Metrics
 
 Each metric becomes a typed instrument with a `new(&meter)` constructor and
 an `add` or `record` method. Required attributes are typed arguments. Other
-attributes are variants of the instrument's `Attr` enum, passed as an iterator.
+attributes are variants of the metric's `Attr` enum, such as `metric::MyappTaskDurationAttr`, passed as an iterator.
 Observable constructors register a callback whose typed observer has the same
 required arguments and optional attribute contract.
 
@@ -203,11 +205,35 @@ params:
     error: upstream
 ```
 
-That mapping refers to `upstream::errorattr` in the consuming crate. Both
+That mapping refers to `upstream::attribute` in the consuming crate, so
+`error.type` becomes `upstream::attribute::ErrorType`. Both
 registries must use compatible namespace and vendor-prefix settings.
 Plain imported strings use `opentelemetry::StringValue`, and string arrays use
 `Vec<opentelemetry::StringValue>`, preserving their SDK storage. Convert a static
 string with `.into()` or `StringValue::from` at the call site.
+
+### Signal metadata
+
+Signal types carry their registry metadata as associated constants, usable in
+`const` contexts. The generated code reads these constants, so each value
+appears once.
+
+| Type                                | Constants                                                        |
+| ----------------------------------- | ---------------------------------------------------------------- |
+| `metric::MyappTaskDuration`         | `NAME`, `UNIT`, `DESCRIPTION`                                    |
+| `metric::MyappQueueDepthObservable` | `NAME`, `UNIT`, `DESCRIPTION`, defined as the synchronous type's |
+| `trace::MyappTaskRun`               | `NAME`, the span type                                            |
+| `event::MyappTaskFinished`          | `NAME`, the event name                                           |
+| `resource::MyappHost`               | `NAME`, the entity type                                          |
+
+`UNIT` and `DESCRIPTION` are empty strings when the registry leaves them unset.
+Refinements report the type they refine. Each event has a unit struct that
+holds its `NAME`; emitting still goes through its `emit_` function.
+
+```rust
+const DURATION: &str = metric::MyappTaskDuration::NAME;
+assert_eq!(metric::MyappTaskDuration::UNIT, "s");
+```
 
 ## Parameters
 

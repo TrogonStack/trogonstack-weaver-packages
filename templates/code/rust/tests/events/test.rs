@@ -1,6 +1,10 @@
 use generated_semconv::options::InstrumentationOptions;
 use generated_semconv::{
-    logger, myappattr, myappevent, scope, workerattr, workerevent, SCHEMA_URL,
+    logger,
+    attribute,
+    event,
+    scope,
+    SCHEMA_URL,
 };
 use opentelemetry::logs::{AnyValue, Severity};
 use opentelemetry::trace::{SpanContext, SpanId, TraceContextExt, TraceFlags, TraceId, TraceState};
@@ -29,30 +33,30 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
     );
     let context = opentelemetry::Context::new().with_remote_span_context(span.clone());
     let timestamp = std::time::UNIX_EPOCH + std::time::Duration::from_secs(100);
-    myappevent::emit_task_finished(
+    event::emit_myapp_task_finished(
         &context,
         &logger,
-        myappattr::TaskStateAttr::Done,
+        attribute::MyappTaskState::Done,
         [
-            myappevent::TaskFinishedOption::TaskAttempt(myappattr::TaskAttemptAttr::from(2)),
-            myappevent::TaskFinishedOption::HostName(workerattr::HostNameAttr::from("worker-1")),
-            myappevent::TaskFinishedOption::Severity(Severity::Warn),
-            myappevent::TaskFinishedOption::Timestamp(timestamp),
-            myappevent::TaskFinishedOption::BoolValues(myappattr::BoolValuesAttr::from(vec![true])),
-            myappevent::TaskFinishedOption::IntValues(myappattr::IntValuesAttr::from(vec![1])),
-            myappevent::TaskFinishedOption::DoubleValues(myappattr::DoubleValuesAttr::from(vec![
+            event::MyappTaskFinishedOption::TaskAttempt(attribute::MyappTaskAttempt::from(2)),
+            event::MyappTaskFinishedOption::HostName(attribute::WorkerHostName::from("worker-1")),
+            event::MyappTaskFinishedOption::Severity(Severity::Warn),
+            event::MyappTaskFinishedOption::Timestamp(timestamp),
+            event::MyappTaskFinishedOption::BoolValues(attribute::MyappBoolValues::from(vec![true])),
+            event::MyappTaskFinishedOption::IntValues(attribute::MyappIntValues::from(vec![1])),
+            event::MyappTaskFinishedOption::DoubleValues(attribute::MyappDoubleValues::from(vec![
                 1.5,
             ])),
-            myappevent::TaskFinishedOption::StringValues(myappattr::StringValuesAttr::from(vec![
+            event::MyappTaskFinishedOption::StringValues(attribute::MyappStringValues::from(vec![
                 opentelemetry::StringValue::from("fetch"),
             ])),
         ],
     );
-    workerevent::emit_task_finished(
+    event::emit_worker_task_finished(
         &context,
         &logger,
-        myappattr::TaskStateAttr::Done,
-        workerattr::HostNameAttr::from("worker-1"),
+        attribute::MyappTaskState::Done,
+        attribute::WorkerHostName::from("worker-1"),
         [],
     );
     provider.force_flush().unwrap();
@@ -95,10 +99,10 @@ fn typed_events_have_schema_timestamps_severity_attributes_and_trace_context() {
     assert_eq!(logs[1].record.event_name(), Some("worker.task.finished"));
     assert_eq!(logs[1].record.severity_number(), Some(Severity::Info));
     assert!(logs[1].record.timestamp().is_none());
-    myappevent::emit_task_finished(
+    event::emit_myapp_task_finished(
         &context,
         &logger::Logger::default(),
-        myappattr::TaskStateAttr::Done,
+        attribute::MyappTaskState::Done,
         [],
     );
 }
@@ -128,10 +132,17 @@ impl opentelemetry::logs::Logger for DisabledLogger {
 }
 #[test]
 fn disabled_events_are_checked_before_record_creation() {
-    myappevent::emit_task_finished(
+    event::emit_myapp_task_finished(
         &opentelemetry::Context::new(),
         &logger::Logger::new(&DisabledProvider, InstrumentationOptions::default()),
-        myappattr::TaskStateAttr::Done,
-        [myappevent::TaskFinishedOption::Severity(Severity::Error)],
+        attribute::MyappTaskState::Done,
+        [event::MyappTaskFinishedOption::Severity(Severity::Error)],
     );
+}
+
+const _: &str = event::MyappTaskFinished::NAME;
+
+#[test]
+fn events_expose_their_name_as_a_constant() {
+    assert_eq!(event::MyappTaskFinished::NAME, "myapp.task.finished");
 }

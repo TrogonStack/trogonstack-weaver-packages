@@ -1,5 +1,5 @@
-use generated_semconv::{authattr, myappmetric};
+use generated_semconv::{attribute, metric};
 
 fn main() {
-    let _ = myappmetric::TaskDurationHistogramAttr::Success(authattr::SuccessAttr::from(true));
+    let _ = metric::MyappTaskDurationAttr::Success(attribute::AuthSuccess::from(true));
 }

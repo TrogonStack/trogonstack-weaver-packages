@@ -3,14 +3,13 @@
 // Source: model/
 // Regenerate: mise run generate
 pub const SCHEMA_URL: &str = "https://example.com/schemas/params/1.0.0";
-pub mod billingattr;
-pub mod myappattr;
+pub mod attribute;
 
 pub mod scope;
 pub mod options;
 pub mod meter;
 pub mod tracer;
 pub mod logger;
-pub mod billingevent;
-pub mod billingmetric;
-pub mod billingspan;
+pub mod event;
+pub mod metric;
+pub mod trace;

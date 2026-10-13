@@ -1,5 +1,5 @@
-use generated_semconv::myappmetric;
+use generated_semconv::metric;
 
 fn main() {
-    myappmetric::TaskStartedCounter::default().add(-1_i64, []);
+    metric::MyappTaskStarted::default().add(-1_i64, []);
 }

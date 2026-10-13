@@ -1,0 +1,1 @@
+module attribute has attributes that render to the same Rust identifier: my.app_task and my_app.task

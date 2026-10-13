@@ -1,3 +1,3 @@
 fn main() {
-    let _ = generated_semconv::myappattr::TaskStateAttr::Unknown;
+    let _ = generated_semconv::attribute::MyappTaskState::Unknown;
 }

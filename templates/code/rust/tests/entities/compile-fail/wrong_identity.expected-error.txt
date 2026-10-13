@@ -1,1 +1,1 @@
-expected `HostNameAttr`, found `QueueNameAttr`
+expected `MyappHostName`, found `MyappQueueName`
