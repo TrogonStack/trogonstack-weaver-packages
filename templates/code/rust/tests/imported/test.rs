@@ -1,12 +1,12 @@
 use generated_semconv::options::InstrumentationOptions;
-use generated_semconv::{edgeevent, edgespan, logger, myappattr, myappmetric, tracer};
+use generated_semconv::{attribute, event, logger, metric, trace, tracer};
 use opentelemetry::{Array, KeyValue, StringValue, Value};
 
 #[test]
 fn imported_native_strings_and_arrays_keep_their_sdk_storage() {
     let methods = vec![StringValue::from("GET"), StringValue::from("POST")];
     let pointer = methods.as_ptr();
-    let attribute = KeyValue::from(myappmetric::TaskFailedCounterAttr::HttpRequestMethodList(
+    let attribute = KeyValue::from(metric::MyappTaskFailedAttr::HttpRequestMethodList(
         methods,
     ));
     assert_eq!(attribute.key.as_str(), "http.request.method_list");
@@ -18,24 +18,24 @@ fn imported_native_strings_and_arrays_keep_their_sdk_storage() {
         methods.iter().map(StringValue::as_str).collect::<Vec<_>>(),
         ["GET", "POST"]
     );
-    myappmetric::TaskFailedCounter::default().add(
+    metric::MyappTaskFailed::default().add(
         1,
         StringValue::from("timeout"),
-        myappattr::TaskIdAttr::from("task-1"),
-        [myappmetric::TaskFailedCounterAttr::HttpRequestMethodList(
+        attribute::MyappTaskId::from("task-1"),
+        [metric::MyappTaskFailedAttr::HttpRequestMethodList(
             methods,
         )],
     );
     let context = opentelemetry::Context::new();
-    edgeevent::emit_upstream_failed(
+    event::emit_edge_upstream_failed(
         &context,
         &logger::Logger::default(),
         StringValue::from("timeout"),
-        [edgeevent::UpstreamFailedOption::ServerAddress(
+        [event::EdgeUpstreamFailedOption::ServerAddress(
             StringValue::from("example.com"),
         )],
     );
-    let mut span = edgespan::start_upstream_request(
+    let mut span = trace::start_edge_upstream_request(
         &context,
         &tracer::Tracer::default(),
         StringValue::from("example.com"),
@@ -52,7 +52,7 @@ fn imported_native_string_arrays_format_derived_span_names() {
         .with_simple_exporter(exporter.clone())
         .build();
     let tracer = tracer::Tracer::new(&provider, InstrumentationOptions::default());
-    let mut span = edgespan::start_upstream_methods(
+    let mut span = trace::start_edge_upstream_methods(
         &opentelemetry::Context::new(),
         &tracer,
         vec![StringValue::from("GET"), StringValue::from("POST")],
@@ -76,11 +76,11 @@ fn imported_native_string_array_events_preserve_order_and_duplicates() {
     let provider = opentelemetry_sdk::logs::SdkLoggerProvider::builder()
         .with_simple_exporter(exporter.clone())
         .build();
-    edgeevent::emit_upstream_failed(
+    event::emit_edge_upstream_failed(
         &opentelemetry::Context::new(),
         &logger::Logger::new(&provider, InstrumentationOptions::default()),
         StringValue::from("timeout"),
-        [edgeevent::UpstreamFailedOption::HttpRequestMethodList(
+        [event::EdgeUpstreamFailedOption::HttpRequestMethodList(
             vec![
                 StringValue::from("GET"),
                 StringValue::from("GET"),

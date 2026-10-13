@@ -1,3 +1,3 @@
 fn main() {
-    let _ = generated_semconv::demoattr::HiddenAttr::from("value");
+    let _ = generated_semconv::attribute::DemoHidden::from("value");
 }

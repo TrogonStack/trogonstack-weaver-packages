@@ -4,4 +4,4 @@ pub const SCHEMA_URL: &str = "https://example.com/schemas/event-no-attributes/1.
 pub mod scope;
 pub mod options;
 pub mod logger;
-pub mod probeevent;
+pub mod event;

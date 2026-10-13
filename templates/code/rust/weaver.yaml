@@ -39,17 +39,17 @@ templates:
       | (semconv_grouped_metrics($opts) | map(.metrics) | add // [] | map(.name)) as $metrics
       | (.registry.spans // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.type)) as $spans
       | (.registry.entities // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.type)) as $entities
-      | ([($metrics + (.refinements.metrics // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .name and (.name as $base | $metrics | any(. == $base))) | .id)))[] | ns | .namespace + "metric"]
-          + [($spans + (.refinements.spans // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .type and (.type as $base | $spans | any(. == $base))) | .id)))[] | ns | .namespace + "span"]
-          + [((.registry.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.name)) + (.refinements.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.id)))[] | ns | .namespace + "event"]
-          + [($entities + (.refinements.entities // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .type and (.type as $base | $entities | any(. == $base))) | .id)))[] | ns | .namespace + "entity"] | unique) as $signal_modules
+      | ([($metrics + (.refinements.metrics // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .name and (.name as $base | $metrics | any(. == $base))) | .id)))[] | "metric"]
+          + [($spans + (.refinements.spans // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .type and (.type as $base | $spans | any(. == $base))) | .id)))[] | "trace"]
+          + [((.registry.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.name)) + (.refinements.events // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(.id)))[] | "event"]
+          + [($entities + (.refinements.entities // [] | stability_filter($opts) | code_generation_exclude_filter($opts) | deprecated_filter($opts) | map(select(.id != .type and (.type as $base | $entities | any(. == $base))) | .id)))[] | "resource"] | unique) as $signal_modules
       | semconv_grouped_attributes($opts)
-      | map(.attributes) | add // [] | map(.key | ns | .namespace + "attr") | unique
-      | {signal_modules: $signal_modules, has_metrics: ($signal_modules | any(endswith("metric"))), has_spans: ($signal_modules | any(endswith("span"))), has_events: ($signal_modules | any(endswith("event"))), schema_literal: ($schema | rust_literal), namespaces: .}
+      | map(.attributes) | add // [] | map(.key | ns)
+      | {signal_modules: $signal_modules, has_metrics: ($signal_modules | any(. == "metric")), has_spans: ($signal_modules | any(. == "trace")), has_events: ($signal_modules | any(. == "event")), schema_literal: ($schema | rust_literal), has_attributes: (length > 0)}
 
   - template: attributes.rs.j2
     application_mode: each
-    file_name: "{{ ctx.name }}.rs"
+    file_name: attribute.rs
     filter: |-
       def title: split(".") | map(split("_")) | flatten | map(.[0:1] as $first | ($first | ascii_upcase) + .[1:]) | join("");
       def keyword: . as $name | ["as", "break", "const", "continue", "crate", "else", "enum", "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type", "unsafe", "use", "where", "while", "async", "await", "dyn", "abstract", "become", "box", "do", "final", "gen", "macro", "override", "priv", "try", "typeof", "unsized", "virtual", "yield"] | any(. == $name);
@@ -76,7 +76,7 @@ templates:
       | map(if (.key | valid_name | not) then error("attribute \(.key) is not a supported Rust attribute name") else . end)
       | map(. + (.key | ns))
       | map(if .short_name == "" then error("attribute \(.key) has no name after its namespace") else . end)
-      | map(. + {name: ((.short_name | title) + "Attr"), value_type: (.key as $key | .type | value_type($key)), key_literal: (.key | rust_literal), deprecated_literal: (if .deprecated then (.deprecated.note // .deprecated.renamed_to // .deprecated.reason | rust_literal) else null end)})
+      | map(. + {name: (.namespace + "." + .short_name | title), value_type: (.key as $key | .type | value_type($key)), key_literal: (.key | rust_literal), deprecated_literal: (if .deprecated then (.deprecated.note // .deprecated.renamed_to // .deprecated.reason | rust_literal) else null end)})
       | map(if (.value_type as $t | ["string", "int", "double", "boolean", "string[]", "int[]", "double[]", "boolean[]"] | any(. == $t) | not)
             then error("attribute \(.key) has an unsupported Rust value type") else . end)
       | map(if .value_type == "int" and (.type | type) == "object"
@@ -90,10 +90,9 @@ templates:
           | (.type.members | group_by(.name) | map(select(length > 1))) as $collisions
           | if ($collisions | length) > 0 then error("attribute \($key) has enum members that render to the same Rust identifier") else . end
           else . end)
-      | group_by(.namespace)
-      | map(if (group_by(.name) | any(length > 1)) then error("namespace \(.[0].namespace) has attributes that render to the same Rust identifier") else . end)
-
-      | map({name: (.[0].namespace + "attr"), attributes: sort_by(.key)})
+      | (group_by(.name) | map(select(length > 1) | map(.key) | join(" and "))) as $collisions
+      | if ($collisions | length) > 0 then error("module attribute has attributes that render to the same Rust identifier: \($collisions | join("; "))") else . end
+      | if length == 0 then [] else [{attributes: sort_by(.key)}] end
 
   - template: metrics.rs.j2
     filter: |-
@@ -172,7 +171,7 @@ templates:
                   then error("metric \($metric) resolves histogram_boundaries_by_unit for unit \($unit) to boundaries that are not in strictly increasing order")
                   else . + {bucket_boundaries: $default_bounds} end
               else . end)
-      | map(. + (.name | ns | {namespace, prefix, short_name}))
+      | map(. + (.name | ns | {namespace, short_name, qualified: .param}))
       | map(if .short_name == ""
             then error("metric \(.name) has no name left after its namespace, so it cannot become a Rust identifier")
             else . end)
@@ -188,7 +187,7 @@ templates:
                         then error("metric \($metric) references imported attribute \(.key) of type \(.type | tostring), which the Rust template does not render")
                         else . end
                         | . + {attr_namespace: $attr_ns.namespace, attr_short_name: $attr_ns.short_name, attr_param: $attr_ns.param,
-                               attr_import_path: ($imported_crate_paths[$attr_ns.namespace] + "::" + $attr_ns.namespace + "attr")})
+                               attr_import_path: ($imported_crate_paths[$attr_ns.namespace] + "::attribute")})
                   else . + {imported: true, attr_short_name: .key, attr_param: .key,
                             attr_type: (if (.type | type) == "object"
                                         then (.key as $key | .type | enum_value_type($key))
@@ -222,23 +221,22 @@ templates:
         )
       | map(if (.required | any(.attr_param == "value" or .attr_param == "options" or .attr_param == "attributes"))
           then error("metric \(.name) has a required attribute whose parameter shadows its generated method") else . end)
-      | group_by(.namespace)
+      | if length == 0 then [] else [.] end
       | map(
-          ([.[] | .name as $metric | (.short_name | gsub("[._]"; "") | ascii_downcase) as $short | .instrument as $kind
-            | ([$short + $kind, $short + $kind + "attr", $short + $kind + "observer", $short + $kind + "callback"]
-               + (if $kind == "histogram" then [] else [$short + "observable" + $kind] end))[]
+          ([.[] | .name as $metric | (.qualified | gsub("[._]"; "") | ascii_downcase) as $short | .instrument as $kind
+            | ([$short, $short + "attr", $short + "observer", $short + "callback"]
+               + (if $kind == "histogram" then [] else [$short + "observable"] end))[]
             | {identifier: ., name: $metric}]
            | group_by(.identifier)
            | map(select(length > 1) | map(.name) | unique | join(" and "))
            | unique) as $collisions
           | if ($collisions | length) > 0
-            then error("package \(.[0].namespace)metric has metrics that render to the same Rust identifier: \($collisions | join("; "))")
+            then error("module metric has metrics that render to the same Rust identifier: \($collisions | join("; "))")
             else . end
         )
-      | map({namespace: .[0].namespace, prefix: .[0].prefix, metrics: sort_by(.name),
-             uses_attributes: ([.[] | .attributes[]] | length > 0)})
+      | map({metrics: sort_by(.name)})
     application_mode: each
-    file_name: "{{ ctx.namespace }}metric.rs"
+    file_name: metric.rs
 
   - template: spans.rs.j2
     filter: |-
@@ -296,7 +294,7 @@ templates:
             | if ($dropped | length) > 0
               then error("span \($span) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated starter could not set them")
               else . end)
-      | map(. + (.id | ns | {namespace, prefix, short_name}))
+      | map(. + (.id | ns | {namespace, short_name, qualified: .param}))
       | map(.id as $span
             | .attributes |= ((. // []) | sort_by(.key) | map(
                 (.key | ns) as $attr_ns
@@ -309,7 +307,7 @@ templates:
                         then error("span \($span) references imported attribute \(.key) of type \(.type | tostring), which the Rust template does not render")
                         else . end
                         | . + {attr_namespace: $attr_ns.namespace, attr_short_name: $attr_ns.short_name, attr_param: $attr_ns.param,
-                               attr_import_path: ($imported_crate_paths[$attr_ns.namespace] + "::" + $attr_ns.namespace + "attr")})
+                               attr_import_path: ($imported_crate_paths[$attr_ns.namespace] + "::attribute")})
                   else . + {imported: true, attr_short_name: .key, attr_param: .key,
                             attr_type: (if (.type | type) == "object"
                                         then (.key as $key | .type | enum_value_type($key))
@@ -347,26 +345,24 @@ templates:
             then error("span \(.id) has required attributes whose Rust parameter would shadow a name its starter declares: \($shadowing | join(", "))")
             else . end
         )
-      | group_by(.namespace)
+      | if length == 0 then [] else [.] end
       | map(
-          ([.[] | . as $def | .id as $span | (.short_name | norm) as $short
-            | (["P:start" + $short, "P:" + $short + "span"]
-               + (if $def.name_parts then [] else ["P:" + $short + "name", "P:new" + $short + "name"] end)
-               + (if ($def.optional | length) > 0 then ["P:" + $short + "startattr"] else [] end)
-               + (if $def.has_late_attrs then ["P:" + $short + "attr"] else [] end)
-               + ($def.optional | map(.attr_short_name | norm) | map("P:with" + $short + ., "p:" + $short + "span" + .)))[]
+          ([.[] | . as $def | .id as $span | (.qualified | norm) as $short
+            | (["start" + $short, $short]
+               + (if $def.name_parts then [] else [$short + "name"] end)
+               + (if ($def.optional | length) > 0 then [$short + "startattr"] else [] end)
+               + (if $def.has_late_attrs then [$short + "attr"] else [] end))[]
             | {identifier: ., name: $span}]
            | group_by(.identifier)
            | map(select(length > 1) | map(.name) | unique | join(" and "))
            | unique) as $collisions
           | if ($collisions | length) > 0
-            then error("package \(.[0].namespace)span has spans that render to the same Rust identifier: \($collisions | join("; "))")
+            then error("module trace has spans that render to the same Rust identifier: \($collisions | join("; "))")
             else . end
         )
-      | map({namespace: .[0].namespace, prefix: .[0].prefix, spans: sort_by(.id),
-             uses_attributes: ([.[] | .attributes[]] | length > 0)})
+      | map({spans: sort_by(.id)})
     application_mode: each
-    file_name: "{{ ctx.namespace }}span.rs"
+    file_name: trace.rs
 
   - template: events.rs.j2
     filter: |-
@@ -407,7 +403,7 @@ templates:
             | if ($dropped | length) > 0
               then error("event \($event) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated Emit function could not set them")
               else . end)
-      | map(. + (.id | ns | {namespace, prefix, short_name}))
+      | map(. + (.id | ns | {namespace, short_name, qualified: .param}))
       | map(.id as $event
             | .attributes |= ((. // []) | sort_by(.key) | map(
                 (.key | ns) as $attr_ns
@@ -420,7 +416,7 @@ templates:
                         then error("event \($event) references imported attribute \(.key) of type \(.type | tostring), which the Rust template does not render")
                         else . end
                         | . + {attr_namespace: $attr_ns.namespace, attr_short_name: $attr_ns.short_name, attr_param: $attr_ns.param,
-                               attr_import_path: ($imported_crate_paths[$attr_ns.namespace] + "::" + $attr_ns.namespace + "attr")})
+                               attr_import_path: ($imported_crate_paths[$attr_ns.namespace] + "::attribute")})
                   else . + {imported: true, attr_short_name: .key, attr_param: .key,
                             attr_type: (if (.type | type) == "object"
                                         then (.key as $key | .type | enum_value_type($key))
@@ -458,10 +454,10 @@ templates:
             then error("event \(.id) has required attributes whose Rust parameter would shadow a name its Emit function declares: \($shadowing | join(", "))")
             else . end
         )
-      | group_by(.namespace)
+      | if length == 0 then [] else [.] end
       | map(
-          ([.[] | . as $def | .id as $event | (.short_name | norm) as $short
-            | (["P:emit" + $short, "P:" + (if $short == "" then "event" else $short end) + "option",
+          ([.[] | . as $def | .id as $event | (.qualified | norm) as $short
+            | (["P:emit" + $short, "P:" + (if $short == "" then "event" else $short end), "P:" + (if $short == "" then "event" else $short end) + "option",
                 "P:with" + $short + "severity", "P:with" + $short + "timestamp",
                 "p:" + $short + "option", "p:" + $short + "eventseverity", "p:" + $short + "eventtimestamp"]
                + ($def.optional | map(.attr_short_name | norm) | map("P:with" + $short + ., "p:" + $short + "event" + .)))[]
@@ -470,13 +466,12 @@ templates:
            | map(select(length > 1) | map(.name) | unique | join(" and "))
            | unique) as $collisions
           | if ($collisions | length) > 0
-            then error("package \(.[0].namespace)event has events that render to the same Rust identifier: \($collisions | join("; "))")
+            then error("module event has events that render to the same Rust identifier: \($collisions | join("; "))")
             else . end
         )
-      | map({namespace: .[0].namespace, prefix: .[0].prefix, events: sort_by(.id),
-             uses_attributes: ([.[] | .attributes[] | select(.imported)] | length > 0)})
+      | map({events: sort_by(.id)})
     application_mode: each
-    file_name: "{{ ctx.namespace }}event.rs"
+    file_name: event.rs
 
   - template: entities.rs.j2
     filter: |-
@@ -519,7 +514,7 @@ templates:
                 then error("entity \($entity) references imported attribute \(.key) of type \(.type | tostring), which the Rust template does not render")
                 else . end
                 | . + {attr_namespace: $attr_ns.namespace, attr_short_name: $attr_ns.short_name, attr_param: $attr_ns.param,
-                       attr_import_path: ($imported_crate_paths[$attr_ns.namespace] + "::" + $attr_ns.namespace + "attr")})
+                       attr_import_path: ($imported_crate_paths[$attr_ns.namespace] + "::attribute")})
           else . + {imported: true, attr_short_name: .key, attr_param: .key,
                     attr_type: (if (.type | type) == "object"
                                 then (.key as $key | .type | enum_value_type($key))
@@ -538,7 +533,7 @@ templates:
             | if ($dropped | length) > 0
               then error("entity \($entity) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated constructor could not set them")
               else . end)
-      | map(. + (.id | ns | {namespace, prefix, short_name}))
+      | map(. + (.id | ns | {namespace, short_name, qualified: .param}))
       | map(.id as $entity
             | .identity = ((.identity // []) | sort_by(.key) | map(resolved($entity; $rendered)))
             | .description = ((.description // []) | sort_by(.key) | map(resolved($entity; $rendered)))
@@ -572,24 +567,22 @@ templates:
             then error("entity \(.id) has required attributes whose Rust parameter would shadow a name its constructor declares: \($shadowing | join(", "))")
             else . end
         )
-      | group_by(.namespace)
+      | if length == 0 then [] else [.] end
       | map(
-          ([.[] | . as $def | .id as $entity | (.short_name | norm) as $short
-            | (["P:new" + $short + "entity", "P:" + $short + "entity"]
-               + (if ($def.optional | length) > 0 then ["P:" + $short + "entityattr"] else [] end)
-               + ($def.optional | map(.attr_short_name | norm) | map("P:with" + $short + "entity" + ., "p:" + $short + "entity" + .)))[]
+          ([.[] | . as $def | .id as $entity | (.qualified | norm) as $short
+            | ([$short]
+               + (if ($def.optional | length) > 0 then [$short + "attr"] else [] end))[]
             | {identifier: ., name: $entity}]
            | group_by(.identifier)
            | map(select(length > 1) | map(.name) | unique | join(" and "))
            | unique) as $collisions
           | if ($collisions | length) > 0
-            then error("package \(.[0].namespace)entity has entities that render to the same Rust identifier: \($collisions | join("; "))")
+            then error("module resource has entities that render to the same Rust identifier: \($collisions | join("; "))")
             else . end
         )
-      | map({namespace: .[0].namespace, prefix: .[0].prefix, entities: sort_by(.id),
-             uses_attributes: ([.[] | .attributes[]] | length > 0)})
+      | map({entities: sort_by(.id)})
     application_mode: each
-    file_name: "{{ ctx.namespace }}entity.rs"
+    file_name: resource.rs
 
   - template: scope.rs.j2
     filter: &instrumentation_filter |-

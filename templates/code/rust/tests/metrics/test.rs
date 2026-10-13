@@ -1,5 +1,5 @@
 use generated_semconv::options::InstrumentationOptions;
-use generated_semconv::{authattr, authmetric, meter, myappattr, myappmetric, scope, workermetric};
+use generated_semconv::{attribute, meter, metric, scope};
 use opentelemetry::KeyValue;
 use opentelemetry_sdk::metrics::data::{AggregatedMetrics, MetricData};
 use opentelemetry_sdk::metrics::{InMemoryMetricExporter, PeriodicReader, SdkMeterProvider};
@@ -29,39 +29,39 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
             },
         },
     );
-    myappmetric::TaskDurationHistogram::new(&meter).record(
+    metric::MyappTaskDuration::new(&meter).record(
         0.1,
-        myappattr::TaskIdAttr::from("base"),
+        attribute::MyappTaskId::from("base"),
         [
-            myappmetric::TaskDurationHistogramAttr::TaskState(myappattr::TaskStateAttr::Queued),
-            myappmetric::TaskDurationHistogramAttr::Method(authattr::MethodAttr::Password),
+            metric::MyappTaskDurationAttr::TaskState(attribute::MyappTaskState::Queued),
+            metric::MyappTaskDurationAttr::Method(attribute::AuthMethod::Password),
         ],
     );
-    myappmetric::TaskRetryDurationHistogram::new(&meter).record(
+    metric::MyappTaskRetryDuration::new(&meter).record(
         0.2,
-        myappattr::TaskIdAttr::from("retry"),
-        myappattr::TaskStateAttr::Done,
-        [myappmetric::TaskRetryDurationHistogramAttr::Method(
-            authattr::MethodAttr::Token,
+        attribute::MyappTaskId::from("retry"),
+        attribute::MyappTaskState::Done,
+        [metric::MyappTaskRetryDurationAttr::Method(
+            attribute::AuthMethod::Token,
         )],
     );
-    workermetric::TaskDurationHistogram::new(&meter).record(
+    metric::WorkerTaskDuration::new(&meter).record(
         0.3,
-        myappattr::TaskIdAttr::from("worker"),
+        attribute::MyappTaskId::from("worker"),
         [],
     );
-    myappmetric::TaskStartedCounter::new(&meter).add(
+    metric::MyappTaskStarted::new(&meter).add(
         7,
-        [myappmetric::TaskStartedCounterAttr::TaskId(
-            myappattr::TaskIdAttr::from("started"),
+        [metric::MyappTaskStartedAttr::TaskId(
+            attribute::MyappTaskId::from("started"),
         )],
     );
-    myappmetric::TaskActiveUpDownCounter::new(&meter).add(-2, myappattr::TaskStateAttr::Queued);
-    myappmetric::QueueDepthGauge::new(&meter).record(5);
-    authmetric::AttemptsCounter::new(&meter).add(
+    metric::MyappTaskActive::new(&meter).add(-2, attribute::MyappTaskState::Queued);
+    metric::MyappQueueDepth::new(&meter).record(5);
+    metric::AuthAttempts::new(&meter).add(
         3,
-        authattr::MethodAttr::Password,
-        authattr::SuccessAttr::from(true),
+        attribute::AuthMethod::Password,
+        attribute::AuthSuccess::from(true),
     );
 
     provider.force_flush().unwrap();
@@ -190,25 +190,25 @@ fn synchronous_metrics_export_types_values_attributes_and_refinements() {
 fn observable_callbacks_export_values_and_typed_attributes() {
     let (provider, exporter) = provider();
     let meter = meter::Meter::new(&provider, InstrumentationOptions::default());
-    let _started = myappmetric::TaskStartedObservableCounter::new(&meter, |observer| {
+    let _started = metric::MyappTaskStartedObservable::new(&meter, |observer| {
         observer.observe(
             11,
-            [myappmetric::TaskStartedCounterAttr::TaskId(
-                myappattr::TaskIdAttr::from("observed"),
+            [metric::MyappTaskStartedAttr::TaskId(
+                attribute::MyappTaskId::from("observed"),
             )],
         );
     });
-    let _active = myappmetric::TaskActiveObservableUpDownCounter::new(&meter, |observer| {
-        observer.observe(-4, myappattr::TaskStateAttr::Queued);
+    let _active = metric::MyappTaskActiveObservable::new(&meter, |observer| {
+        observer.observe(-4, attribute::MyappTaskState::Queued);
     });
-    let _depth = myappmetric::QueueDepthObservableGauge::new(&meter, |observer| {
+    let _depth = metric::MyappQueueDepthObservable::new(&meter, |observer| {
         observer.observe(9);
     });
-    let _attempts = authmetric::AttemptsObservableCounter::new(&meter, |observer| {
+    let _attempts = metric::AuthAttemptsObservable::new(&meter, |observer| {
         observer.observe(
             13,
-            authattr::MethodAttr::Token,
-            authattr::SuccessAttr::from(false),
+            attribute::AuthMethod::Token,
+            attribute::AuthSuccess::from(false),
         );
     });
     provider.force_flush().unwrap();
@@ -267,10 +267,10 @@ fn alternate_numeric_types_export_sync_and_observable_measurements() {
             },
         },
     );
-    myappmetric::TaskFloatStartedCounter::new(&sync_meter).add(0.5);
-    myappmetric::TaskFloatActiveUpDownCounter::new(&sync_meter).add(-1.25);
-    myappmetric::TaskFloatDepthGauge::new(&sync_meter).record(2.5);
-    myappmetric::TaskPayloadHistogram::new(&sync_meter).record(512);
+    metric::MyappTaskFloatStarted::new(&sync_meter).add(0.5);
+    metric::MyappTaskFloatActive::new(&sync_meter).add(-1.25);
+    metric::MyappTaskFloatDepth::new(&sync_meter).record(2.5);
+    metric::MyappTaskPayload::new(&sync_meter).record(512);
     let async_meter = meter::Meter::new(
         &provider,
         InstrumentationOptions {
@@ -279,14 +279,14 @@ fn alternate_numeric_types_export_sync_and_observable_measurements() {
             },
         },
     );
-    let _started = myappmetric::TaskFloatStartedObservableCounter::new(&async_meter, |observer| {
+    let _started = metric::MyappTaskFloatStartedObservable::new(&async_meter, |observer| {
         observer.observe(0.75);
     });
     let _active =
-        myappmetric::TaskFloatActiveObservableUpDownCounter::new(&async_meter, |observer| {
+        metric::MyappTaskFloatActiveObservable::new(&async_meter, |observer| {
             observer.observe(-2.5);
         });
-    let _depth = myappmetric::TaskFloatDepthObservableGauge::new(&async_meter, |observer| {
+    let _depth = metric::MyappTaskFloatDepthObservable::new(&async_meter, |observer| {
         observer.observe(3.75);
     });
     provider.force_flush().unwrap();
@@ -346,4 +346,22 @@ fn alternate_numeric_types_export_sync_and_observable_measurements() {
         }
     }
     provider.shutdown().unwrap();
+}
+
+const _: &str = metric::MyappTaskDuration::NAME;
+
+#[test]
+fn instruments_expose_registry_metadata_as_constants() {
+    assert_eq!(metric::MyappTaskDuration::NAME, "myapp.task.duration");
+    assert_eq!(metric::MyappTaskDuration::UNIT, "s");
+    assert_eq!(
+        metric::MyappTaskDuration::DESCRIPTION,
+        "Time a task took from start to finish."
+    );
+    assert_eq!(metric::AuthAttemptsObservable::NAME, metric::AuthAttempts::NAME);
+    assert_eq!(metric::AuthAttemptsObservable::UNIT, "{attempt}");
+    assert_eq!(
+        metric::AuthAttemptsObservable::DESCRIPTION,
+        metric::AuthAttempts::DESCRIPTION
+    );
 }

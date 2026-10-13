@@ -1,5 +1,5 @@
-use generated_semconv::{authattr, authmetric};
+use generated_semconv::{attribute, metric};
 
 fn main() {
-    authmetric::AttemptsCounter::default().add(1, authattr::MethodAttr::Password);
+    metric::AuthAttempts::default().add(1, attribute::AuthMethod::Password);
 }

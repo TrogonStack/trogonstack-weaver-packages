@@ -1,4 +1,4 @@
-use generated_semconv::{myappattr, myappspan, tracer, workerattr, workerspan, SCHEMA_URL};
+use generated_semconv::{attribute, trace, tracer, SCHEMA_URL};
 use opentelemetry::trace::{Span, TraceContextExt};
 use opentelemetry_sdk::trace::{InMemorySpanExporter, SdkTracerProvider};
 
@@ -17,97 +17,97 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         },
     );
     let _: &opentelemetry_sdk::trace::SdkTracer = tracer.inner();
-    let mut parent = myappspan::start_task_dispatch(
+    let mut parent = trace::start_myapp_task_dispatch(
         &opentelemetry::Context::new(),
         &tracer,
-        workerattr::HostNameAttr::from("worker-1"),
-        workerattr::HostPortAttr::from(8080),
-        [myappspan::TaskDispatchStartAttr::TaskId(
-            myappattr::TaskIdAttr::from("task-1"),
+        attribute::WorkerHostName::from("worker-1"),
+        attribute::WorkerHostPort::from(8080),
+        [trace::MyappTaskDispatchStartAttr::TaskId(
+            attribute::MyappTaskId::from("task-1"),
         )],
     );
     let _: &mut opentelemetry_sdk::trace::Span = parent.span();
     let context = parent.into_context(&opentelemetry::Context::new());
-    let mut child = myappspan::start_task_run(
+    let mut child = trace::start_myapp_task_run(
         &context,
         &tracer,
-        myappspan::TaskRunName::from("run task-1"),
-        myappattr::TaskStateAttr::Done,
+        trace::MyappTaskRunName::from("run task-1"),
+        attribute::MyappTaskState::Done,
         [],
     );
-    child.set_attributes([myappspan::TaskRunAttr::TaskId(myappattr::TaskIdAttr::from(
+    child.set_attributes([trace::MyappTaskRunAttr::TaskId(attribute::MyappTaskId::from(
         "task-1",
     ))]);
     child.set_status(opentelemetry::trace::Status::Ok);
     child.end();
     context.span().end();
-    let mut refined = workerspan::start_task_dispatch(
+    let mut refined = trace::start_worker_task_dispatch(
         &opentelemetry::Context::new(),
         &tracer,
-        myappattr::TaskAttemptAttr::from(3),
-        workerattr::HostNameAttr::from("worker-2"),
-        workerattr::HostPortAttr::from(9090),
+        attribute::MyappTaskAttempt::from(3),
+        attribute::WorkerHostName::from("worker-2"),
+        attribute::WorkerHostPort::from(9090),
         [],
     );
     refined.end();
-    let mut fallback = myappspan::start_task_run(
+    let mut fallback = trace::start_myapp_task_run(
         &opentelemetry::Context::new(),
         &tracer,
-        myappspan::TaskRunName::default(),
-        myappattr::TaskStateAttr::Done,
+        trace::MyappTaskRunName::default(),
+        attribute::MyappTaskState::Done,
         [],
     );
     fallback.end();
-    myappspan::start_name_apostrophe(
+    trace::start_myapp_name_apostrophe(
         &opentelemetry::Context::new(),
         &tracer,
-        workerattr::HostPortAttr::from(1),
+        attribute::WorkerHostPort::from(1),
     )
     .end();
-    myappspan::start_name_backslash(
+    trace::start_myapp_name_backslash(
         &opentelemetry::Context::new(),
         &tracer,
-        workerattr::HostPortAttr::from(1),
+        attribute::WorkerHostPort::from(1),
     )
     .end();
-    myappspan::start_name_unicode(
+    trace::start_myapp_name_unicode(
         &opentelemetry::Context::new(),
         &tracer,
-        workerattr::HostPortAttr::from(1),
+        attribute::WorkerHostPort::from(1),
     )
     .end();
-    myappspan::start_name_control(
+    trace::start_myapp_name_control(
         &opentelemetry::Context::new(),
         &tracer,
-        workerattr::HostPortAttr::from(1),
+        attribute::WorkerHostPort::from(1),
     )
     .end();
     for value in [f64::MAX, -f64::from_bits(1)] {
-        myappspan::start_name_float(
+        trace::start_myapp_name_float(
             &opentelemetry::Context::new(),
             &tracer,
-            myappattr::NumberValueAttr::from(value),
+            attribute::MyappNumberValue::from(value),
         )
         .end();
     }
-    myappspan::start_name_arrays(
+    trace::start_myapp_name_arrays(
         &opentelemetry::Context::new(),
         &tracer,
-        myappattr::ArrayFlagsAttr::from(vec![true, false]),
-        myappattr::ArrayIndicesAttr::from(vec![-1, 2]),
-        myappattr::ArraySamplesAttr::from(vec![1.5, 2.5]),
-        myappattr::ArrayTagsAttr::from(vec![
+        attribute::MyappArrayFlags::from(vec![true, false]),
+        attribute::MyappArrayIndices::from(vec![-1, 2]),
+        attribute::MyappArraySamples::from(vec![1.5, 2.5]),
+        attribute::MyappArrayTags::from(vec![
             opentelemetry::StringValue::from("a"),
             opentelemetry::StringValue::from("b"),
         ]),
     )
     .end();
     for name in [
-        myappspan::NameStaticName::default(),
-        myappspan::NameStaticName::from("explicit static"),
-        myappspan::NameStaticName::from(String::from("owned dynamic")),
+        trace::MyappNameStaticName::default(),
+        trace::MyappNameStaticName::from("explicit static"),
+        trace::MyappNameStaticName::from(String::from("owned dynamic")),
     ] {
-        myappspan::start_name_static(&opentelemetry::Context::new(), &tracer, name).end();
+        trace::start_myapp_name_static(&opentelemetry::Context::new(), &tracer, name).end();
     }
     provider.force_flush().unwrap();
     let spans = exporter.get_finished_spans().unwrap();
@@ -154,7 +154,15 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     for name in ["myapp.name.static", "explicit static", "owned dynamic"] {
         assert!(spans.iter().any(|span| span.name == name));
     }
-    let mut noop = myappspan::TaskRunSpan::default();
+    let mut noop = trace::MyappTaskRun::default();
     assert!(!noop.span().is_recording());
     noop.end();
+}
+
+const _: &str = trace::MyappTaskRun::NAME;
+
+#[test]
+fn spans_expose_their_type_as_a_constant() {
+    assert_eq!(trace::MyappTaskRun::NAME, "myapp.task.run");
+    assert_eq!(trace::WorkerTaskDispatch::NAME, trace::MyappTaskDispatch::NAME);
 }

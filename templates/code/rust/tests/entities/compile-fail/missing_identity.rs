@@ -1,5 +1,5 @@
-use generated_semconv::myappentity::HostEntity;
+use generated_semconv::resource::MyappHost;
 
 fn main() {
-    let _ = HostEntity::new([]);
+    let _ = MyappHost::new([]);
 }

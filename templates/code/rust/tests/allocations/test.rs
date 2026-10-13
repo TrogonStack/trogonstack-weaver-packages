@@ -1,5 +1,5 @@
 use generated_semconv::options::InstrumentationOptions;
-use generated_semconv::{logger, meter, probeattr, probeevent, probemetric, scope};
+use generated_semconv::{attribute, event, logger, meter, metric, scope};
 use opentelemetry::logs::{AnyValue, LogRecord, Logger, LoggerProvider, Severity};
 use opentelemetry::metrics::{
     AsyncInstrument, AsyncInstrumentBuilder, Callback, Counter, InstrumentBuilder,
@@ -226,9 +226,9 @@ fn metrics_use_no_generated_heap_for_required_or_typical_optional_attributes() {
         &MetricProvider(state.clone()),
         InstrumentationOptions::default(),
     );
-    let required = probemetric::RequiredCounter::new(&meter);
-    let optional = probemetric::OptionalCounter::new(&meter);
-    let required_count = allocations(|| required.add(1, probeattr::RequiredAttr::from(3)));
+    let required = metric::ProbeRequired::new(&meter);
+    let optional = metric::ProbeOptional::new(&meter);
+    let required_count = allocations(|| required.add(1, attribute::ProbeRequired::from(3)));
     assert_eq!(
         required_count, 0,
         "required metric attribute buffer allocated"
@@ -236,9 +236,9 @@ fn metrics_use_no_generated_heap_for_required_or_typical_optional_attributes() {
     let optional_count = allocations(|| {
         optional.add(
             1,
-            probeattr::RequiredAttr::from(3),
-            [probemetric::OptionalCounterAttr::Optional(
-                probeattr::OptionalAttr::from(5),
+            attribute::ProbeRequired::from(3),
+            [metric::ProbeOptionalAttr::Optional(
+                attribute::ProbeOptional::from(5),
             )],
         )
     });
@@ -250,9 +250,9 @@ fn metrics_use_no_generated_heap_for_required_or_typical_optional_attributes() {
     assert_eq!(state.sum.load(Ordering::Relaxed), 8);
     optional.add(
         1,
-        probeattr::RequiredAttr::from(3),
+        attribute::ProbeRequired::from(3),
         (0..20).map(|value| {
-            probemetric::OptionalCounterAttr::Optional(probeattr::OptionalAttr::from(value))
+            metric::ProbeOptionalAttr::Optional(attribute::ProbeOptional::from(value))
         }),
     );
     assert_eq!(state.attribute_count.load(Ordering::Relaxed), 21);
@@ -271,15 +271,15 @@ fn observable_measurements_use_stack_attribute_storage() {
     let state = Arc::new(MetricState::default());
     let provider = MetricProvider(state.clone());
     let meter = meter::Meter::new(&provider, InstrumentationOptions::default());
-    let _required = probemetric::RequiredObservableCounter::new(&meter, |observer| {
-        observer.observe(1, probeattr::RequiredAttr::from(3));
+    let _required = metric::ProbeRequiredObservable::new(&meter, |observer| {
+        observer.observe(1, attribute::ProbeRequired::from(3));
     });
-    let _optional = probemetric::OptionalObservableCounter::new(&meter, |observer| {
+    let _optional = metric::ProbeOptionalObservable::new(&meter, |observer| {
         observer.observe(
             1,
-            probeattr::RequiredAttr::from(3),
-            [probemetric::OptionalCounterAttr::Optional(
-                probeattr::OptionalAttr::from(5),
+            attribute::ProbeRequired::from(3),
+            [metric::ProbeOptionalAttr::Optional(
+                attribute::ProbeOptional::from(5),
             )],
         );
     });
@@ -390,12 +390,12 @@ fn default_options_apply_generated_identity() {
 
 #[test]
 fn direct_scalar_log_values_move_without_heap_allocations() {
-    let owned = probeattr::LabelAttr::from(String::from("owned text"));
+    let owned = attribute::ProbeLabel::from(String::from("owned text"));
     let count = allocations(|| {
-        black_box(AnyValue::from(probeattr::RequiredAttr::from(7)));
-        black_box(AnyValue::from(probeattr::FlagAttr::from(true)));
-        black_box(AnyValue::from(probeattr::FractionAttr::from(0.5)));
-        black_box(AnyValue::from(probeattr::LabelAttr::from("static text")));
+        black_box(AnyValue::from(attribute::ProbeRequired::from(7)));
+        black_box(AnyValue::from(attribute::ProbeFlag::from(true)));
+        black_box(AnyValue::from(attribute::ProbeFraction::from(0.5)));
+        black_box(AnyValue::from(attribute::ProbeLabel::from("static text")));
         black_box(AnyValue::from(owned));
     });
     assert_eq!(count, 0);
@@ -411,26 +411,26 @@ fn enabled_events_use_no_generated_heap_and_preserve_duplicate_attributes() {
         InstrumentationOptions::default(),
     );
     let context = Context::new();
-    probeevent::emit_recorded(&context, &logger, probeattr::RequiredAttr::from(3), []);
+    event::emit_probe_recorded(&context, &logger, attribute::ProbeRequired::from(3), []);
     let count = allocations(|| {
-        probeevent::emit_recorded(
+        event::emit_probe_recorded(
             &context,
             &logger,
-            probeattr::RequiredAttr::from(3),
-            [probeevent::RecordedOption::Optional(
-                probeattr::OptionalAttr::from(5),
+            attribute::ProbeRequired::from(3),
+            [event::ProbeRecordedOption::Optional(
+                attribute::ProbeOptional::from(5),
             )],
         )
     });
     assert_eq!(count, 0, "ordinary enabled event attributes allocated");
     assert_eq!(state.attribute_count.load(Ordering::Relaxed), 2);
     assert_eq!(state.attribute_sum.load(Ordering::Relaxed), 8);
-    probeevent::emit_recorded(
+    event::emit_probe_recorded(
         &context,
         &logger,
-        probeattr::RequiredAttr::from(3),
+        attribute::ProbeRequired::from(3),
         (0..20).map(|value| {
-            probeevent::RecordedOption::Optional(probeattr::OptionalAttr::from(value))
+            event::ProbeRecordedOption::Optional(attribute::ProbeOptional::from(value))
         }),
     );
     assert_eq!(state.attribute_count.load(Ordering::Relaxed), 21);
@@ -442,15 +442,15 @@ fn enabled_events_use_no_generated_heap_and_preserve_duplicate_attributes() {
             .wrapping_add(value))
     );
     let configuration_count = allocations(|| {
-        probeevent::emit_recorded(
+        event::emit_probe_recorded(
             &context,
             &logger,
-            probeattr::RequiredAttr::from(3),
+            attribute::ProbeRequired::from(3),
             [
-                probeevent::RecordedOption::Severity(Severity::Warn),
-                probeevent::RecordedOption::Timestamp(UNIX_EPOCH + Duration::from_secs(10)),
-                probeevent::RecordedOption::Severity(Severity::Error),
-                probeevent::RecordedOption::Timestamp(UNIX_EPOCH + Duration::from_secs(20)),
+                event::ProbeRecordedOption::Severity(Severity::Warn),
+                event::ProbeRecordedOption::Timestamp(UNIX_EPOCH + Duration::from_secs(10)),
+                event::ProbeRecordedOption::Severity(Severity::Error),
+                event::ProbeRecordedOption::Timestamp(UNIX_EPOCH + Duration::from_secs(20)),
             ],
         )
     });
@@ -471,19 +471,19 @@ fn disabled_events_defer_context_attachment_and_attribute_conversion() {
         InstrumentationOptions::default(),
     );
     let context = Context::new().with_value(ExplicitContext);
-    let values = probeattr::ValuesAttr::from(vec![1, 2, 3]);
-    probeevent::emit_recorded(
+    let values = attribute::ProbeValues::from(vec![1, 2, 3]);
+    event::emit_probe_recorded(
         &Context::new(),
         &logger,
-        probeattr::RequiredAttr::from(0),
+        attribute::ProbeRequired::from(0),
         [],
     );
     let count = allocations(|| {
-        probeevent::emit_recorded(
+        event::emit_probe_recorded(
             &context,
             &logger,
-            probeattr::RequiredAttr::from(3),
-            [probeevent::RecordedOption::Values(values)],
+            attribute::ProbeRequired::from(3),
+            [event::ProbeRecordedOption::Values(values)],
         )
     });
     assert_eq!(count, 0, "disabled event attributes allocated");

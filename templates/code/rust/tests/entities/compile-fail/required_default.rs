@@ -1,3 +1,3 @@
 fn main() {
-    let _ = generated_semconv::myappentity::HostEntity::default();
+    let _ = generated_semconv::resource::MyappHost::default();
 }

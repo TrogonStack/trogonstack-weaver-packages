@@ -1,4 +1,4 @@
 #![deny(deprecated)]
 fn main() {
-    let _ = generated_semconv::myappattr::TaskLaneAttr::Fast;
+    let _ = generated_semconv::attribute::MyappTaskLane::Fast;
 }

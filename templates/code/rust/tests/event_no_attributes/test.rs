@@ -1,5 +1,5 @@
 use generated_semconv::options::InstrumentationOptions;
-use generated_semconv::{logger, probeevent};
+use generated_semconv::{event, logger};
 use opentelemetry::logs::Severity;
 use opentelemetry_sdk::logs::{InMemoryLogExporter, SdkLoggerProvider};
 
@@ -10,10 +10,10 @@ fn events_without_attributes_export_cleanly() {
         .with_simple_exporter(exporter.clone())
         .build();
     let logger = logger::Logger::new(&provider, InstrumentationOptions::default());
-    probeevent::emit_tick(
+    event::emit_probe_tick(
         &opentelemetry::Context::new(),
         &logger,
-        [probeevent::TickOption::Severity(Severity::Debug)],
+        [event::ProbeTickOption::Severity(Severity::Debug)],
     );
     provider.force_flush().unwrap();
     let records = exporter.get_emitted_logs().unwrap();
