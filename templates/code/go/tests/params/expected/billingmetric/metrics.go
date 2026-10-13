@@ -15,65 +15,85 @@ import (
 	"example.com/acme/internal/acmesemconv/myappattr"
 )
 
-// InvoiceAmountHistogramAttr is an attribute `acme.billing.invoice.amount`
-// accepts in addition to the ones InvoiceAmountHistogram.Record requires.
-type InvoiceAmountHistogramAttr interface {
-	invoiceAmountHistogramAttr() attribute.KeyValue
+// InvoiceAmountAttr is an attribute `acme.billing.invoice.amount` accepts in
+// addition to the ones InvoiceAmount.Record requires.
+type InvoiceAmountAttr interface {
+	invoiceAmountAttr() attribute.KeyValue
 }
 
-type invoiceAmountHistogramCurrency struct{ v billingattr.CurrencyAttr }
+type invoiceAmountCurrency struct{ v billingattr.Currency }
 
-func (o invoiceAmountHistogramCurrency) invoiceAmountHistogramAttr() attribute.KeyValue {
+func (o invoiceAmountCurrency) invoiceAmountAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithInvoiceAmountHistogramCurrency attaches `billing.currency` to
-// InvoiceAmountHistogram.
-func WithInvoiceAmountHistogramCurrency(v billingattr.CurrencyAttr) InvoiceAmountHistogramAttr {
-	return invoiceAmountHistogramCurrency{v: v}
+// WithInvoiceAmountCurrency attaches `billing.currency` to InvoiceAmount.
+func WithInvoiceAmountCurrency(v billingattr.Currency) InvoiceAmountAttr {
+	return invoiceAmountCurrency{v: v}
 }
 
-type invoiceAmountHistogramRequestURL struct{ v myappattr.RequestURLAttr }
+type invoiceAmountRequestURL struct{ v myappattr.RequestURL }
 
-func (o invoiceAmountHistogramRequestURL) invoiceAmountHistogramAttr() attribute.KeyValue {
+func (o invoiceAmountRequestURL) invoiceAmountAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithInvoiceAmountHistogramRequestURL attaches `myapp.request.url` to
-// InvoiceAmountHistogram.
-func WithInvoiceAmountHistogramRequestURL(v myappattr.RequestURLAttr) InvoiceAmountHistogramAttr {
-	return invoiceAmountHistogramRequestURL{v: v}
+// WithInvoiceAmountRequestURL attaches `myapp.request.url` to InvoiceAmount.
+func WithInvoiceAmountRequestURL(v myappattr.RequestURL) InvoiceAmountAttr {
+	return invoiceAmountRequestURL{v: v}
 }
 
-// InvoiceAmountHistogram is `acme.billing.invoice.amount`.
+// InvoiceAmount is `acme.billing.invoice.amount`.
 //
 // Amount of each issued invoice.
-type InvoiceAmountHistogram struct{ inst metric.Float64Histogram }
+type InvoiceAmount struct{ inst metric.Float64Histogram }
 
-// NewInvoiceAmountHistogram creates the `acme.billing.invoice.amount`
-// instrument from meter.
-func NewInvoiceAmountHistogram(meter acmesemconvmeter.Meter) (InvoiceAmountHistogram, error) {
+// NewInvoiceAmount creates the `acme.billing.invoice.amount` instrument from
+// meter.
+func NewInvoiceAmount(meter acmesemconvmeter.Meter) (InvoiceAmount, error) {
+	var m InvoiceAmount
 	inst, err := meter.MetricMeter().Float64Histogram(
-		"acme.billing.invoice.amount",
-		metric.WithDescription("Amount of each issued invoice."),
-		metric.WithUnit("{currency_unit}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 	)
 	if err != nil {
-		return InvoiceAmountHistogram{}, fmt.Errorf("create the %s instrument: %w", "acme.billing.invoice.amount", err)
+		return InvoiceAmount{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return InvoiceAmountHistogram{inst: inst}, nil
+	return InvoiceAmount{inst: inst}, nil
+}
+
+// Name returns the name `acme.billing.invoice.amount` records under.
+func (InvoiceAmount) Name() string {
+	return "acme.billing.invoice.amount"
+}
+
+// Unit returns the unit of `acme.billing.invoice.amount`.
+func (InvoiceAmount) Unit() string {
+	return "{currency_unit}"
+}
+
+// Description returns the description of `acme.billing.invoice.amount`.
+func (InvoiceAmount) Description() string {
+	return "Amount of each issued invoice."
+}
+
+// Inst returns the underlying metric.Float64Histogram, or nil for the zero
+// InvoiceAmount.
+func (m InvoiceAmount) Inst() metric.Float64Histogram {
+	return m.inst
 }
 
 // Record records one `acme.billing.invoice.amount` measurement. The zero
-// InvoiceAmountHistogram records nothing.
-func (m InvoiceAmountHistogram) Record(ctx context.Context, value float64, billingInvoiceID billingattr.InvoiceIDAttr, opts ...InvoiceAmountHistogramAttr) {
+// InvoiceAmount records nothing.
+func (m InvoiceAmount) Record(ctx context.Context, value float64, billingInvoiceID billingattr.InvoiceID, opts ...InvoiceAmountAttr) {
 	if m.inst == nil {
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
 	kvs = append(kvs, billingInvoiceID.KeyValue())
 	for _, opt := range opts {
-		kvs = append(kvs, opt.invoiceAmountHistogramAttr())
+		kvs = append(kvs, opt.invoiceAmountAttr())
 	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }

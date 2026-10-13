@@ -14,73 +14,92 @@ import (
 	"example.com/semconv/semconvmeter"
 )
 
-// TaskDurationHistogramAttr is an attribute `worker.task.duration` accepts
-// in addition to the ones TaskDurationHistogram.Record requires.
-type TaskDurationHistogramAttr interface {
-	taskDurationHistogramAttr() attribute.KeyValue
+// TaskDurationAttr is an attribute `worker.task.duration` accepts in
+// addition to the ones TaskDuration.Record requires.
+type TaskDurationAttr interface {
+	taskDurationAttr() attribute.KeyValue
 }
 
-type taskDurationHistogramMethod struct{ v authattr.MethodAttr }
+type taskDurationMethod struct{ v authattr.Method }
 
-func (o taskDurationHistogramMethod) taskDurationHistogramAttr() attribute.KeyValue {
+func (o taskDurationMethod) taskDurationAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskDurationHistogramMethod attaches `auth.method` to
-// TaskDurationHistogram.
+// WithTaskDurationMethod attaches `auth.method` to TaskDuration.
 //
 // Opt-in: the convention records it only when a user asks for it.
-func WithTaskDurationHistogramMethod(v authattr.MethodAttr) TaskDurationHistogramAttr {
-	return taskDurationHistogramMethod{v: v}
+func WithTaskDurationMethod(v authattr.Method) TaskDurationAttr {
+	return taskDurationMethod{v: v}
 }
 
-type taskDurationHistogramTaskState struct{ v myappattr.TaskStateAttr }
+type taskDurationTaskState struct{ v myappattr.TaskState }
 
-func (o taskDurationHistogramTaskState) taskDurationHistogramAttr() attribute.KeyValue {
+func (o taskDurationTaskState) taskDurationAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskDurationHistogramTaskState attaches `myapp.task.state` to
-// TaskDurationHistogram.
+// WithTaskDurationTaskState attaches `myapp.task.state` to TaskDuration.
 //
 // Conditionally required: If the task reached a final state.
-func WithTaskDurationHistogramTaskState(v myappattr.TaskStateAttr) TaskDurationHistogramAttr {
-	return taskDurationHistogramTaskState{v: v}
+func WithTaskDurationTaskState(v myappattr.TaskState) TaskDurationAttr {
+	return taskDurationTaskState{v: v}
 }
 
-// TaskDurationHistogram is `worker.task.duration`, a refinement of
+// TaskDuration is `worker.task.duration`, a refinement of
 // `myapp.task.duration` that records under that metric's name.
 //
 // Time a task took on the worker that ran it.
 //
 // Measured by the worker that ran the task.
-type TaskDurationHistogram struct{ inst metric.Float64Histogram }
+type TaskDuration struct{ inst metric.Float64Histogram }
 
-// NewTaskDurationHistogram creates the `myapp.task.duration` instrument from
-// meter.
-func NewTaskDurationHistogram(meter semconvmeter.Meter) (TaskDurationHistogram, error) {
+// NewTaskDuration creates the `myapp.task.duration` instrument from meter.
+func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
+	var m TaskDuration
 	inst, err := meter.MetricMeter().Float64Histogram(
-		"myapp.task.duration",
-		metric.WithDescription("Time a task took from start to finish."),
-		metric.WithUnit("s"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.WithExplicitBucketBoundaries(0, 0.005, 0.01, 0.1, 1, 10),
 	)
 	if err != nil {
-		return TaskDurationHistogram{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.duration", err)
+		return TaskDuration{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskDurationHistogram{inst: inst}, nil
+	return TaskDuration{inst: inst}, nil
+}
+
+// Name returns the name `worker.task.duration` records under.
+func (TaskDuration) Name() string {
+	return "myapp.task.duration"
+}
+
+// Unit returns the unit of `worker.task.duration`.
+func (TaskDuration) Unit() string {
+	return "s"
+}
+
+// Description returns the description of `worker.task.duration`.
+func (TaskDuration) Description() string {
+	return "Time a task took from start to finish."
+}
+
+// Inst returns the underlying metric.Float64Histogram, or nil for the zero
+// TaskDuration.
+func (m TaskDuration) Inst() metric.Float64Histogram {
+	return m.inst
 }
 
 // Record records one `worker.task.duration` measurement. The zero
-// TaskDurationHistogram records nothing.
-func (m TaskDurationHistogram) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskIDAttr, opts ...TaskDurationHistogramAttr) {
+// TaskDuration records nothing.
+func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID, opts ...TaskDurationAttr) {
 	if m.inst == nil {
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
 	kvs = append(kvs, myappTaskID.KeyValue())
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskDurationHistogramAttr())
+		kvs = append(kvs, opt.taskDurationAttr())
 	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }

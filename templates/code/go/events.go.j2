@@ -5,7 +5,7 @@
 {%- if a.imported -%}
 {{ a.attr_type | map_text("attribute_field_type") }}
 {%- else -%}
-{{ a.attr_namespace }}attr.{{ n.exported(a.attr_short_name) }}Attr
+{{ a.attr_namespace }}attr.{{ n.exported(a.attr_short_name) }}
 {%- endif -%}
 {%- endmacro -%}
 {%- macro attr_kv(a, v) -%}

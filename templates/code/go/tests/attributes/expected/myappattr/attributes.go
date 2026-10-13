@@ -7,98 +7,98 @@ import "go.opentelemetry.io/otel/attribute"
 // taskAssignedByKey is the attribute key of `myapp.task.assigned_by`.
 const taskAssignedByKey = attribute.Key("myapp.task.assigned_by")
 
-// TaskAssignedByAttr is a value of `myapp.task.assigned_by`.
+// TaskAssignedBy is a value of `myapp.task.assigned_by`.
 //
 // Who assigned the task.
 //
 // The scheduler sets it on every task it passes along to `myapp.task.state`.
 // Workers never set it themselves.
-type TaskAssignedByAttr struct{ value string }
+type TaskAssignedBy struct{ value string }
 
-// NewTaskAssignedByAttr returns a value of `myapp.task.assigned_by`.
-func NewTaskAssignedByAttr(value string) TaskAssignedByAttr {
-	return TaskAssignedByAttr{value: value}
+// NewTaskAssignedBy returns a value of `myapp.task.assigned_by`.
+func NewTaskAssignedBy(value string) TaskAssignedBy {
+	return TaskAssignedBy{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskAssignedByAttr) Key() attribute.Key {
+func (TaskAssignedBy) Key() attribute.Key {
 	return taskAssignedByKey
 }
 
 // KeyValue is the `myapp.task.assigned_by` attribute set to this value.
-func (v TaskAssignedByAttr) KeyValue() attribute.KeyValue {
+func (v TaskAssignedBy) KeyValue() attribute.KeyValue {
 	return taskAssignedByKey.String(v.value)
 }
 
 // taskCancelledKey is the attribute key of `myapp.task.cancelled`.
 const taskCancelledKey = attribute.Key("myapp.task.cancelled")
 
-// TaskCancelledAttr is a value of `myapp.task.cancelled`.
+// TaskCancelled is a value of `myapp.task.cancelled`.
 //
 // Whether the task was cancelled.
-type TaskCancelledAttr struct{ value bool }
+type TaskCancelled struct{ value bool }
 
-// NewTaskCancelledAttr returns a value of `myapp.task.cancelled`.
-func NewTaskCancelledAttr(value bool) TaskCancelledAttr {
-	return TaskCancelledAttr{value: value}
+// NewTaskCancelled returns a value of `myapp.task.cancelled`.
+func NewTaskCancelled(value bool) TaskCancelled {
+	return TaskCancelled{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskCancelledAttr) Key() attribute.Key {
+func (TaskCancelled) Key() attribute.Key {
 	return taskCancelledKey
 }
 
 // KeyValue is the `myapp.task.cancelled` attribute set to this value.
-func (v TaskCancelledAttr) KeyValue() attribute.KeyValue {
+func (v TaskCancelled) KeyValue() attribute.KeyValue {
 	return taskCancelledKey.Bool(v.value)
 }
 
 // taskFlagsKey is the attribute key of `myapp.task.flags`.
 const taskFlagsKey = attribute.Key("myapp.task.flags")
 
-// TaskFlagsAttr is a value of `myapp.task.flags`.
+// TaskFlags is a value of `myapp.task.flags`.
 //
 // Feature flags evaluated for the task.
-type TaskFlagsAttr struct{ value []bool }
+type TaskFlags struct{ value []bool }
 
-// NewTaskFlagsAttr returns a value of `myapp.task.flags`.
-func NewTaskFlagsAttr(value ...bool) TaskFlagsAttr {
-	return TaskFlagsAttr{value: value}
+// NewTaskFlags returns a value of `myapp.task.flags`.
+func NewTaskFlags(value ...bool) TaskFlags {
+	return TaskFlags{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskFlagsAttr) Key() attribute.Key {
+func (TaskFlags) Key() attribute.Key {
 	return taskFlagsKey
 }
 
 // KeyValue is the `myapp.task.flags` attribute set to this value.
-func (v TaskFlagsAttr) KeyValue() attribute.KeyValue {
+func (v TaskFlags) KeyValue() attribute.KeyValue {
 	return taskFlagsKey.BoolSlice(v.value)
 }
 
 // taskIDKey is the attribute key of `myapp.task.id`.
 const taskIDKey = attribute.Key("myapp.task.id")
 
-// TaskIDAttr is a value of `myapp.task.id`.
+// TaskID is a value of `myapp.task.id`.
 //
 // Unique identifier of the task.
 //
 // The identifier is assigned by the scheduler and stays stable across
 // retries.
-type TaskIDAttr struct{ value string }
+type TaskID struct{ value string }
 
-// NewTaskIDAttr returns a value of `myapp.task.id`.
-func NewTaskIDAttr(value string) TaskIDAttr {
-	return TaskIDAttr{value: value}
+// NewTaskID returns a value of `myapp.task.id`.
+func NewTaskID(value string) TaskID {
+	return TaskID{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskIDAttr) Key() attribute.Key {
+func (TaskID) Key() attribute.Key {
 	return taskIDKey
 }
 
 // KeyValue is the `myapp.task.id` attribute set to this value.
-func (v TaskIDAttr) KeyValue() attribute.KeyValue {
+func (v TaskID) KeyValue() attribute.KeyValue {
 	return taskIDKey.String(v.value)
 }
 
@@ -107,20 +107,20 @@ func (v TaskIDAttr) KeyValue() attribute.KeyValue {
 // Deprecated: Lanes were replaced by priorities.
 const taskLaneKey = attribute.Key("myapp.task.lane")
 
-// TaskLaneAttr is a value of `myapp.task.lane`.
+// TaskLane is a value of `myapp.task.lane`.
 //
 // Lane the task was scheduled in.
 //
 // Deprecated: Lanes were replaced by priorities.
-type TaskLaneAttr struct{ value string }
+type TaskLane struct{ value string }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskLaneAttr) Key() attribute.Key {
+func (TaskLane) Key() attribute.Key {
 	return taskLaneKey
 }
 
 // KeyValue is the `myapp.task.lane` attribute set to this value.
-func (v TaskLaneAttr) KeyValue() attribute.KeyValue {
+func (v TaskLane) KeyValue() attribute.KeyValue {
 	return taskLaneKey.String(v.value)
 }
 
@@ -130,14 +130,14 @@ var (
 	// The fast lane.
 	//
 	// Deprecated: Lanes were replaced by priorities.
-	TaskLaneFast = TaskLaneAttr{value: "fast"}
+	TaskLaneFast = TaskLane{value: "fast"}
 
 	// TaskLaneSlow is the "slow" member of `myapp.task.lane`.
 	//
 	// The slow lane.
 	//
 	// Deprecated: Every task runs in the fast lane.
-	TaskLaneSlow = TaskLaneAttr{value: "slow"}
+	TaskLaneSlow = TaskLane{value: "slow"}
 )
 
 // taskOwnerKey is the attribute key of `myapp.task.owner`.
@@ -145,45 +145,45 @@ var (
 // Deprecated: Replaced by `auth.user.id`.
 const taskOwnerKey = attribute.Key("myapp.task.owner")
 
-// TaskOwnerAttr is a value of `myapp.task.owner`.
+// TaskOwner is a value of `myapp.task.owner`.
 //
 // Owner of the task.
 //
 // Deprecated: Replaced by `auth.user.id`.
-type TaskOwnerAttr struct{ value string }
+type TaskOwner struct{ value string }
 
-// NewTaskOwnerAttr returns a value of `myapp.task.owner`.
+// NewTaskOwner returns a value of `myapp.task.owner`.
 //
 // Deprecated: Replaced by `auth.user.id`.
-func NewTaskOwnerAttr(value string) TaskOwnerAttr {
-	return TaskOwnerAttr{value: value}
+func NewTaskOwner(value string) TaskOwner {
+	return TaskOwner{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskOwnerAttr) Key() attribute.Key {
+func (TaskOwner) Key() attribute.Key {
 	return taskOwnerKey
 }
 
 // KeyValue is the `myapp.task.owner` attribute set to this value.
-func (v TaskOwnerAttr) KeyValue() attribute.KeyValue {
+func (v TaskOwner) KeyValue() attribute.KeyValue {
 	return taskOwnerKey.String(v.value)
 }
 
 // taskPreemptibleKey is the attribute key of `myapp.task.preemptible`.
 const taskPreemptibleKey = attribute.Key("myapp.task.preemptible")
 
-// TaskPreemptibleAttr is a value of `myapp.task.preemptible`.
+// TaskPreemptible is a value of `myapp.task.preemptible`.
 //
 // Whether the scheduler may preempt the task.
-type TaskPreemptibleAttr struct{ value bool }
+type TaskPreemptible struct{ value bool }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskPreemptibleAttr) Key() attribute.Key {
+func (TaskPreemptible) Key() attribute.Key {
 	return taskPreemptibleKey
 }
 
 // KeyValue is the `myapp.task.preemptible` attribute set to this value.
-func (v TaskPreemptibleAttr) KeyValue() attribute.KeyValue {
+func (v TaskPreemptible) KeyValue() attribute.KeyValue {
 	return taskPreemptibleKey.Bool(v.value)
 }
 
@@ -191,76 +191,76 @@ var (
 	// TaskPreemptibleAllowed is the true member of `myapp.task.preemptible`.
 	//
 	// The scheduler may preempt the task.
-	TaskPreemptibleAllowed = TaskPreemptibleAttr{value: true}
+	TaskPreemptibleAllowed = TaskPreemptible{value: true}
 
 	// TaskPreemptibleForbidden is the false member of
 	// `myapp.task.preemptible`.
 	//
 	// The task runs to completion.
-	TaskPreemptibleForbidden = TaskPreemptibleAttr{value: false}
+	TaskPreemptibleForbidden = TaskPreemptible{value: false}
 )
 
 // taskProgressKey is the attribute key of `myapp.task.progress`.
 const taskProgressKey = attribute.Key("myapp.task.progress")
 
-// TaskProgressAttr is a value of `myapp.task.progress`.
+// TaskProgress is a value of `myapp.task.progress`.
 //
 // Fraction of the task that has completed, between 0 and 1.
-type TaskProgressAttr struct{ value float64 }
+type TaskProgress struct{ value float64 }
 
-// NewTaskProgressAttr returns a value of `myapp.task.progress`.
-func NewTaskProgressAttr(value float64) TaskProgressAttr {
-	return TaskProgressAttr{value: value}
+// NewTaskProgress returns a value of `myapp.task.progress`.
+func NewTaskProgress(value float64) TaskProgress {
+	return TaskProgress{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskProgressAttr) Key() attribute.Key {
+func (TaskProgress) Key() attribute.Key {
 	return taskProgressKey
 }
 
 // KeyValue is the `myapp.task.progress` attribute set to this value.
-func (v TaskProgressAttr) KeyValue() attribute.KeyValue {
+func (v TaskProgress) KeyValue() attribute.KeyValue {
 	return taskProgressKey.Float64(v.value)
 }
 
 // taskRetriesKey is the attribute key of `myapp.task.retries`.
 const taskRetriesKey = attribute.Key("myapp.task.retries")
 
-// TaskRetriesAttr is a value of `myapp.task.retries`.
+// TaskRetries is a value of `myapp.task.retries`.
 //
 // Number of times the task was retried.
-type TaskRetriesAttr struct{ value int }
+type TaskRetries struct{ value int }
 
-// NewTaskRetriesAttr returns a value of `myapp.task.retries`.
-func NewTaskRetriesAttr(value int) TaskRetriesAttr {
-	return TaskRetriesAttr{value: value}
+// NewTaskRetries returns a value of `myapp.task.retries`.
+func NewTaskRetries(value int) TaskRetries {
+	return TaskRetries{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskRetriesAttr) Key() attribute.Key {
+func (TaskRetries) Key() attribute.Key {
 	return taskRetriesKey
 }
 
 // KeyValue is the `myapp.task.retries` attribute set to this value.
-func (v TaskRetriesAttr) KeyValue() attribute.KeyValue {
+func (v TaskRetries) KeyValue() attribute.KeyValue {
 	return taskRetriesKey.Int(v.value)
 }
 
 // taskSampleRateKey is the attribute key of `myapp.task.sample_rate`.
 const taskSampleRateKey = attribute.Key("myapp.task.sample_rate")
 
-// TaskSampleRateAttr is a value of `myapp.task.sample_rate`.
+// TaskSampleRate is a value of `myapp.task.sample_rate`.
 //
 // Fraction of tasks whose telemetry is sampled.
-type TaskSampleRateAttr struct{ value float64 }
+type TaskSampleRate struct{ value float64 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskSampleRateAttr) Key() attribute.Key {
+func (TaskSampleRate) Key() attribute.Key {
 	return taskSampleRateKey
 }
 
 // KeyValue is the `myapp.task.sample_rate` attribute set to this value.
-func (v TaskSampleRateAttr) KeyValue() attribute.KeyValue {
+func (v TaskSampleRate) KeyValue() attribute.KeyValue {
 	return taskSampleRateKey.Float64(v.value)
 }
 
@@ -268,52 +268,52 @@ var (
 	// TaskSampleRateTenth is the 0.1 member of `myapp.task.sample_rate`.
 	//
 	// One task in ten is sampled.
-	TaskSampleRateTenth = TaskSampleRateAttr{value: 0.1}
+	TaskSampleRateTenth = TaskSampleRate{value: 0.1}
 
 	// TaskSampleRateAll is the 1 member of `myapp.task.sample_rate`.
 	//
 	// Every task is sampled.
-	TaskSampleRateAll = TaskSampleRateAttr{value: 1}
+	TaskSampleRateAll = TaskSampleRate{value: 1}
 )
 
 // taskShardIdsKey is the attribute key of `myapp.task.shard_ids`.
 const taskShardIdsKey = attribute.Key("myapp.task.shard_ids")
 
-// TaskShardIdsAttr is a value of `myapp.task.shard_ids`.
+// TaskShardIds is a value of `myapp.task.shard_ids`.
 //
 // Shards the task touched.
-type TaskShardIdsAttr struct{ value []int }
+type TaskShardIds struct{ value []int }
 
-// NewTaskShardIdsAttr returns a value of `myapp.task.shard_ids`.
-func NewTaskShardIdsAttr(value ...int) TaskShardIdsAttr {
-	return TaskShardIdsAttr{value: value}
+// NewTaskShardIds returns a value of `myapp.task.shard_ids`.
+func NewTaskShardIds(value ...int) TaskShardIds {
+	return TaskShardIds{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskShardIdsAttr) Key() attribute.Key {
+func (TaskShardIds) Key() attribute.Key {
 	return taskShardIdsKey
 }
 
 // KeyValue is the `myapp.task.shard_ids` attribute set to this value.
-func (v TaskShardIdsAttr) KeyValue() attribute.KeyValue {
+func (v TaskShardIds) KeyValue() attribute.KeyValue {
 	return taskShardIdsKey.IntSlice(v.value)
 }
 
 // taskStateKey is the attribute key of `myapp.task.state`.
 const taskStateKey = attribute.Key("myapp.task.state")
 
-// TaskStateAttr is a value of `myapp.task.state`.
+// TaskState is a value of `myapp.task.state`.
 //
 // Current state of the task.
-type TaskStateAttr struct{ value string }
+type TaskState struct{ value string }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskStateAttr) Key() attribute.Key {
+func (TaskState) Key() attribute.Key {
 	return taskStateKey
 }
 
 // KeyValue is the `myapp.task.state` attribute set to this value.
-func (v TaskStateAttr) KeyValue() attribute.KeyValue {
+func (v TaskState) KeyValue() attribute.KeyValue {
 	return taskStateKey.String(v.value)
 }
 
@@ -321,65 +321,65 @@ var (
 	// TaskStateQueued is the "queued" member of `myapp.task.state`.
 	//
 	// The task is waiting to run.
-	TaskStateQueued = TaskStateAttr{value: "queued"}
+	TaskStateQueued = TaskState{value: "queued"}
 
 	// TaskStateRunning is the "running" member of `myapp.task.state`.
 	//
 	// The task is running.
 	//
 	// A task stays running until it finishes or is cancelled.
-	TaskStateRunning = TaskStateAttr{value: "running"}
+	TaskStateRunning = TaskState{value: "running"}
 
 	// TaskStatePaused is the "paused" member of `myapp.task.state`.
 	//
 	// The task was paused.
 	//
 	// Deprecated: Paused tasks are reported as queued.
-	TaskStatePaused = TaskStateAttr{value: "paused"}
+	TaskStatePaused = TaskState{value: "paused"}
 )
 
 // taskTagsKey is the attribute key of `myapp.task.tags`.
 const taskTagsKey = attribute.Key("myapp.task.tags")
 
-// TaskTagsAttr is a value of `myapp.task.tags`.
+// TaskTags is a value of `myapp.task.tags`.
 //
 // Tags attached to the task.
-type TaskTagsAttr struct{ value []string }
+type TaskTags struct{ value []string }
 
-// NewTaskTagsAttr returns a value of `myapp.task.tags`.
-func NewTaskTagsAttr(value ...string) TaskTagsAttr {
-	return TaskTagsAttr{value: value}
+// NewTaskTags returns a value of `myapp.task.tags`.
+func NewTaskTags(value ...string) TaskTags {
+	return TaskTags{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskTagsAttr) Key() attribute.Key {
+func (TaskTags) Key() attribute.Key {
 	return taskTagsKey
 }
 
 // KeyValue is the `myapp.task.tags` attribute set to this value.
-func (v TaskTagsAttr) KeyValue() attribute.KeyValue {
+func (v TaskTags) KeyValue() attribute.KeyValue {
 	return taskTagsKey.StringSlice(v.value)
 }
 
 // taskWeightsKey is the attribute key of `myapp.task.weights`.
 const taskWeightsKey = attribute.Key("myapp.task.weights")
 
-// TaskWeightsAttr is a value of `myapp.task.weights`.
+// TaskWeights is a value of `myapp.task.weights`.
 //
 // Scheduling weights applied to the task.
-type TaskWeightsAttr struct{ value []float64 }
+type TaskWeights struct{ value []float64 }
 
-// NewTaskWeightsAttr returns a value of `myapp.task.weights`.
-func NewTaskWeightsAttr(value ...float64) TaskWeightsAttr {
-	return TaskWeightsAttr{value: value}
+// NewTaskWeights returns a value of `myapp.task.weights`.
+func NewTaskWeights(value ...float64) TaskWeights {
+	return TaskWeights{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskWeightsAttr) Key() attribute.Key {
+func (TaskWeights) Key() attribute.Key {
 	return taskWeightsKey
 }
 
 // KeyValue is the `myapp.task.weights` attribute set to this value.
-func (v TaskWeightsAttr) KeyValue() attribute.KeyValue {
+func (v TaskWeights) KeyValue() attribute.KeyValue {
 	return taskWeightsKey.Float64Slice(v.value)
 }

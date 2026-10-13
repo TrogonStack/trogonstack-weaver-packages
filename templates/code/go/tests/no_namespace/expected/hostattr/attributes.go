@@ -7,45 +7,45 @@ import "go.opentelemetry.io/otel/attribute"
 // idKey is the attribute key of `host.id`.
 const idKey = attribute.Key("host.id")
 
-// IDAttr is a value of `host.id`.
+// ID is a value of `host.id`.
 //
 // Unique identifier of the host.
-type IDAttr struct{ value string }
+type ID struct{ value string }
 
-// NewIDAttr returns a value of `host.id`.
-func NewIDAttr(value string) IDAttr {
-	return IDAttr{value: value}
+// NewID returns a value of `host.id`.
+func NewID(value string) ID {
+	return ID{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (IDAttr) Key() attribute.Key {
+func (ID) Key() attribute.Key {
 	return idKey
 }
 
 // KeyValue is the `host.id` attribute set to this value.
-func (v IDAttr) KeyValue() attribute.KeyValue {
+func (v ID) KeyValue() attribute.KeyValue {
 	return idKey.String(v.value)
 }
 
 // nameKey is the attribute key of `host.name`.
 const nameKey = attribute.Key("host.name")
 
-// NameAttr is a value of `host.name`.
+// Name is a value of `host.name`.
 //
 // Name of the host.
-type NameAttr struct{ value string }
+type Name struct{ value string }
 
-// NewNameAttr returns a value of `host.name`.
-func NewNameAttr(value string) NameAttr {
-	return NameAttr{value: value}
+// NewName returns a value of `host.name`.
+func NewName(value string) Name {
+	return Name{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (NameAttr) Key() attribute.Key {
+func (Name) Key() attribute.Key {
 	return nameKey
 }
 
 // KeyValue is the `host.name` attribute set to this value.
-func (v NameAttr) KeyValue() attribute.KeyValue {
+func (v Name) KeyValue() attribute.KeyValue {
 	return nameKey.String(v.value)
 }

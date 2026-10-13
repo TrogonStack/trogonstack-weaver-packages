@@ -9,7 +9,7 @@ package {{ ctx.namespace }}attr
 import "go.opentelemetry.io/otel/attribute"
 {% for attr in ctx.attributes -%}
 {%- set base = n.exported(attr.short_name) -%}
-{%- set name = base ~ "Attr" -%}
+{%- set name = base -%}
 {%- set key = n.unexported(attr.short_name) ~ "Key" -%}
 {%- set is_enum = attr.type is mapping -%}
 {%- set deprecated = d.notice(attr) %}

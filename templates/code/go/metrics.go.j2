@@ -5,7 +5,7 @@
 {%- if a.imported -%}
 {{ a.attr_type | map_text("attribute_field_type") }}
 {%- else -%}
-{{ a.attr_namespace }}attr.{{ n.exported(a.attr_short_name) }}Attr
+{{ a.attr_namespace }}attr.{{ n.exported(a.attr_short_name) }}
 {%- endif -%}
 {%- endmacro -%}
 {%- macro attr_kv(a, v) -%}
@@ -33,8 +33,8 @@ import (
 )
 {% for def in ctx.metrics %}
 {%- set suffix = def.instrument | map_text("metric_instrument") %}
-{%- set name = n.exported(def.short_name) ~ suffix %}
-{%- set private = n.unexported(def.short_name) ~ suffix %}
+{%- set name = n.exported(def.short_name) %}
+{%- set private = n.unexported(def.short_name) %}
 {%- set method = def.instrument | map_text("metric_instrument_method") %}
 {%- set arg = def.instrument | map_text("metric_instrument_arg") %}
 {%- set value_type = def.annotations.code_generation.metric_value_type | map_text("metric_value_type") %}
@@ -66,18 +66,39 @@ type {{ name }} struct{ inst metric.{{ instrument }} }
 
 {{ ["New" ~ name ~ " creates the `" ~ def.instrument_name ~ "` instrument from meter.", opt_in, deprecated] | select | join("\n\n") | comment }}
 func New{{ name }}(meter {{ n.root() }}meter.Meter) ({{ name }}, error) {
+	var m {{ name }}
 	inst, err := meter.MetricMeter().{{ instrument }}(
-		"{{ def.instrument_name }}",
-		metric.WithDescription({{ def.description | trim | tojson }}),
-		metric.WithUnit({{ def.unit | tojson }}),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 {%- if def.bucket_boundaries %}
 		metric.WithExplicitBucketBoundaries({{ def.bucket_boundaries | join(", ") }}),
 {%- endif %}
 	)
 	if err != nil {
-		return {{ name }}{}, fmt.Errorf("create the %s instrument: %w", "{{ def.instrument_name }}", err)
+		return {{ name }}{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
 	return {{ name }}{inst: inst}, nil
+}
+
+{{ ["Name returns the name `" ~ def.name ~ "` records under."] | join | comment }}
+func ({{ name }}) Name() string {
+	return {{ def.instrument_name | tojson }}
+}
+
+{{ ["Unit returns the unit of `" ~ def.name ~ "`."] | join | comment }}
+func ({{ name }}) Unit() string {
+	return {{ (def.unit or "") | tojson }}
+}
+
+{{ ["Description returns the description of `" ~ def.name ~ "`."] | join | comment }}
+func ({{ name }}) Description() string {
+	return {{ (def.description or "") | trim | tojson }}
+}
+
+{{ ["Inst returns the underlying metric." ~ instrument ~ ", or nil for the zero " ~ name ~ "."] | join | comment }}
+func (m {{ name }}) Inst() metric.{{ instrument }} {
+	return m.inst
 }
 
 {{ [method ~ " records one `" ~ def.name ~ "` measurement. The zero " ~ name ~ " records nothing."] | join | comment }}
@@ -101,7 +122,7 @@ func (m {{ name }}) {{ method }}(ctx context.Context, {{ arg }} {{ gotype }}{% f
 {%- endif %}
 }
 {%- if def.instrument != "histogram" %}
-{%- set observable = n.exported(def.short_name) ~ "Observable" ~ suffix %}
+{%- set observable = name ~ "Observable" %}
 {%- set observer = name ~ "Observer" %}
 {%- set callback = name ~ "Callback" %}
 
@@ -141,21 +162,42 @@ type {{ observable }} struct {
 
 {{ ["New" ~ observable ~ " creates the `" ~ def.instrument_name ~ "` instrument from meter and registers callback to observe it on every collection.", opt_in, deprecated] | select | join("\n\n") | comment }}
 func New{{ observable }}(meter {{ n.root() }}meter.Meter, callback {{ callback }}) ({{ observable }}, error) {
+	var m {{ observable }}
 	if callback == nil {
-		return {{ observable }}{}, fmt.Errorf("create the %s instrument: the callback is nil", "{{ def.instrument_name }}")
+		return {{ observable }}{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
 	inst, err := meter.MetricMeter().{{ value_type }}Observable{{ suffix }}(
-		"{{ def.instrument_name }}",
-		metric.WithDescription({{ def.description | trim | tojson }}),
-		metric.WithUnit({{ def.unit | tojson }}),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.With{{ value_type }}Callback(func(ctx context.Context, o metric.{{ value_type }}Observer) error {
 			return callback(ctx, {{ observer }}{o: o})
 		}),
 	)
 	if err != nil {
-		return {{ observable }}{}, fmt.Errorf("create the %s instrument: %w", "{{ def.instrument_name }}", err)
+		return {{ observable }}{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
 	return {{ observable }}{inst: inst}, nil
+}
+
+{{ ["Name returns the name `" ~ def.name ~ "` records under."] | join | comment }}
+func ({{ observable }}) Name() string {
+	return {{ name }}{}.Name()
+}
+
+{{ ["Unit returns the unit of `" ~ def.name ~ "`."] | join | comment }}
+func ({{ observable }}) Unit() string {
+	return {{ name }}{}.Unit()
+}
+
+{{ ["Description returns the description of `" ~ def.name ~ "`."] | join | comment }}
+func ({{ observable }}) Description() string {
+	return {{ name }}{}.Description()
+}
+
+{{ ["Inst returns the underlying metric." ~ value_type ~ "Observable" ~ suffix ~ ", or nil for the zero " ~ observable ~ "."] | join | comment }}
+func (m {{ observable }}) Inst() metric.{{ value_type }}Observable{{ suffix }} {
+	return m.inst
 }
 {%- endif %}
 {% endfor %}{% endfilter %}

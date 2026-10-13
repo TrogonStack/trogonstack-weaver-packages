@@ -21,7 +21,7 @@ type TaskDispatchStartAttr interface {
 	taskDispatchStartAttr() attribute.KeyValue
 }
 
-// TaskDispatchAttr is an attribute a TaskDispatchSpan also accepts after it
+// TaskDispatchAttr is an attribute a TaskDispatch also accepts after it
 // started, through SetAttributes.
 type TaskDispatchAttr interface {
 	TaskDispatchStartAttr
@@ -36,19 +36,19 @@ func (o taskDispatchSpanServerPort) taskDispatchStartAttr() attribute.KeyValue {
 
 func (taskDispatchSpanServerPort) taskDispatchAttr() {}
 
-// WithTaskDispatchServerPort sets `server.port` on a TaskDispatchSpan, when
+// WithTaskDispatchServerPort sets `server.port` on a TaskDispatch, when
 // StartTaskDispatch starts it or later through SetAttributes.
 func WithTaskDispatchServerPort(v int) TaskDispatchAttr {
 	return taskDispatchSpanServerPort{v: v}
 }
 
-// TaskDispatchSpan is a started span of `myapp.task.dispatch`. The zero
-// TaskDispatchSpan records nothing.
-type TaskDispatchSpan struct{ span trace.Span }
+// TaskDispatch is a started span of `myapp.task.dispatch`. The zero
+// TaskDispatch records nothing.
+type TaskDispatch struct{ span trace.Span }
 
 // Span returns the underlying trace.Span, or a no-op one for the zero
-// TaskDispatchSpan.
-func (s TaskDispatchSpan) Span() trace.Span {
+// TaskDispatch.
+func (s TaskDispatch) Span() trace.Span {
 	if s.span == nil {
 		return noop.Span{}
 	}
@@ -56,12 +56,12 @@ func (s TaskDispatchSpan) Span() trace.Span {
 }
 
 // End ends the span.
-func (s TaskDispatchSpan) End(opts ...trace.SpanEndOption) {
+func (s TaskDispatch) End(opts ...trace.SpanEndOption) {
 	s.Span().End(opts...)
 }
 
 // SetAttributes sets attributes on the span after it started.
-func (s TaskDispatchSpan) SetAttributes(attrs ...TaskDispatchAttr) {
+func (s TaskDispatch) SetAttributes(attrs ...TaskDispatchAttr) {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
 		kvs = append(kvs, attr.taskDispatchStartAttr())
@@ -70,12 +70,12 @@ func (s TaskDispatchSpan) SetAttributes(attrs ...TaskDispatchAttr) {
 }
 
 // RecordError records err as an exception event on the span.
-func (s TaskDispatchSpan) RecordError(err error, opts ...trace.EventOption) {
+func (s TaskDispatch) RecordError(err error, opts ...trace.EventOption) {
 	s.Span().RecordError(err, opts...)
 }
 
 // SetStatus sets the status of the span.
-func (s TaskDispatchSpan) SetStatus(code codes.Code, description string) {
+func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 	s.Span().SetStatus(code, description)
 }
 
@@ -86,7 +86,7 @@ func (s TaskDispatchSpan) SetStatus(code codes.Code, description string) {
 //
 // The span is named `task {myapp.task.id} failed with {error.type}`, with
 // each placeholder replaced by the value of the attribute it names.
-func StartTaskDispatch(ctx context.Context, tracer myapptracer.Tracer, errorType errorattr.TypeAttr, myappTaskID myappattr.TaskIDAttr, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatchSpan) {
+func StartTaskDispatch(ctx context.Context, tracer myapptracer.Tracer, errorType errorattr.Type, myappTaskID myappattr.TaskID, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	kvs = append(kvs, errorType.KeyValue())
 	kvs = append(kvs, myappTaskID.KeyValue())
@@ -100,5 +100,5 @@ func StartTaskDispatch(ctx context.Context, tracer myapptracer.Tracer, errorType
 		trace.WithSpanKind(trace.SpanKindInternal),
 		trace.WithAttributes(kvs...),
 	)
-	return ctx, TaskDispatchSpan{span: span}
+	return ctx, TaskDispatch{span: span}
 }

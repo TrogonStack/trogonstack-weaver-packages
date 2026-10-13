@@ -7,41 +7,41 @@ import "go.opentelemetry.io/otel/attribute"
 // taskAttemptKey is the attribute key of `myapp.task.attempt`.
 const taskAttemptKey = attribute.Key("myapp.task.attempt")
 
-// TaskAttemptAttr is a value of `myapp.task.attempt`.
+// TaskAttempt is a value of `myapp.task.attempt`.
 //
 // Number of the attempt, starting at 1.
-type TaskAttemptAttr struct{ value int }
+type TaskAttempt struct{ value int }
 
-// NewTaskAttemptAttr returns a value of `myapp.task.attempt`.
-func NewTaskAttemptAttr(value int) TaskAttemptAttr {
-	return TaskAttemptAttr{value: value}
+// NewTaskAttempt returns a value of `myapp.task.attempt`.
+func NewTaskAttempt(value int) TaskAttempt {
+	return TaskAttempt{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskAttemptAttr) Key() attribute.Key {
+func (TaskAttempt) Key() attribute.Key {
 	return taskAttemptKey
 }
 
 // KeyValue is the `myapp.task.attempt` attribute set to this value.
-func (v TaskAttemptAttr) KeyValue() attribute.KeyValue {
+func (v TaskAttempt) KeyValue() attribute.KeyValue {
 	return taskAttemptKey.Int(v.value)
 }
 
 // taskStateKey is the attribute key of `myapp.task.state`.
 const taskStateKey = attribute.Key("myapp.task.state")
 
-// TaskStateAttr is a value of `myapp.task.state`.
+// TaskState is a value of `myapp.task.state`.
 //
 // Current state of the task.
-type TaskStateAttr struct{ value string }
+type TaskState struct{ value string }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskStateAttr) Key() attribute.Key {
+func (TaskState) Key() attribute.Key {
 	return taskStateKey
 }
 
 // KeyValue is the `myapp.task.state` attribute set to this value.
-func (v TaskStateAttr) KeyValue() attribute.KeyValue {
+func (v TaskState) KeyValue() attribute.KeyValue {
 	return taskStateKey.String(v.value)
 }
 
@@ -49,10 +49,10 @@ var (
 	// TaskStateDone is the "done" member of `myapp.task.state`.
 	//
 	// The task finished.
-	TaskStateDone = TaskStateAttr{value: "done"}
+	TaskStateDone = TaskState{value: "done"}
 
 	// TaskStateFailed is the "failed" member of `myapp.task.state`.
 	//
 	// The task gave up.
-	TaskStateFailed = TaskStateAttr{value: "failed"}
+	TaskStateFailed = TaskState{value: "failed"}
 )

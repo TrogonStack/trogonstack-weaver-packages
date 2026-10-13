@@ -13,28 +13,49 @@ import (
 	"example.com/semconv/semconvmeter"
 )
 
-// TaskDurationHistogram is `myapp.task.duration`.
+// TaskDuration is `myapp.task.duration`.
 //
 // Time a task took from start to finish.
-type TaskDurationHistogram struct{ inst metric.Float64Histogram }
+type TaskDuration struct{ inst metric.Float64Histogram }
 
-// NewTaskDurationHistogram creates the `myapp.task.duration` instrument from
-// meter.
-func NewTaskDurationHistogram(meter semconvmeter.Meter) (TaskDurationHistogram, error) {
+// NewTaskDuration creates the `myapp.task.duration` instrument from meter.
+func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
+	var m TaskDuration
 	inst, err := meter.MetricMeter().Float64Histogram(
-		"myapp.task.duration",
-		metric.WithDescription("Time a task took from start to finish."),
-		metric.WithUnit("s"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 	)
 	if err != nil {
-		return TaskDurationHistogram{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.duration", err)
+		return TaskDuration{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskDurationHistogram{inst: inst}, nil
+	return TaskDuration{inst: inst}, nil
+}
+
+// Name returns the name `myapp.task.duration` records under.
+func (TaskDuration) Name() string {
+	return "myapp.task.duration"
+}
+
+// Unit returns the unit of `myapp.task.duration`.
+func (TaskDuration) Unit() string {
+	return "s"
+}
+
+// Description returns the description of `myapp.task.duration`.
+func (TaskDuration) Description() string {
+	return "Time a task took from start to finish."
+}
+
+// Inst returns the underlying metric.Float64Histogram, or nil for the zero
+// TaskDuration.
+func (m TaskDuration) Inst() metric.Float64Histogram {
+	return m.inst
 }
 
 // Record records one `myapp.task.duration` measurement. The zero
-// TaskDurationHistogram records nothing.
-func (m TaskDurationHistogram) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskIDAttr) {
+// TaskDuration records nothing.
+func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID) {
 	if m.inst == nil {
 		return
 	}
@@ -43,29 +64,51 @@ func (m TaskDurationHistogram) Record(ctx context.Context, value float64, myappT
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
 
-// TaskQueueWaitHistogram is `myapp.task.queue_wait`.
+// TaskQueueWait is `myapp.task.queue_wait`.
 //
 // Time a task waited in the queue, in minutes.
-type TaskQueueWaitHistogram struct{ inst metric.Float64Histogram }
+type TaskQueueWait struct{ inst metric.Float64Histogram }
 
-// NewTaskQueueWaitHistogram creates the `myapp.task.queue_wait` instrument
-// from meter.
-func NewTaskQueueWaitHistogram(meter semconvmeter.Meter) (TaskQueueWaitHistogram, error) {
+// NewTaskQueueWait creates the `myapp.task.queue_wait` instrument from
+// meter.
+func NewTaskQueueWait(meter semconvmeter.Meter) (TaskQueueWait, error) {
+	var m TaskQueueWait
 	inst, err := meter.MetricMeter().Float64Histogram(
-		"myapp.task.queue_wait",
-		metric.WithDescription("Time a task waited in the queue, in minutes."),
-		metric.WithUnit("min"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.WithExplicitBucketBoundaries(1, 5, 10, 30, 60),
 	)
 	if err != nil {
-		return TaskQueueWaitHistogram{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.queue_wait", err)
+		return TaskQueueWait{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskQueueWaitHistogram{inst: inst}, nil
+	return TaskQueueWait{inst: inst}, nil
+}
+
+// Name returns the name `myapp.task.queue_wait` records under.
+func (TaskQueueWait) Name() string {
+	return "myapp.task.queue_wait"
+}
+
+// Unit returns the unit of `myapp.task.queue_wait`.
+func (TaskQueueWait) Unit() string {
+	return "min"
+}
+
+// Description returns the description of `myapp.task.queue_wait`.
+func (TaskQueueWait) Description() string {
+	return "Time a task waited in the queue, in minutes."
+}
+
+// Inst returns the underlying metric.Float64Histogram, or nil for the zero
+// TaskQueueWait.
+func (m TaskQueueWait) Inst() metric.Float64Histogram {
+	return m.inst
 }
 
 // Record records one `myapp.task.queue_wait` measurement. The zero
-// TaskQueueWaitHistogram records nothing.
-func (m TaskQueueWaitHistogram) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskIDAttr) {
+// TaskQueueWait records nothing.
+func (m TaskQueueWait) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID) {
 	if m.inst == nil {
 		return
 	}

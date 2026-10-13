@@ -41,14 +41,14 @@ func WithTimestamp(timestamp time.Time) Option {
 	return bareEventTimestamp{v: timestamp}
 }
 
-type bareEventMessage struct{ v exceptionattr.MessageAttr }
+type bareEventMessage struct{ v exceptionattr.Message }
 
 func (o bareEventMessage) bareOption(record *log.Record) {
 	record.AddAttributes(o.v.KeyValue())
 }
 
 // WithMessage sets `exception.message` on the event.
-func WithMessage(v exceptionattr.MessageAttr) Option {
+func WithMessage(v exceptionattr.Message) Option {
 	return bareEventMessage{v: v}
 }
 
@@ -56,7 +56,7 @@ func WithMessage(v exceptionattr.MessageAttr) Option {
 // is not enabled for it, and the zero logger emits nothing.
 //
 // A noteworthy exception occurred.
-func Emit(ctx context.Context, logger semconvlogger.Logger, exceptionType exceptionattr.TypeAttr, opts ...Option) {
+func Emit(ctx context.Context, logger semconvlogger.Logger, exceptionType exceptionattr.Type, opts ...Option) {
 	var record log.Record
 	record.SetEventName("exception")
 	record.SetSeverity(log.SeverityInfo)

@@ -8,22 +8,22 @@ import "go.opentelemetry.io/otel/attribute"
 // requestURLKey is the attribute key of `myapp.request.url`.
 const requestURLKey = attribute.Key("myapp.request.url")
 
-// RequestURLAttr is a value of `myapp.request.url`.
+// RequestURL is a value of `myapp.request.url`.
 //
 // URL the request was sent to.
-type RequestURLAttr struct{ value string }
+type RequestURL struct{ value string }
 
-// NewRequestURLAttr returns a value of `myapp.request.url`.
-func NewRequestURLAttr(value string) RequestURLAttr {
-	return RequestURLAttr{value: value}
+// NewRequestURL returns a value of `myapp.request.url`.
+func NewRequestURL(value string) RequestURL {
+	return RequestURL{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (RequestURLAttr) Key() attribute.Key {
+func (RequestURL) Key() attribute.Key {
 	return requestURLKey
 }
 
 // KeyValue is the `myapp.request.url` attribute set to this value.
-func (v RequestURLAttr) KeyValue() attribute.KeyValue {
+func (v RequestURL) KeyValue() attribute.KeyValue {
 	return requestURLKey.String(v.value)
 }

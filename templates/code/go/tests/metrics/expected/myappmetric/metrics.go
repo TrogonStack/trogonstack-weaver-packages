@@ -14,113 +14,178 @@ import (
 	"example.com/semconv/semconvmeter"
 )
 
-// QueueDepthGauge is `myapp.queue.depth`.
+// QueueDepth is `myapp.queue.depth`.
 //
 // Number of tasks waiting in the queue.
 //
 // Deprecated: Replaced by `myapp.task.active`.
-type QueueDepthGauge struct{ inst metric.Int64Gauge }
+type QueueDepth struct{ inst metric.Int64Gauge }
 
-// NewQueueDepthGauge creates the `myapp.queue.depth` instrument from meter.
+// NewQueueDepth creates the `myapp.queue.depth` instrument from meter.
 //
 // Deprecated: Replaced by `myapp.task.active`.
-func NewQueueDepthGauge(meter semconvmeter.Meter) (QueueDepthGauge, error) {
+func NewQueueDepth(meter semconvmeter.Meter) (QueueDepth, error) {
+	var m QueueDepth
 	inst, err := meter.MetricMeter().Int64Gauge(
-		"myapp.queue.depth",
-		metric.WithDescription("Number of tasks waiting in the queue."),
-		metric.WithUnit("{task}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 	)
 	if err != nil {
-		return QueueDepthGauge{}, fmt.Errorf("create the %s instrument: %w", "myapp.queue.depth", err)
+		return QueueDepth{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return QueueDepthGauge{inst: inst}, nil
+	return QueueDepth{inst: inst}, nil
 }
 
-// Record records one `myapp.queue.depth` measurement. The zero
-// QueueDepthGauge records nothing.
-func (m QueueDepthGauge) Record(ctx context.Context, value int64) {
+// Name returns the name `myapp.queue.depth` records under.
+func (QueueDepth) Name() string {
+	return "myapp.queue.depth"
+}
+
+// Unit returns the unit of `myapp.queue.depth`.
+func (QueueDepth) Unit() string {
+	return "{task}"
+}
+
+// Description returns the description of `myapp.queue.depth`.
+func (QueueDepth) Description() string {
+	return "Number of tasks waiting in the queue."
+}
+
+// Inst returns the underlying metric.Int64Gauge, or nil for the zero
+// QueueDepth.
+func (m QueueDepth) Inst() metric.Int64Gauge {
+	return m.inst
+}
+
+// Record records one `myapp.queue.depth` measurement. The zero QueueDepth
+// records nothing.
+func (m QueueDepth) Record(ctx context.Context, value int64) {
 	if m.inst == nil {
 		return
 	}
 	m.inst.Record(ctx, value)
 }
 
-// QueueDepthGaugeObserver records `myapp.queue.depth` observations from the
-// callback of a QueueDepthObservableGauge. The zero QueueDepthGaugeObserver
-// records nothing.
-type QueueDepthGaugeObserver struct {
+// QueueDepthObserver records `myapp.queue.depth` observations from the
+// callback of a QueueDepthObservable. The zero QueueDepthObserver records
+// nothing.
+type QueueDepthObserver struct {
 	o metric.Int64Observer
 }
 
 // Observe records one `myapp.queue.depth` observation.
-func (o QueueDepthGaugeObserver) Observe(value int64) {
+func (o QueueDepthObserver) Observe(value int64) {
 	if o.o == nil {
 		return
 	}
 	o.o.Observe(value)
 }
 
-// QueueDepthGaugeCallback observes `myapp.queue.depth` through o on every
-// collection of a QueueDepthObservableGauge.
+// QueueDepthCallback observes `myapp.queue.depth` through o on every
+// collection of a QueueDepthObservable.
 //
 // An error it returns is returned by the collection that ran it, and the
 // observations made before it returned are still recorded.
 //
 // Deprecated: Replaced by `myapp.task.active`.
-type QueueDepthGaugeCallback func(ctx context.Context, o QueueDepthGaugeObserver) error
+type QueueDepthCallback func(ctx context.Context, o QueueDepthObserver) error
 
-// QueueDepthObservableGauge is the asynchronous form of QueueDepthGauge,
-// observed through the callback it was created with.
+// QueueDepthObservable is the asynchronous form of QueueDepth, observed
+// through the callback it was created with.
 //
 // Deprecated: Replaced by `myapp.task.active`.
-type QueueDepthObservableGauge struct {
+type QueueDepthObservable struct {
 	inst metric.Int64ObservableGauge
 }
 
-// NewQueueDepthObservableGauge creates the `myapp.queue.depth` instrument
-// from meter and registers callback to observe it on every collection.
+// NewQueueDepthObservable creates the `myapp.queue.depth` instrument from
+// meter and registers callback to observe it on every collection.
 //
 // Deprecated: Replaced by `myapp.task.active`.
-func NewQueueDepthObservableGauge(meter semconvmeter.Meter, callback QueueDepthGaugeCallback) (QueueDepthObservableGauge, error) {
+func NewQueueDepthObservable(meter semconvmeter.Meter, callback QueueDepthCallback) (QueueDepthObservable, error) {
+	var m QueueDepthObservable
 	if callback == nil {
-		return QueueDepthObservableGauge{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.queue.depth")
+		return QueueDepthObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
 	inst, err := meter.MetricMeter().Int64ObservableGauge(
-		"myapp.queue.depth",
-		metric.WithDescription("Number of tasks waiting in the queue."),
-		metric.WithUnit("{task}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			return callback(ctx, QueueDepthGaugeObserver{o: o})
+			return callback(ctx, QueueDepthObserver{o: o})
 		}),
 	)
 	if err != nil {
-		return QueueDepthObservableGauge{}, fmt.Errorf("create the %s instrument: %w", "myapp.queue.depth", err)
+		return QueueDepthObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return QueueDepthObservableGauge{inst: inst}, nil
+	return QueueDepthObservable{inst: inst}, nil
 }
 
-// TaskActiveUpDownCounter is `myapp.task.active`.
+// Name returns the name `myapp.queue.depth` records under.
+func (QueueDepthObservable) Name() string {
+	return QueueDepth{}.Name()
+}
+
+// Unit returns the unit of `myapp.queue.depth`.
+func (QueueDepthObservable) Unit() string {
+	return QueueDepth{}.Unit()
+}
+
+// Description returns the description of `myapp.queue.depth`.
+func (QueueDepthObservable) Description() string {
+	return QueueDepth{}.Description()
+}
+
+// Inst returns the underlying metric.Int64ObservableGauge, or nil for the
+// zero QueueDepthObservable.
+func (m QueueDepthObservable) Inst() metric.Int64ObservableGauge {
+	return m.inst
+}
+
+// TaskActive is `myapp.task.active`.
 //
 // Number of tasks currently running.
-type TaskActiveUpDownCounter struct{ inst metric.Int64UpDownCounter }
+type TaskActive struct{ inst metric.Int64UpDownCounter }
 
-// NewTaskActiveUpDownCounter creates the `myapp.task.active` instrument from
-// meter.
-func NewTaskActiveUpDownCounter(meter semconvmeter.Meter) (TaskActiveUpDownCounter, error) {
+// NewTaskActive creates the `myapp.task.active` instrument from meter.
+func NewTaskActive(meter semconvmeter.Meter) (TaskActive, error) {
+	var m TaskActive
 	inst, err := meter.MetricMeter().Int64UpDownCounter(
-		"myapp.task.active",
-		metric.WithDescription("Number of tasks currently running."),
-		metric.WithUnit("{task}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 	)
 	if err != nil {
-		return TaskActiveUpDownCounter{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.active", err)
+		return TaskActive{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskActiveUpDownCounter{inst: inst}, nil
+	return TaskActive{inst: inst}, nil
 }
 
-// Add records one `myapp.task.active` measurement. The zero
-// TaskActiveUpDownCounter records nothing.
-func (m TaskActiveUpDownCounter) Add(ctx context.Context, incr int64, myappTaskState myappattr.TaskStateAttr) {
+// Name returns the name `myapp.task.active` records under.
+func (TaskActive) Name() string {
+	return "myapp.task.active"
+}
+
+// Unit returns the unit of `myapp.task.active`.
+func (TaskActive) Unit() string {
+	return "{task}"
+}
+
+// Description returns the description of `myapp.task.active`.
+func (TaskActive) Description() string {
+	return "Number of tasks currently running."
+}
+
+// Inst returns the underlying metric.Int64UpDownCounter, or nil for the zero
+// TaskActive.
+func (m TaskActive) Inst() metric.Int64UpDownCounter {
+	return m.inst
+}
+
+// Add records one `myapp.task.active` measurement. The zero TaskActive
+// records nothing.
+func (m TaskActive) Add(ctx context.Context, incr int64, myappTaskState myappattr.TaskState) {
 	if m.inst == nil {
 		return
 	}
@@ -129,15 +194,15 @@ func (m TaskActiveUpDownCounter) Add(ctx context.Context, incr int64, myappTaskS
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
 
-// TaskActiveUpDownCounterObserver records `myapp.task.active` observations
-// from the callback of a TaskActiveObservableUpDownCounter. The zero
-// TaskActiveUpDownCounterObserver records nothing.
-type TaskActiveUpDownCounterObserver struct {
+// TaskActiveObserver records `myapp.task.active` observations from the
+// callback of a TaskActiveObservable. The zero TaskActiveObserver records
+// nothing.
+type TaskActiveObserver struct {
 	o metric.Int64Observer
 }
 
 // Observe records one `myapp.task.active` observation.
-func (o TaskActiveUpDownCounterObserver) Observe(value int64, myappTaskState myappattr.TaskStateAttr) {
+func (o TaskActiveObserver) Observe(value int64, myappTaskState myappattr.TaskState) {
 	if o.o == nil {
 		return
 	}
@@ -146,158 +211,217 @@ func (o TaskActiveUpDownCounterObserver) Observe(value int64, myappTaskState mya
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 
-// TaskActiveUpDownCounterCallback observes `myapp.task.active` through o on
-// every collection of a TaskActiveObservableUpDownCounter.
+// TaskActiveCallback observes `myapp.task.active` through o on every
+// collection of a TaskActiveObservable.
 //
 // An error it returns is returned by the collection that ran it, and the
 // observations made before it returned are still recorded.
-type TaskActiveUpDownCounterCallback func(ctx context.Context, o TaskActiveUpDownCounterObserver) error
+type TaskActiveCallback func(ctx context.Context, o TaskActiveObserver) error
 
-// TaskActiveObservableUpDownCounter is the asynchronous form of
-// TaskActiveUpDownCounter, observed through the callback it was created
-// with.
-type TaskActiveObservableUpDownCounter struct {
+// TaskActiveObservable is the asynchronous form of TaskActive, observed
+// through the callback it was created with.
+type TaskActiveObservable struct {
 	inst metric.Int64ObservableUpDownCounter
 }
 
-// NewTaskActiveObservableUpDownCounter creates the `myapp.task.active`
-// instrument from meter and registers callback to observe it on every
-// collection.
-func NewTaskActiveObservableUpDownCounter(meter semconvmeter.Meter, callback TaskActiveUpDownCounterCallback) (TaskActiveObservableUpDownCounter, error) {
+// NewTaskActiveObservable creates the `myapp.task.active` instrument from
+// meter and registers callback to observe it on every collection.
+func NewTaskActiveObservable(meter semconvmeter.Meter, callback TaskActiveCallback) (TaskActiveObservable, error) {
+	var m TaskActiveObservable
 	if callback == nil {
-		return TaskActiveObservableUpDownCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.active")
+		return TaskActiveObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
 	inst, err := meter.MetricMeter().Int64ObservableUpDownCounter(
-		"myapp.task.active",
-		metric.WithDescription("Number of tasks currently running."),
-		metric.WithUnit("{task}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			return callback(ctx, TaskActiveUpDownCounterObserver{o: o})
+			return callback(ctx, TaskActiveObserver{o: o})
 		}),
 	)
 	if err != nil {
-		return TaskActiveObservableUpDownCounter{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.active", err)
+		return TaskActiveObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskActiveObservableUpDownCounter{inst: inst}, nil
+	return TaskActiveObservable{inst: inst}, nil
 }
 
-// TaskDurationHistogramAttr is an attribute `myapp.task.duration` accepts in
-// addition to the ones TaskDurationHistogram.Record requires.
-type TaskDurationHistogramAttr interface {
-	taskDurationHistogramAttr() attribute.KeyValue
+// Name returns the name `myapp.task.active` records under.
+func (TaskActiveObservable) Name() string {
+	return TaskActive{}.Name()
 }
 
-type taskDurationHistogramMethod struct{ v authattr.MethodAttr }
+// Unit returns the unit of `myapp.task.active`.
+func (TaskActiveObservable) Unit() string {
+	return TaskActive{}.Unit()
+}
 
-func (o taskDurationHistogramMethod) taskDurationHistogramAttr() attribute.KeyValue {
+// Description returns the description of `myapp.task.active`.
+func (TaskActiveObservable) Description() string {
+	return TaskActive{}.Description()
+}
+
+// Inst returns the underlying metric.Int64ObservableUpDownCounter, or nil
+// for the zero TaskActiveObservable.
+func (m TaskActiveObservable) Inst() metric.Int64ObservableUpDownCounter {
+	return m.inst
+}
+
+// TaskDurationAttr is an attribute `myapp.task.duration` accepts in addition
+// to the ones TaskDuration.Record requires.
+type TaskDurationAttr interface {
+	taskDurationAttr() attribute.KeyValue
+}
+
+type taskDurationMethod struct{ v authattr.Method }
+
+func (o taskDurationMethod) taskDurationAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskDurationHistogramMethod attaches `auth.method` to
-// TaskDurationHistogram.
+// WithTaskDurationMethod attaches `auth.method` to TaskDuration.
 //
 // Opt-in: the convention records it only when a user asks for it.
-func WithTaskDurationHistogramMethod(v authattr.MethodAttr) TaskDurationHistogramAttr {
-	return taskDurationHistogramMethod{v: v}
+func WithTaskDurationMethod(v authattr.Method) TaskDurationAttr {
+	return taskDurationMethod{v: v}
 }
 
-type taskDurationHistogramTaskState struct{ v myappattr.TaskStateAttr }
+type taskDurationTaskState struct{ v myappattr.TaskState }
 
-func (o taskDurationHistogramTaskState) taskDurationHistogramAttr() attribute.KeyValue {
+func (o taskDurationTaskState) taskDurationAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskDurationHistogramTaskState attaches `myapp.task.state` to
-// TaskDurationHistogram.
+// WithTaskDurationTaskState attaches `myapp.task.state` to TaskDuration.
 //
 // Conditionally required: If the task reached a final state.
-func WithTaskDurationHistogramTaskState(v myappattr.TaskStateAttr) TaskDurationHistogramAttr {
-	return taskDurationHistogramTaskState{v: v}
+func WithTaskDurationTaskState(v myappattr.TaskState) TaskDurationAttr {
+	return taskDurationTaskState{v: v}
 }
 
-// TaskDurationHistogram is `myapp.task.duration`.
+// TaskDuration is `myapp.task.duration`.
 //
 // Time a task took from start to finish.
 //
 // Measured by the worker that ran the task.
-type TaskDurationHistogram struct{ inst metric.Float64Histogram }
+type TaskDuration struct{ inst metric.Float64Histogram }
 
-// NewTaskDurationHistogram creates the `myapp.task.duration` instrument from
-// meter.
-func NewTaskDurationHistogram(meter semconvmeter.Meter) (TaskDurationHistogram, error) {
+// NewTaskDuration creates the `myapp.task.duration` instrument from meter.
+func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
+	var m TaskDuration
 	inst, err := meter.MetricMeter().Float64Histogram(
-		"myapp.task.duration",
-		metric.WithDescription("Time a task took from start to finish."),
-		metric.WithUnit("s"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.WithExplicitBucketBoundaries(0, 0.005, 0.01, 0.1, 1, 10),
 	)
 	if err != nil {
-		return TaskDurationHistogram{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.duration", err)
+		return TaskDuration{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskDurationHistogram{inst: inst}, nil
+	return TaskDuration{inst: inst}, nil
+}
+
+// Name returns the name `myapp.task.duration` records under.
+func (TaskDuration) Name() string {
+	return "myapp.task.duration"
+}
+
+// Unit returns the unit of `myapp.task.duration`.
+func (TaskDuration) Unit() string {
+	return "s"
+}
+
+// Description returns the description of `myapp.task.duration`.
+func (TaskDuration) Description() string {
+	return "Time a task took from start to finish."
+}
+
+// Inst returns the underlying metric.Float64Histogram, or nil for the zero
+// TaskDuration.
+func (m TaskDuration) Inst() metric.Float64Histogram {
+	return m.inst
 }
 
 // Record records one `myapp.task.duration` measurement. The zero
-// TaskDurationHistogram records nothing.
-func (m TaskDurationHistogram) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskIDAttr, opts ...TaskDurationHistogramAttr) {
+// TaskDuration records nothing.
+func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID, opts ...TaskDurationAttr) {
 	if m.inst == nil {
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
 	kvs = append(kvs, myappTaskID.KeyValue())
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskDurationHistogramAttr())
+		kvs = append(kvs, opt.taskDurationAttr())
 	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
 
-// TaskRetryDurationHistogramAttr is an attribute `myapp.task.retry.duration`
-// accepts in addition to the ones TaskRetryDurationHistogram.Record
-// requires.
-type TaskRetryDurationHistogramAttr interface {
-	taskRetryDurationHistogramAttr() attribute.KeyValue
+// TaskRetryDurationAttr is an attribute `myapp.task.retry.duration` accepts
+// in addition to the ones TaskRetryDuration.Record requires.
+type TaskRetryDurationAttr interface {
+	taskRetryDurationAttr() attribute.KeyValue
 }
 
-type taskRetryDurationHistogramMethod struct{ v authattr.MethodAttr }
+type taskRetryDurationMethod struct{ v authattr.Method }
 
-func (o taskRetryDurationHistogramMethod) taskRetryDurationHistogramAttr() attribute.KeyValue {
+func (o taskRetryDurationMethod) taskRetryDurationAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskRetryDurationHistogramMethod attaches `auth.method` to
-// TaskRetryDurationHistogram.
+// WithTaskRetryDurationMethod attaches `auth.method` to TaskRetryDuration.
 //
 // Opt-in: the convention records it only when a user asks for it.
-func WithTaskRetryDurationHistogramMethod(v authattr.MethodAttr) TaskRetryDurationHistogramAttr {
-	return taskRetryDurationHistogramMethod{v: v}
+func WithTaskRetryDurationMethod(v authattr.Method) TaskRetryDurationAttr {
+	return taskRetryDurationMethod{v: v}
 }
 
-// TaskRetryDurationHistogram is `myapp.task.retry.duration`, a refinement of
+// TaskRetryDuration is `myapp.task.retry.duration`, a refinement of
 // `myapp.task.duration` that records under that metric's name.
 //
 // Time a retried task took from start to finish.
 //
 // Recorded only for tasks that ran more than once.
-type TaskRetryDurationHistogram struct{ inst metric.Float64Histogram }
+type TaskRetryDuration struct{ inst metric.Float64Histogram }
 
-// NewTaskRetryDurationHistogram creates the `myapp.task.duration` instrument
-// from meter.
-func NewTaskRetryDurationHistogram(meter semconvmeter.Meter) (TaskRetryDurationHistogram, error) {
+// NewTaskRetryDuration creates the `myapp.task.duration` instrument from
+// meter.
+func NewTaskRetryDuration(meter semconvmeter.Meter) (TaskRetryDuration, error) {
+	var m TaskRetryDuration
 	inst, err := meter.MetricMeter().Float64Histogram(
-		"myapp.task.duration",
-		metric.WithDescription("Time a task took from start to finish."),
-		metric.WithUnit("s"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.WithExplicitBucketBoundaries(0, 0.005, 0.01, 0.1, 1, 10),
 	)
 	if err != nil {
-		return TaskRetryDurationHistogram{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.duration", err)
+		return TaskRetryDuration{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskRetryDurationHistogram{inst: inst}, nil
+	return TaskRetryDuration{inst: inst}, nil
+}
+
+// Name returns the name `myapp.task.retry.duration` records under.
+func (TaskRetryDuration) Name() string {
+	return "myapp.task.duration"
+}
+
+// Unit returns the unit of `myapp.task.retry.duration`.
+func (TaskRetryDuration) Unit() string {
+	return "s"
+}
+
+// Description returns the description of `myapp.task.retry.duration`.
+func (TaskRetryDuration) Description() string {
+	return "Time a task took from start to finish."
+}
+
+// Inst returns the underlying metric.Float64Histogram, or nil for the zero
+// TaskRetryDuration.
+func (m TaskRetryDuration) Inst() metric.Float64Histogram {
+	return m.inst
 }
 
 // Record records one `myapp.task.retry.duration` measurement. The zero
-// TaskRetryDurationHistogram records nothing.
-func (m TaskRetryDurationHistogram) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskIDAttr, myappTaskState myappattr.TaskStateAttr, opts ...TaskRetryDurationHistogramAttr) {
+// TaskRetryDuration records nothing.
+func (m TaskRetryDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID, myappTaskState myappattr.TaskState, opts ...TaskRetryDurationAttr) {
 	if m.inst == nil {
 		return
 	}
@@ -305,124 +429,165 @@ func (m TaskRetryDurationHistogram) Record(ctx context.Context, value float64, m
 	kvs = append(kvs, myappTaskID.KeyValue())
 	kvs = append(kvs, myappTaskState.KeyValue())
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskRetryDurationHistogramAttr())
+		kvs = append(kvs, opt.taskRetryDurationAttr())
 	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
 
-// TaskStartedCounterAttr is an attribute `myapp.task.started` accepts in
-// addition to the ones TaskStartedCounter.Add requires.
-type TaskStartedCounterAttr interface {
-	taskStartedCounterAttr() attribute.KeyValue
+// TaskStartedAttr is an attribute `myapp.task.started` accepts in addition
+// to the ones TaskStarted.Add requires.
+type TaskStartedAttr interface {
+	taskStartedAttr() attribute.KeyValue
 }
 
-type taskStartedCounterTaskID struct{ v myappattr.TaskIDAttr }
+type taskStartedTaskID struct{ v myappattr.TaskID }
 
-func (o taskStartedCounterTaskID) taskStartedCounterAttr() attribute.KeyValue {
+func (o taskStartedTaskID) taskStartedAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskStartedCounterTaskID attaches `myapp.task.id` to
-// TaskStartedCounter.
+// WithTaskStartedTaskID attaches `myapp.task.id` to TaskStarted.
 //
 // Recommended: When the scheduler assigned an id before the task started.
-func WithTaskStartedCounterTaskID(v myappattr.TaskIDAttr) TaskStartedCounterAttr {
-	return taskStartedCounterTaskID{v: v}
+func WithTaskStartedTaskID(v myappattr.TaskID) TaskStartedAttr {
+	return taskStartedTaskID{v: v}
 }
 
-// TaskStartedCounter is `myapp.task.started`.
+// TaskStarted is `myapp.task.started`.
 //
 // Number of tasks started.
 //
 // Opt-in: the convention records `myapp.task.started` only when a user asks
 // for it.
-type TaskStartedCounter struct{ inst metric.Int64Counter }
+type TaskStarted struct{ inst metric.Int64Counter }
 
-// NewTaskStartedCounter creates the `myapp.task.started` instrument from
-// meter.
+// NewTaskStarted creates the `myapp.task.started` instrument from meter.
 //
 // Opt-in: the convention records `myapp.task.started` only when a user asks
 // for it.
-func NewTaskStartedCounter(meter semconvmeter.Meter) (TaskStartedCounter, error) {
+func NewTaskStarted(meter semconvmeter.Meter) (TaskStarted, error) {
+	var m TaskStarted
 	inst, err := meter.MetricMeter().Int64Counter(
-		"myapp.task.started",
-		metric.WithDescription("Number of tasks started."),
-		metric.WithUnit("{task}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 	)
 	if err != nil {
-		return TaskStartedCounter{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.started", err)
+		return TaskStarted{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskStartedCounter{inst: inst}, nil
+	return TaskStarted{inst: inst}, nil
 }
 
-// Add records one `myapp.task.started` measurement. The zero
-// TaskStartedCounter records nothing.
-func (m TaskStartedCounter) Add(ctx context.Context, incr int64, opts ...TaskStartedCounterAttr) {
+// Name returns the name `myapp.task.started` records under.
+func (TaskStarted) Name() string {
+	return "myapp.task.started"
+}
+
+// Unit returns the unit of `myapp.task.started`.
+func (TaskStarted) Unit() string {
+	return "{task}"
+}
+
+// Description returns the description of `myapp.task.started`.
+func (TaskStarted) Description() string {
+	return "Number of tasks started."
+}
+
+// Inst returns the underlying metric.Int64Counter, or nil for the zero
+// TaskStarted.
+func (m TaskStarted) Inst() metric.Int64Counter {
+	return m.inst
+}
+
+// Add records one `myapp.task.started` measurement. The zero TaskStarted
+// records nothing.
+func (m TaskStarted) Add(ctx context.Context, incr int64, opts ...TaskStartedAttr) {
 	if m.inst == nil {
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskStartedCounterAttr())
+		kvs = append(kvs, opt.taskStartedAttr())
 	}
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
 
-// TaskStartedCounterObserver records `myapp.task.started` observations from
-// the callback of a TaskStartedObservableCounter. The zero
-// TaskStartedCounterObserver records nothing.
-type TaskStartedCounterObserver struct {
+// TaskStartedObserver records `myapp.task.started` observations from the
+// callback of a TaskStartedObservable. The zero TaskStartedObserver records
+// nothing.
+type TaskStartedObserver struct {
 	o metric.Int64Observer
 }
 
 // Observe records one `myapp.task.started` observation.
-func (o TaskStartedCounterObserver) Observe(value int64, opts ...TaskStartedCounterAttr) {
+func (o TaskStartedObserver) Observe(value int64, opts ...TaskStartedAttr) {
 	if o.o == nil {
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskStartedCounterAttr())
+		kvs = append(kvs, opt.taskStartedAttr())
 	}
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 
-// TaskStartedCounterCallback observes `myapp.task.started` through o on
-// every collection of a TaskStartedObservableCounter.
+// TaskStartedCallback observes `myapp.task.started` through o on every
+// collection of a TaskStartedObservable.
 //
 // An error it returns is returned by the collection that ran it, and the
 // observations made before it returned are still recorded.
-type TaskStartedCounterCallback func(ctx context.Context, o TaskStartedCounterObserver) error
+type TaskStartedCallback func(ctx context.Context, o TaskStartedObserver) error
 
-// TaskStartedObservableCounter is the asynchronous form of
-// TaskStartedCounter, observed through the callback it was created with.
+// TaskStartedObservable is the asynchronous form of TaskStarted, observed
+// through the callback it was created with.
 //
 // Opt-in: the convention records `myapp.task.started` only when a user asks
 // for it.
-type TaskStartedObservableCounter struct {
+type TaskStartedObservable struct {
 	inst metric.Int64ObservableCounter
 }
 
-// NewTaskStartedObservableCounter creates the `myapp.task.started`
-// instrument from meter and registers callback to observe it on every
-// collection.
+// NewTaskStartedObservable creates the `myapp.task.started` instrument from
+// meter and registers callback to observe it on every collection.
 //
 // Opt-in: the convention records `myapp.task.started` only when a user asks
 // for it.
-func NewTaskStartedObservableCounter(meter semconvmeter.Meter, callback TaskStartedCounterCallback) (TaskStartedObservableCounter, error) {
+func NewTaskStartedObservable(meter semconvmeter.Meter, callback TaskStartedCallback) (TaskStartedObservable, error) {
+	var m TaskStartedObservable
 	if callback == nil {
-		return TaskStartedObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.started")
+		return TaskStartedObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
 	inst, err := meter.MetricMeter().Int64ObservableCounter(
-		"myapp.task.started",
-		metric.WithDescription("Number of tasks started."),
-		metric.WithUnit("{task}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			return callback(ctx, TaskStartedCounterObserver{o: o})
+			return callback(ctx, TaskStartedObserver{o: o})
 		}),
 	)
 	if err != nil {
-		return TaskStartedObservableCounter{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.started", err)
+		return TaskStartedObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskStartedObservableCounter{inst: inst}, nil
+	return TaskStartedObservable{inst: inst}, nil
+}
+
+// Name returns the name `myapp.task.started` records under.
+func (TaskStartedObservable) Name() string {
+	return TaskStarted{}.Name()
+}
+
+// Unit returns the unit of `myapp.task.started`.
+func (TaskStartedObservable) Unit() string {
+	return TaskStarted{}.Unit()
+}
+
+// Description returns the description of `myapp.task.started`.
+func (TaskStartedObservable) Description() string {
+	return TaskStarted{}.Description()
+}
+
+// Inst returns the underlying metric.Int64ObservableCounter, or nil for the
+// zero TaskStartedObservable.
+func (m TaskStartedObservable) Inst() metric.Int64ObservableCounter {
+	return m.inst
 }

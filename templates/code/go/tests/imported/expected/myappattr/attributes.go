@@ -7,22 +7,22 @@ import "go.opentelemetry.io/otel/attribute"
 // taskIDKey is the attribute key of `myapp.task.id`.
 const taskIDKey = attribute.Key("myapp.task.id")
 
-// TaskIDAttr is a value of `myapp.task.id`.
+// TaskID is a value of `myapp.task.id`.
 //
 // Unique identifier of the task.
-type TaskIDAttr struct{ value string }
+type TaskID struct{ value string }
 
-// NewTaskIDAttr returns a value of `myapp.task.id`.
-func NewTaskIDAttr(value string) TaskIDAttr {
-	return TaskIDAttr{value: value}
+// NewTaskID returns a value of `myapp.task.id`.
+func NewTaskID(value string) TaskID {
+	return TaskID{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskIDAttr) Key() attribute.Key {
+func (TaskID) Key() attribute.Key {
 	return taskIDKey
 }
 
 // KeyValue is the `myapp.task.id` attribute set to this value.
-func (v TaskIDAttr) KeyValue() attribute.KeyValue {
+func (v TaskID) KeyValue() attribute.KeyValue {
 	return taskIDKey.String(v.value)
 }

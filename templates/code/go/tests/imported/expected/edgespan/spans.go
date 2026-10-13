@@ -19,8 +19,8 @@ type UpstreamRequestStartAttr interface {
 	upstreamRequestStartAttr() attribute.KeyValue
 }
 
-// UpstreamRequestAttr is an attribute a UpstreamRequestSpan also accepts
-// after it started, through SetAttributes.
+// UpstreamRequestAttr is an attribute a UpstreamRequest also accepts after
+// it started, through SetAttributes.
 type UpstreamRequestAttr interface {
 	UpstreamRequestStartAttr
 	upstreamRequestAttr()
@@ -49,19 +49,19 @@ func (o upstreamRequestSpanHTTPRequestMethodList) upstreamRequestStartAttr() att
 func (upstreamRequestSpanHTTPRequestMethodList) upstreamRequestAttr() {}
 
 // WithUpstreamRequestHTTPRequestMethodList sets `http.request.method_list`
-// on a UpstreamRequestSpan, when StartUpstreamRequest starts it or later
-// through SetAttributes.
+// on a UpstreamRequest, when StartUpstreamRequest starts it or later through
+// SetAttributes.
 func WithUpstreamRequestHTTPRequestMethodList(v []string) UpstreamRequestAttr {
 	return upstreamRequestSpanHTTPRequestMethodList{v: v}
 }
 
-// UpstreamRequestSpan is a started span of `edge.upstream.request`. The zero
-// UpstreamRequestSpan records nothing.
-type UpstreamRequestSpan struct{ span trace.Span }
+// UpstreamRequest is a started span of `edge.upstream.request`. The zero
+// UpstreamRequest records nothing.
+type UpstreamRequest struct{ span trace.Span }
 
 // Span returns the underlying trace.Span, or a no-op one for the zero
-// UpstreamRequestSpan.
-func (s UpstreamRequestSpan) Span() trace.Span {
+// UpstreamRequest.
+func (s UpstreamRequest) Span() trace.Span {
 	if s.span == nil {
 		return noop.Span{}
 	}
@@ -69,12 +69,12 @@ func (s UpstreamRequestSpan) Span() trace.Span {
 }
 
 // End ends the span.
-func (s UpstreamRequestSpan) End(opts ...trace.SpanEndOption) {
+func (s UpstreamRequest) End(opts ...trace.SpanEndOption) {
 	s.Span().End(opts...)
 }
 
 // SetAttributes sets attributes on the span after it started.
-func (s UpstreamRequestSpan) SetAttributes(attrs ...UpstreamRequestAttr) {
+func (s UpstreamRequest) SetAttributes(attrs ...UpstreamRequestAttr) {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
 		kvs = append(kvs, attr.upstreamRequestStartAttr())
@@ -83,12 +83,12 @@ func (s UpstreamRequestSpan) SetAttributes(attrs ...UpstreamRequestAttr) {
 }
 
 // RecordError records err as an exception event on the span.
-func (s UpstreamRequestSpan) RecordError(err error, opts ...trace.EventOption) {
+func (s UpstreamRequest) RecordError(err error, opts ...trace.EventOption) {
 	s.Span().RecordError(err, opts...)
 }
 
 // SetStatus sets the status of the span.
-func (s UpstreamRequestSpan) SetStatus(code codes.Code, description string) {
+func (s UpstreamRequest) SetStatus(code codes.Code, description string) {
 	s.Span().SetStatus(code, description)
 }
 
@@ -99,7 +99,7 @@ func (s UpstreamRequestSpan) SetStatus(code codes.Code, description string) {
 //
 // The span is named `{server.address}:{server.port}`, with each placeholder
 // replaced by the value of the attribute it names.
-func StartUpstreamRequest(ctx context.Context, tracer semconvtracer.Tracer, serverAddress string, serverPort int, opts ...UpstreamRequestStartAttr) (context.Context, UpstreamRequestSpan) {
+func StartUpstreamRequest(ctx context.Context, tracer semconvtracer.Tracer, serverAddress string, serverPort int, opts ...UpstreamRequestStartAttr) (context.Context, UpstreamRequest) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	kvs = append(kvs, attribute.String("server.address", serverAddress))
 	kvs = append(kvs, attribute.Int("server.port", serverPort))
@@ -113,5 +113,5 @@ func StartUpstreamRequest(ctx context.Context, tracer semconvtracer.Tracer, serv
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(kvs...),
 	)
-	return ctx, UpstreamRequestSpan{span: span}
+	return ctx, UpstreamRequest{span: span}
 }

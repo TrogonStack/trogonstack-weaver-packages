@@ -21,14 +21,14 @@ type TaskDispatchStartAttr interface {
 	taskDispatchStartAttr() attribute.KeyValue
 }
 
-// TaskDispatchAttr is an attribute a TaskDispatchSpan also accepts after it
+// TaskDispatchAttr is an attribute a TaskDispatch also accepts after it
 // started, through SetAttributes.
 type TaskDispatchAttr interface {
 	TaskDispatchStartAttr
 	taskDispatchAttr()
 }
 
-type taskDispatchSpanQueueName struct{ v myappattr.QueueNameAttr }
+type taskDispatchSpanQueueName struct{ v myappattr.QueueName }
 
 func (o taskDispatchSpanQueueName) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
@@ -36,15 +36,15 @@ func (o taskDispatchSpanQueueName) taskDispatchStartAttr() attribute.KeyValue {
 
 func (taskDispatchSpanQueueName) taskDispatchAttr() {}
 
-// WithTaskDispatchQueueName sets `myapp.queue.name` on a TaskDispatchSpan,
-// when StartTaskDispatch starts it or later through SetAttributes.
+// WithTaskDispatchQueueName sets `myapp.queue.name` on a TaskDispatch, when
+// StartTaskDispatch starts it or later through SetAttributes.
 //
 // Recommended: When the task came from a named queue.
-func WithTaskDispatchQueueName(v myappattr.QueueNameAttr) TaskDispatchAttr {
+func WithTaskDispatchQueueName(v myappattr.QueueName) TaskDispatchAttr {
 	return taskDispatchSpanQueueName{v: v}
 }
 
-type taskDispatchSpanTaskID struct{ v myappattr.TaskIDAttr }
+type taskDispatchSpanTaskID struct{ v myappattr.TaskID }
 
 func (o taskDispatchSpanTaskID) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
@@ -52,17 +52,17 @@ func (o taskDispatchSpanTaskID) taskDispatchStartAttr() attribute.KeyValue {
 
 // WithTaskDispatchTaskID sets `myapp.task.id` when StartTaskDispatch starts
 // the span. Samplers read it, so it is accepted only at start.
-func WithTaskDispatchTaskID(v myappattr.TaskIDAttr) TaskDispatchStartAttr {
+func WithTaskDispatchTaskID(v myappattr.TaskID) TaskDispatchStartAttr {
 	return taskDispatchSpanTaskID{v: v}
 }
 
-// TaskDispatchSpan is a started span of `worker.task.dispatch`. The zero
-// TaskDispatchSpan records nothing.
-type TaskDispatchSpan struct{ span trace.Span }
+// TaskDispatch is a started span of `worker.task.dispatch`. The zero
+// TaskDispatch records nothing.
+type TaskDispatch struct{ span trace.Span }
 
 // Span returns the underlying trace.Span, or a no-op one for the zero
-// TaskDispatchSpan.
-func (s TaskDispatchSpan) Span() trace.Span {
+// TaskDispatch.
+func (s TaskDispatch) Span() trace.Span {
 	if s.span == nil {
 		return noop.Span{}
 	}
@@ -70,12 +70,12 @@ func (s TaskDispatchSpan) Span() trace.Span {
 }
 
 // End ends the span.
-func (s TaskDispatchSpan) End(opts ...trace.SpanEndOption) {
+func (s TaskDispatch) End(opts ...trace.SpanEndOption) {
 	s.Span().End(opts...)
 }
 
 // SetAttributes sets attributes on the span after it started.
-func (s TaskDispatchSpan) SetAttributes(attrs ...TaskDispatchAttr) {
+func (s TaskDispatch) SetAttributes(attrs ...TaskDispatchAttr) {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
 		kvs = append(kvs, attr.taskDispatchStartAttr())
@@ -84,12 +84,12 @@ func (s TaskDispatchSpan) SetAttributes(attrs ...TaskDispatchAttr) {
 }
 
 // RecordError records err as an exception event on the span.
-func (s TaskDispatchSpan) RecordError(err error, opts ...trace.EventOption) {
+func (s TaskDispatch) RecordError(err error, opts ...trace.EventOption) {
 	s.Span().RecordError(err, opts...)
 }
 
 // SetStatus sets the status of the span.
-func (s TaskDispatchSpan) SetStatus(code codes.Code, description string) {
+func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 	s.Span().SetStatus(code, description)
 }
 
@@ -102,7 +102,7 @@ func (s TaskDispatchSpan) SetStatus(code codes.Code, description string) {
 //
 // The span is named `dispatch {worker.host.name}:{worker.host.port}`, with
 // each placeholder replaced by the value of the attribute it names.
-func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttemptAttr, workerHostName workerattr.HostNameAttr, workerHostPort workerattr.HostPortAttr, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatchSpan) {
+func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 3+len(opts))
 	kvs = append(kvs, myappTaskAttempt.KeyValue())
 	kvs = append(kvs, workerHostName.KeyValue())
@@ -117,5 +117,5 @@ func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, myappTa
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(kvs...),
 	)
-	return ctx, TaskDispatchSpan{span: span}
+	return ctx, TaskDispatch{span: span}
 }

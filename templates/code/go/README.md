@@ -55,7 +55,7 @@ that carries the registry's schema URL:
 
 The namespace is the first segment of a name, or the second when the first is
 listed in `vendor_prefixes`. Identifiers drop that prefix, so `myapp.task.id`
-becomes `myappattr.TaskIDAttr`.
+becomes `myappattr.TaskID`.
 
 ### Attributes
 
@@ -63,9 +63,9 @@ Each attribute becomes a struct that can only be built through its constructor
 or, for enums, through its members:
 
 ```go
-myappattr.NewTaskIDAttr("task_0001").KeyValue()
+myappattr.NewTaskID("task_0001").KeyValue()
 myappattr.TaskStateQueued.KeyValue()
-myappattr.TaskIDAttr{}.Key()
+myappattr.TaskID{}.Key()
 ```
 
 Supported types are `string`, `int`, `double`, `boolean`, their array forms, and
@@ -139,34 +139,48 @@ The zero `Logger` emits log records that go nowhere.
 ### Metrics
 
 Each metric becomes a struct wrapping the matching synchronous instrument, built
-with `New<Name><Instrument>(meter)`. Required attributes are typed parameters of
+with `New<Name>(meter)`. Required attributes are typed parameters of
 `Add` or `Record`, and every other attribute is a trailing option:
 
 ```go
-duration, err := myappmetric.NewTaskDurationHistogram(meter)
-duration.Record(ctx, 1.5, myappattr.NewTaskIDAttr("task_0001"),
-	myappmetric.WithTaskDurationHistogramTaskState(myappattr.TaskStateRunning))
+duration, err := myappmetric.NewTaskDuration(meter)
+duration.Record(ctx, 1.5, myappattr.NewTaskID("task_0001"),
+	myappmetric.WithTaskDurationTaskState(myappattr.TaskStateRunning))
 ```
 
 Counters, up-down counters, and gauges also get an asynchronous form, built
-with `New<Name>Observable<Instrument>(meter, callback)`. The callback receives a
+with `New<Name>Observable(meter, callback)`. The callback receives a
 typed observer whose `Observe` takes the same parameters and options as the
 synchronous method, so an observation cannot skip a required attribute or
 attach one the convention does not declare:
 
 ```go
-_, err := myappmetric.NewTaskActiveObservableUpDownCounter(meter,
-	func(ctx context.Context, o myappmetric.TaskActiveUpDownCounterObserver) error {
+_, err := myappmetric.NewTaskActiveObservable(meter,
+	func(ctx context.Context, o myappmetric.TaskActiveObserver) error {
 		o.Observe(int64(queue.Len()), myappattr.TaskStateQueued)
 		return nil
 	})
 ```
 
-The callback has its own type, `<Name><Instrument>Callback`, so it can be
+The callback has its own type, `<Name>Callback`, so it can be
 declared ahead of the constructor. It is registered when the instrument is
 created and runs on every collection. An error it returns is returned by that
 collection, and the observations made before it are still recorded. Histograms
 have no asynchronous form in OpenTelemetry, so they get none.
+
+Like the official `semconv` packages, each instrument type, synchronous or
+observable, reports its registry metadata through `Name`, `Unit`, and
+`Description`, which work on the zero value, and exposes the underlying
+OpenTelemetry instrument through `Inst`:
+
+```go
+myappmetric.TaskDuration{}.Name() // "myapp.task.duration"
+duration.Inst()                   // metric.Float64Histogram
+```
+
+`Unit` and `Description` return an empty string when the registry sets none.
+A refinement reports the name of the metric it refines, since both record into
+one instrument.
 
 Go cannot check a requirement condition, so conditionally required,
 recommended, and opt-in attributes are all options. The option's doc comment
@@ -185,7 +199,7 @@ plain Go value instead, with the key filled in, so an imported enum is taken as
 the Go value of its members:
 
 ```go
-failed.Add(ctx, 1, "timeout", myappattr.NewTaskIDAttr("task_0001"))
+failed.Add(ctx, 1, "timeout", myappattr.NewTaskID("task_0001"))
 ```
 
 Map its namespace to the Go import path of a dependency registry that was
@@ -194,7 +208,7 @@ attribute is taken as the typed value from `<path>/<ns>attr` instead, exactly
 like a local attribute:
 
 ```go
-failed.Add(ctx, 1, errorattr.TypeTimeout, myappattr.NewTaskIDAttr("task_0001"))
+failed.Add(ctx, 1, errorattr.TypeTimeout, myappattr.NewTaskID("task_0001"))
 ```
 
 The map's key is the attribute's namespace as this registry's own
@@ -260,8 +274,8 @@ with the attributes and requirement levels the refinement declares. A
 refinement that makes an attribute required therefore makes it a parameter:
 
 ```go
-retried, err := myappmetric.NewTaskRetryDurationHistogram(meter)
-retried.Record(ctx, 1.5, myappattr.NewTaskIDAttr("task_0001"), myappattr.TaskStateDone)
+retried, err := myappmetric.NewTaskRetryDuration(meter)
+retried.Record(ctx, 1.5, myappattr.NewTaskID("task_0001"), myappattr.TaskStateDone)
 ```
 
 It records under the name of the metric it refines, created with that metric's
@@ -271,27 +285,27 @@ is generated only when the metric it refines is.
 
 ### Spans
 
-Each span becomes a `Start<Name>` function and a `<Name>Span` it returns. The
+Each span becomes a `Start<Name>` function and a `<Name>` it returns. The
 starter takes the `<root>tracer.Tracer`, then every required attribute as a
 typed parameter, then the rest as options, and starts the span with the kind
 the registry gives it:
 
 ```go
 ctx, span := myappspan.StartTaskDispatch(ctx, tracer,
-	workerattr.NewHostNameAttr("worker-1"),
-	workerattr.NewHostPortAttr(8080),
-	myappspan.WithTaskDispatchTaskID(myappattr.NewTaskIDAttr("task_0001")),
+	workerattr.NewHostName("worker-1"),
+	workerattr.NewHostPort(8080),
+	myappspan.WithTaskDispatchTaskID(myappattr.NewTaskID("task_0001")),
 )
 defer span.End()
-span.SetAttributes(myappspan.WithTaskDispatchQueueName(myappattr.NewQueueNameAttr("reports")))
+span.SetAttributes(myappspan.WithTaskDispatchQueueName(myappattr.NewQueueName("reports")))
 ```
 
 Every attribute given to the starter is set as the span starts, since a sampler
 sees only those. An option for an attribute marked `sampling_relevant` returns
 only `<Name>StartAttr`, which the starter accepts, while every other option
 returns `<Name>Attr`, which `SetAttributes` also accepts after the span started.
-`<Name>Span` also has `End`, `RecordError`, `SetStatus`, and `Span` for the
-underlying `trace.Span`. The zero `<Name>Span` records nothing.
+`<Name>` also has `End`, `RecordError`, `SetStatus`, and `Span` for the
+underlying `trace.Span`. The zero `<Name>` records nothing.
 
 The span name comes from `name.note`, read only for a name template: a single
 code span holding at least one `{placeholder}`, each the key of an attribute
@@ -318,7 +332,7 @@ has nothing left after its namespace. Rather than failing, it renders
 unprefixed, in its own `<name>span` package:
 
 ```go
-ctx, span := heartbeatspan.Start(ctx, tracer, heartbeatattr.NewSequenceAttr(1))
+ctx, span := heartbeatspan.Start(ctx, tracer, heartbeatspan.Name{}, heartbeatattr.NewSequence(1))
 defer span.End()
 ```
 
@@ -331,7 +345,7 @@ severity and the timestamp:
 
 ```go
 myappevent.EmitTaskFinished(ctx, logger, myappattr.TaskStateDone,
-	myappevent.WithTaskFinishedTaskAttempt(myappattr.NewTaskAttemptAttr(2)),
+	myappevent.WithTaskFinishedTaskAttempt(myappattr.NewTaskAttempt(2)),
 	myappevent.WithTaskFinishedSeverity(log.SeverityWarn),
 )
 ```
@@ -351,21 +365,21 @@ event, has nothing left after its namespace. Rather than failing, it renders
 unprefixed, in its own `<name>event` package:
 
 ```go
-exceptionevent.Emit(ctx, logger, exceptionattr.NewTypeAttr("ValueError"),
-	exceptionevent.WithMessage(exceptionattr.NewMessageAttr("division by zero")),
+exceptionevent.Emit(ctx, logger, exceptionattr.NewType("ValueError"),
+	exceptionevent.WithMessage(exceptionattr.NewMessage("division by zero")),
 )
 ```
 
 ### Entities
 
-Each entity becomes a `<Name>Entity` value type built by `New<Name>Entity`.
+Each entity becomes a `<Name>` value type built by `New<Name>`.
 A required attribute of the entity's identity or description is a typed
 parameter of the constructor, and every other attribute is a trailing option:
 
 ```go
-host := myappentity.NewHostEntity(
-	myappattr.NewHostNameAttr("worker-1"),
-	myappentity.WithHostEntityHostType(myappattr.HostTypeVirtual),
+host := myappentity.NewHost(
+	myappattr.NewHostName("worker-1"),
+	myappentity.WithHostHostType(myappattr.HostTypeVirtual),
 )
 ```
 
@@ -377,7 +391,7 @@ schema. Resources from the same registry merge cleanly:
 res, err := resource.Merge(host.Resource(), queue.Resource())
 ```
 
-The zero `<Name>Entity` carries no attributes. Identity attributes come
+The zero `<Name>` carries no attributes. Identity attributes come
 before description attributes in both the constructor and the doc comment, so
 a reader can tell at a glance which attributes identify the entity and which
 merely describe it.
@@ -393,7 +407,7 @@ after its namespace. Rather than failing, it renders
 unprefixed, in its own `<name>entity` package:
 
 ```go
-host := hostentity.NewEntity(hostattr.NewIDAttr("h-1"))
+host := hostentity.NewEntity(hostattr.NewID("h-1"))
 ```
 
 ### Deprecation
@@ -480,9 +494,9 @@ that same `Resource`. Pass its attributes to `resource.New` under the
 registry's schema URL:
 
 ```go
-host := myappentity.NewHostEntity(
-	myappattr.NewHostNameAttr(hostname),
-	myappentity.WithHostEntityHostType(myappattr.HostTypeVirtual),
+host := myappentity.NewHost(
+	myappattr.NewHostName(hostname),
+	myappentity.WithHostHostType(myappattr.HostTypeVirtual),
 )
 
 res, err := resource.New(ctx,

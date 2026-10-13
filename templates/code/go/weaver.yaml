@@ -338,9 +338,15 @@ templates:
       | group_by(.namespace)
       | map({namespace: .[0].namespace, attributes: sort_by(.key)})
       | map(
-          (.attributes
-           | group_by(.short_name | gsub("[._]"; "") | ascii_downcase)
-           | map(select(length > 1) | map(.key) | join(" and "))) as $collisions
+          ([.attributes[] | . as $attr | (.short_name | gsub("[._]"; "") | ascii_downcase) as $short
+            | (["P:" + $short, "p:" + $short + "key"]
+               + (if (.type | type) == "object"
+                  then [.type.members[] | "P:" + $short + (.id | gsub("[._]"; "") | ascii_downcase)]
+                  else ["P:new" + $short] end))[]
+            | {identifier: ., name: $attr.key}]
+           | group_by(.identifier)
+           | map(select(length > 1) | map(.name) | unique | join(" and "))
+           | unique) as $collisions
           | if ($collisions | length) > 0
             then error("package \(.namespace)attr has attributes that render to the same Go identifier: \($collisions | join("; "))")
             else . end
@@ -487,9 +493,11 @@ templates:
         )
       | group_by(.namespace)
       | map(
-          ([.[] | .name as $metric | (.short_name | gsub("[._]"; "") | ascii_downcase) as $short | .instrument as $kind
-            | ([$short + $kind, $short + $kind + "attr", $short + $kind + "observer", $short + $kind + "callback"]
-               + (if $kind == "histogram" then [] else [$short + "observable" + $kind] end))[]
+          ([.[] | . as $def | .name as $metric | (.short_name | gsub("[._]"; "") | ascii_downcase) as $short
+            | (["P:" + $short, "P:new" + $short]
+               + (if ($def.optional | length) > 0 then ["P:" + $short + "attr"] else [] end)
+               + (if $def.instrument == "histogram" then [] else ["P:" + $short + "observer", "P:" + $short + "callback", "P:" + $short + "observable", "P:new" + $short + "observable"] end)
+               + ($def.optional | map(.attr_short_name | gsub("[._]"; "") | ascii_downcase) | map("P:with" + $short + ., "p:" + $short + .)))[]
             | {identifier: ., name: $metric}]
            | group_by(.identifier)
            | map(select(length > 1) | map(.name) | unique | join(" and "))
@@ -630,7 +638,7 @@ templates:
       | group_by(.namespace)
       | map(
           ([.[] | . as $def | .id as $span | (.short_name | norm) as $short
-            | (["P:start" + $short, "P:" + $short + "span"]
+            | (["P:start" + $short, "P:" + (if $short == "" then "span" else $short end)]
                + (if $def.name_parts then [] else ["P:" + $short + "name", "P:new" + $short + "name"] end)
                + (if ($def.optional | length) > 0 then ["P:" + $short + "startattr"] else [] end)
                + (if $def.has_late_attrs then ["P:" + $short + "attr"] else [] end)
@@ -891,9 +899,10 @@ templates:
       | group_by(.namespace)
       | map(
           ([.[] | . as $def | .id as $entity | (.short_name | norm) as $short
-            | (["P:new" + $short + "entity", "P:" + $short + "entity"]
-               + (if ($def.optional | length) > 0 then ["P:" + $short + "entityattr"] else [] end)
-               + ($def.optional | map(.attr_short_name | norm) | map("P:with" + $short + "entity" + ., "p:" + $short + "entity" + .)))[]
+            | (if $short == "" then "entity" else $short end) as $type
+            | (["P:new" + $type, "P:" + $type]
+               + (if ($def.optional | length) > 0 then ["P:" + $type + "attr"] else [] end)
+               + ($def.optional | map(.attr_short_name | norm) | map("P:with" + $type + ., "p:" + $short + "entity" + .)))[]
             | {identifier: ., name: $entity}]
            | group_by(.identifier)
            | map(select(length > 1) | map(.name) | unique | join(" and "))

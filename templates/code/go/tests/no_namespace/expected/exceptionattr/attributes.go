@@ -7,45 +7,45 @@ import "go.opentelemetry.io/otel/attribute"
 // messageKey is the attribute key of `exception.message`.
 const messageKey = attribute.Key("exception.message")
 
-// MessageAttr is a value of `exception.message`.
+// Message is a value of `exception.message`.
 //
 // The exception message.
-type MessageAttr struct{ value string }
+type Message struct{ value string }
 
-// NewMessageAttr returns a value of `exception.message`.
-func NewMessageAttr(value string) MessageAttr {
-	return MessageAttr{value: value}
+// NewMessage returns a value of `exception.message`.
+func NewMessage(value string) Message {
+	return Message{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (MessageAttr) Key() attribute.Key {
+func (Message) Key() attribute.Key {
 	return messageKey
 }
 
 // KeyValue is the `exception.message` attribute set to this value.
-func (v MessageAttr) KeyValue() attribute.KeyValue {
+func (v Message) KeyValue() attribute.KeyValue {
 	return messageKey.String(v.value)
 }
 
 // typeKey is the attribute key of `exception.type`.
 const typeKey = attribute.Key("exception.type")
 
-// TypeAttr is a value of `exception.type`.
+// Type is a value of `exception.type`.
 //
 // The type of the exception.
-type TypeAttr struct{ value string }
+type Type struct{ value string }
 
-// NewTypeAttr returns a value of `exception.type`.
-func NewTypeAttr(value string) TypeAttr {
-	return TypeAttr{value: value}
+// NewType returns a value of `exception.type`.
+func NewType(value string) Type {
+	return Type{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TypeAttr) Key() attribute.Key {
+func (Type) Key() attribute.Key {
 	return typeKey
 }
 
 // KeyValue is the `exception.type` attribute set to this value.
-func (v TypeAttr) KeyValue() attribute.KeyValue {
+func (v Type) KeyValue() attribute.KeyValue {
 	return typeKey.String(v.value)
 }

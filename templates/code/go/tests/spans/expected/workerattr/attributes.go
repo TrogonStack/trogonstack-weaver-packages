@@ -7,45 +7,45 @@ import "go.opentelemetry.io/otel/attribute"
 // hostNameKey is the attribute key of `worker.host.name`.
 const hostNameKey = attribute.Key("worker.host.name")
 
-// HostNameAttr is a value of `worker.host.name`.
+// HostName is a value of `worker.host.name`.
 //
 // Host name of the worker.
-type HostNameAttr struct{ value string }
+type HostName struct{ value string }
 
-// NewHostNameAttr returns a value of `worker.host.name`.
-func NewHostNameAttr(value string) HostNameAttr {
-	return HostNameAttr{value: value}
+// NewHostName returns a value of `worker.host.name`.
+func NewHostName(value string) HostName {
+	return HostName{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (HostNameAttr) Key() attribute.Key {
+func (HostName) Key() attribute.Key {
 	return hostNameKey
 }
 
 // KeyValue is the `worker.host.name` attribute set to this value.
-func (v HostNameAttr) KeyValue() attribute.KeyValue {
+func (v HostName) KeyValue() attribute.KeyValue {
 	return hostNameKey.String(v.value)
 }
 
 // hostPortKey is the attribute key of `worker.host.port`.
 const hostPortKey = attribute.Key("worker.host.port")
 
-// HostPortAttr is a value of `worker.host.port`.
+// HostPort is a value of `worker.host.port`.
 //
 // Port the worker listens on.
-type HostPortAttr struct{ value int }
+type HostPort struct{ value int }
 
-// NewHostPortAttr returns a value of `worker.host.port`.
-func NewHostPortAttr(value int) HostPortAttr {
-	return HostPortAttr{value: value}
+// NewHostPort returns a value of `worker.host.port`.
+func NewHostPort(value int) HostPort {
+	return HostPort{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (HostPortAttr) Key() attribute.Key {
+func (HostPort) Key() attribute.Key {
 	return hostPortKey
 }
 
 // KeyValue is the `worker.host.port` attribute set to this value.
-func (v HostPortAttr) KeyValue() attribute.KeyValue {
+func (v HostPort) KeyValue() attribute.KeyValue {
 	return hostPortKey.Int(v.value)
 }

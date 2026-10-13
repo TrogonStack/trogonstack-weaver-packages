@@ -59,7 +59,7 @@ func WithTaskErroredServerPort(v int) TaskErroredOption {
 // nothing.
 //
 // A task failed with an error.
-func EmitTaskErrored(ctx context.Context, logger myapplogger.Logger, errorType errorattr.TypeAttr, opts ...TaskErroredOption) {
+func EmitTaskErrored(ctx context.Context, logger myapplogger.Logger, errorType errorattr.Type, opts ...TaskErroredOption) {
 	var record log.Record
 	record.SetEventName("myapp.task.errored")
 	record.SetSeverity(log.SeverityInfo)

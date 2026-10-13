@@ -8,45 +8,45 @@ import "go.opentelemetry.io/otel/attribute"
 // invoiceIDKey is the attribute key of `acme.billing.invoice.id`.
 const invoiceIDKey = attribute.Key("acme.billing.invoice.id")
 
-// InvoiceIDAttr is a value of `acme.billing.invoice.id`.
+// InvoiceID is a value of `acme.billing.invoice.id`.
 //
 // Identifier of the invoice.
-type InvoiceIDAttr struct{ value string }
+type InvoiceID struct{ value string }
 
-// NewInvoiceIDAttr returns a value of `acme.billing.invoice.id`.
-func NewInvoiceIDAttr(value string) InvoiceIDAttr {
-	return InvoiceIDAttr{value: value}
+// NewInvoiceID returns a value of `acme.billing.invoice.id`.
+func NewInvoiceID(value string) InvoiceID {
+	return InvoiceID{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (InvoiceIDAttr) Key() attribute.Key {
+func (InvoiceID) Key() attribute.Key {
 	return invoiceIDKey
 }
 
 // KeyValue is the `acme.billing.invoice.id` attribute set to this value.
-func (v InvoiceIDAttr) KeyValue() attribute.KeyValue {
+func (v InvoiceID) KeyValue() attribute.KeyValue {
 	return invoiceIDKey.String(v.value)
 }
 
 // currencyKey is the attribute key of `billing.currency`.
 const currencyKey = attribute.Key("billing.currency")
 
-// CurrencyAttr is a value of `billing.currency`.
+// Currency is a value of `billing.currency`.
 //
 // ISO 4217 currency code of the amount.
-type CurrencyAttr struct{ value string }
+type Currency struct{ value string }
 
-// NewCurrencyAttr returns a value of `billing.currency`.
-func NewCurrencyAttr(value string) CurrencyAttr {
-	return CurrencyAttr{value: value}
+// NewCurrency returns a value of `billing.currency`.
+func NewCurrency(value string) Currency {
+	return Currency{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (CurrencyAttr) Key() attribute.Key {
+func (Currency) Key() attribute.Key {
 	return currencyKey
 }
 
 // KeyValue is the `billing.currency` attribute set to this value.
-func (v CurrencyAttr) KeyValue() attribute.KeyValue {
+func (v Currency) KeyValue() attribute.KeyValue {
 	return currencyKey.String(v.value)
 }

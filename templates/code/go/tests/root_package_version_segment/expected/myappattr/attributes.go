@@ -7,22 +7,22 @@ import "go.opentelemetry.io/otel/attribute"
 // taskStateKey is the attribute key of `myapp.task.state`.
 const taskStateKey = attribute.Key("myapp.task.state")
 
-// TaskStateAttr is a value of `myapp.task.state`.
+// TaskState is a value of `myapp.task.state`.
 //
 // Current state of the task.
-type TaskStateAttr struct{ value string }
+type TaskState struct{ value string }
 
-// NewTaskStateAttr returns a value of `myapp.task.state`.
-func NewTaskStateAttr(value string) TaskStateAttr {
-	return TaskStateAttr{value: value}
+// NewTaskState returns a value of `myapp.task.state`.
+func NewTaskState(value string) TaskState {
+	return TaskState{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskStateAttr) Key() attribute.Key {
+func (TaskState) Key() attribute.Key {
 	return taskStateKey
 }
 
 // KeyValue is the `myapp.task.state` attribute set to this value.
-func (v TaskStateAttr) KeyValue() attribute.KeyValue {
+func (v TaskState) KeyValue() attribute.KeyValue {
 	return taskStateKey.String(v.value)
 }
