@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.1...v0.1.2) (2026-10-13)
+
+
+### Bug Fixes
+
+* **rust:** Mirror the official semantic conventions crate layout ([#42](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/42)) ([6ae509a](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/6ae509a4d0b5e5145694d3c0ca9afd5233bdbfc1))
+
 ## [0.1.1](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.0...v0.1.1) (2026-10-05)
 
 
