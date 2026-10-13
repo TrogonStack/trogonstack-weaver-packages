@@ -117,7 +117,9 @@ for test_dir in "${PACKAGE_DIR}"/tests/*/; do
       mkdir -p "${cf_package_dir}"
       cp -R "${expected}/." "${cf_package_dir}/"
       if [[ -f "${dependency_params}" ]]; then
-        cp -R "${dependency_observed}/." "${cf_module_dir}${dependency_import_path#"${module_path}"}/"
+        cf_dependency_dir="${cf_module_dir}${dependency_import_path#"${module_path}"}"
+        mkdir -p "${cf_dependency_dir}"
+        cp -R "${dependency_observed}/." "${cf_dependency_dir}/"
       fi
       invalid_dir="${cf_module_dir}/invalidconsumer"
       mkdir -p "${invalid_dir}"
