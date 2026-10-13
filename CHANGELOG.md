@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.3...v0.1.4) (2026-10-13)
+
+
+### Bug Fixes
+
+* **go:** Drop invalid enum values instead of recording empty attributes ([#47](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/47)) ([47bbcf2](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/47bbcf2b025275a9df0f2743a541a83a947b238f))
+
 ## [0.1.3](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.2...v0.1.3) (2026-10-13)
 
 
