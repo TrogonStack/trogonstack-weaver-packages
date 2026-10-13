@@ -6,6 +6,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
 
 	"example.com/semconv/myappattr"
@@ -94,7 +95,9 @@ func WithTaskFinishedTimestamp(timestamp time.Time) TaskFinishedOption {
 type taskFinishedEventTaskAttempt struct{ v myappattr.TaskAttempt }
 
 func (o taskFinishedEventTaskAttempt) taskFinishedOption(record *log.Record) {
-	record.AddAttributes(o.v.KeyValue())
+	if kv := o.v.KeyValue(); kv.Valid() {
+		record.AddAttributes(kv)
+	}
 }
 
 // WithTaskFinishedTaskAttempt sets `myapp.task.attempt` on the event.
@@ -115,10 +118,14 @@ func EmitTaskFinished(ctx context.Context, logger semconvlogger.Logger, myappTas
 	var record log.Record
 	record.SetEventName("worker.task.finished")
 	record.SetSeverity(log.SeverityInfo)
-	record.AddAttributes(
-		myappTaskState.KeyValue(),
-		workerHostName.KeyValue(),
-	)
+	kvs := make([]attribute.KeyValue, 0, 2)
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := workerHostName.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	record.AddAttributes(kvs...)
 	for _, opt := range opts {
 		opt.taskFinishedOption(&record)
 	}

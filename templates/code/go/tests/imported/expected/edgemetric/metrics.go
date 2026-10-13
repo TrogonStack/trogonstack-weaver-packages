@@ -80,7 +80,9 @@ func (m UpstreamDuration) Record(ctx context.Context, value float64, serverAddre
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
 	kvs = append(kvs, attribute.String("server.address", serverAddress))
 	for _, opt := range opts {
-		kvs = append(kvs, opt.upstreamDurationAttr())
+		if kv := opt.upstreamDurationAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }

@@ -55,9 +55,13 @@ type Host struct{ attrs []attribute.KeyValue }
 // NewHost builds a Host from its required attributes and any given options.
 func NewHost(myappHostName myappattr.HostName, opts ...HostAttr) Host {
 	attrs := make([]attribute.KeyValue, 0, 1+len(opts))
-	attrs = append(attrs, myappHostName.KeyValue())
+	if kv := myappHostName.KeyValue(); kv.Valid() {
+		attrs = append(attrs, kv)
+	}
 	for _, opt := range opts {
-		attrs = append(attrs, opt.hostEntityAttr())
+		if kv := opt.hostEntityAttr(); kv.Valid() {
+			attrs = append(attrs, kv)
+		}
 	}
 	return Host{attrs: attrs}
 }
@@ -123,10 +127,16 @@ type HostWorker struct{ attrs []attribute.KeyValue }
 // given options.
 func NewHostWorker(myappHostName myappattr.HostName, myappHostRole myappattr.HostRole, opts ...HostWorkerAttr) HostWorker {
 	attrs := make([]attribute.KeyValue, 0, 2+len(opts))
-	attrs = append(attrs, myappHostName.KeyValue())
-	attrs = append(attrs, myappHostRole.KeyValue())
+	if kv := myappHostName.KeyValue(); kv.Valid() {
+		attrs = append(attrs, kv)
+	}
+	if kv := myappHostRole.KeyValue(); kv.Valid() {
+		attrs = append(attrs, kv)
+	}
 	for _, opt := range opts {
-		attrs = append(attrs, opt.hostWorkerEntityAttr())
+		if kv := opt.hostWorkerEntityAttr(); kv.Valid() {
+			attrs = append(attrs, kv)
+		}
 	}
 	return HostWorker{attrs: attrs}
 }
@@ -175,9 +185,13 @@ type Queue struct{ attrs []attribute.KeyValue }
 // options.
 func NewQueue(myappQueueName myappattr.QueueName, opts ...QueueAttr) Queue {
 	attrs := make([]attribute.KeyValue, 0, 1+len(opts))
-	attrs = append(attrs, myappQueueName.KeyValue())
+	if kv := myappQueueName.KeyValue(); kv.Valid() {
+		attrs = append(attrs, kv)
+	}
 	for _, opt := range opts {
-		attrs = append(attrs, opt.queueEntityAttr())
+		if kv := opt.queueEntityAttr(); kv.Valid() {
+			attrs = append(attrs, kv)
+		}
 	}
 	return Queue{attrs: attrs}
 }

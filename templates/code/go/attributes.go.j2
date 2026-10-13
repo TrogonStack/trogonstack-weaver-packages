@@ -17,7 +17,14 @@ import "go.opentelemetry.io/otel/attribute"
 const {{ key }} = attribute.Key("{{ attr.key }}")
 
 {{ [name ~ " is a value of `" ~ attr.key ~ "`.", attr.brief, attr.note, deprecated] | select | join("\n\n") | comment }}
+{%- if is_enum %}
+type {{ name }} struct {
+	value {{ attr.value_type | map_text("attribute_field_type") }}
+	ok    bool
+}
+{%- else %}
 type {{ name }} struct{ value {{ attr.value_type | map_text("attribute_field_type") }} }
+{%- endif %}
 {% if not is_enum %}
 {{ ["New" ~ name ~ " returns a value of `" ~ attr.key ~ "`.", deprecated] | select | join("\n\n") | comment }}
 func New{{ name }}(value {{ attr.value_type | map_text("attribute_type_value") }}) {{ name }} {
@@ -28,11 +35,20 @@ func New{{ name }}(value {{ attr.value_type | map_text("attribute_type_value") }
 func ({{ name }}) Key() attribute.Key {
 	return {{ key }}
 }
-
+{% if is_enum %}
+{{ ["KeyValue is the `" ~ attr.key ~ "` attribute set to this value.", "The zero " ~ name ~ " is not a valid value. KeyValue returns an invalid attribute.KeyValue for it, which the generated instruments, spans, events, and entities drop."] | select | join("\n\n") | comment }}
+func (v {{ name }}) KeyValue() attribute.KeyValue {
+	if !v.ok {
+		return attribute.KeyValue{}
+	}
+	return {{ key }}.{{ attr.value_type | map_text("attribute_type_method") }}(v.value)
+}
+{%- else %}
 {{ ["KeyValue is the `" ~ attr.key ~ "` attribute set to this value."] | join | comment }}
 func (v {{ name }}) KeyValue() attribute.KeyValue {
 	return {{ key }}.{{ attr.value_type | map_text("attribute_type_method") }}(v.value)
 }
+{%- endif %}
 {% if is_enum %}
 var (
 {% for member in attr.type.members %}
@@ -40,7 +56,7 @@ var (
 
 {% endif -%}
 {{ [base ~ n.exported(member.id) ~ " is the " ~ (member.value | print_member_value) ~ " member of `" ~ attr.key ~ "`.", member.brief, member.note, d.notice(member) or deprecated] | select | join("\n\n") | comment(format="go_indented") }}
-	{{ base }}{{ n.exported(member.id) }} = {{ name }}{value: {{ member.value | print_member_value }}}
+	{{ base }}{{ n.exported(member.id) }} = {{ name }}{value: {{ member.value | print_member_value }}, ok: true}
 {%- endfor %}
 )
 {% endif -%}

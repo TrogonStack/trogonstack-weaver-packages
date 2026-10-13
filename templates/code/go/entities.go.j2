@@ -64,11 +64,19 @@ func New{{ entity }}({% for req in def.required %}{% if not loop.first %}, {% en
 {%- if def.required or def.optional %}
 	attrs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
 {%- for req in def.required %}
+{%- if req.imported %}
 	attrs = append(attrs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
+{%- else %}
+	if kv := {{ n.unexported(req.attr_param) }}.KeyValue(); kv.Valid() {
+		attrs = append(attrs, kv)
+	}
+{%- endif %}
 {%- endfor %}
 {%- if def.optional %}
 	for _, opt := range opts {
-		attrs = append(attrs, opt.{{ private }}EntityAttr())
+		if kv := opt.{{ private }}EntityAttr(); kv.Valid() {
+			attrs = append(attrs, kv)
+		}
 	}
 {%- endif %}
 	return {{ entity }}{attrs: attrs}

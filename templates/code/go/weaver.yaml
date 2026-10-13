@@ -336,7 +336,8 @@ templates:
             then error("attribute \(.key) has no name left after its namespace, so it cannot become a Go identifier")
             else . end)
       | group_by(.namespace)
-      | map({namespace: .[0].namespace, attributes: sort_by(.key)})
+      | map({namespace: .[0].namespace, attributes: sort_by(.key),
+             has_enum: ([.[] | .type | type == "object"] | any)})
       | map(
           ([.attributes[] | . as $attr | (.short_name | gsub("[._]"; "") | ascii_downcase) as $short
             | (["P:" + $short, "p:" + $short + "key"]
@@ -782,7 +783,7 @@ templates:
             else . end
         )
       | map({namespace: .[0].namespace, prefix: .[0].prefix, events: sort_by(.id),
-             uses_attributes: ([.[] | .attributes[] | select(.imported)] | length > 0),
+             uses_attributes: ([.[] | .attributes[] | select(.imported or .requirement_level == "required")] | length > 0),
              imports: (
                .[0].namespace as $pkg
                | (([.[] | .attributes[] | select(.imported | not)

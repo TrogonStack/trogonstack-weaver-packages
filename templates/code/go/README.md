@@ -73,6 +73,15 @@ enums of those. An enum takes the Go type of its members: `string`, `int64`,
 `float64` when any member is fractional, or `bool`. Template and `any` types are
 not rendered.
 
+An enum's struct carries a hidden field marking it as one of the package's
+members, so the zero value of an enum type, such as `myappattr.TaskState{}`, is
+never a valid member even when an enum's value type makes the zero value look
+otherwise valid, as a `boolean` enum with a `false` member does. `KeyValue`, and
+every metric, span, event, and entity that records the attribute, detects the
+zero value and drops the attribute instead of emitting one with an empty value.
+The OpenTelemetry Go SDK drops invalid attributes the same way, and
+`otel.Handle` is reserved for irremediable errors, so nothing is reported.
+
 ### Root package
 
 The root package is named after the last element of `import_path`, as Go

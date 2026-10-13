@@ -60,8 +60,12 @@ func (m Attempts) Add(ctx context.Context, incr int64, authMethod authattr.Metho
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 2)
-	kvs = append(kvs, authMethod.KeyValue())
-	kvs = append(kvs, authSuccess.KeyValue())
+	if kv := authMethod.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := authSuccess.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
 
@@ -77,8 +81,12 @@ func (o AttemptsObserver) Observe(value int64, authMethod authattr.Method, authS
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 2)
-	kvs = append(kvs, authMethod.KeyValue())
-	kvs = append(kvs, authSuccess.KeyValue())
+	if kv := authMethod.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := authSuccess.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 

@@ -41,9 +41,13 @@ type Entity struct{ attrs []attribute.KeyValue }
 // options.
 func NewEntity(hostID hostattr.ID, opts ...EntityAttr) Entity {
 	attrs := make([]attribute.KeyValue, 0, 1+len(opts))
-	attrs = append(attrs, hostID.KeyValue())
+	if kv := hostID.KeyValue(); kv.Valid() {
+		attrs = append(attrs, kv)
+	}
 	for _, opt := range opts {
-		attrs = append(attrs, opt.bareEntityAttr())
+		if kv := opt.bareEntityAttr(); kv.Valid() {
+			attrs = append(attrs, kv)
+		}
 	}
 	return Entity{attrs: attrs}
 }

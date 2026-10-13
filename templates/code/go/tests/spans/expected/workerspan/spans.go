@@ -78,7 +78,9 @@ func (s TaskDispatch) End(opts ...trace.SpanEndOption) {
 func (s TaskDispatch) SetAttributes(attrs ...TaskDispatchAttr) {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
-		kvs = append(kvs, attr.taskDispatchStartAttr())
+		if kv := attr.taskDispatchStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	s.Span().SetAttributes(kvs...)
 }
@@ -104,11 +106,19 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 // each placeholder replaced by the value of the attribute it names.
 func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 3+len(opts))
-	kvs = append(kvs, myappTaskAttempt.KeyValue())
-	kvs = append(kvs, workerHostName.KeyValue())
-	kvs = append(kvs, workerHostPort.KeyValue())
+	if kv := myappTaskAttempt.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := workerHostName.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := workerHostPort.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskDispatchStartAttr())
+		if kv := opt.taskDispatchStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	name := "dispatch " + workerHostName.KeyValue().Value.Emit() + ":" + workerHostPort.KeyValue().Value.Emit()
 	ctx, span := tracer.TraceTracer().Start(

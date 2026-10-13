@@ -10,7 +10,10 @@ const levelKey = attribute.Key("auth.level")
 // Level is a value of `auth.level`.
 //
 // Assurance level of the authentication.
-type Level struct{ value int }
+type Level struct {
+	value int
+	ok    bool
+}
 
 // Key is the attribute key, for filters and views that need it.
 func (Level) Key() attribute.Key {
@@ -18,7 +21,14 @@ func (Level) Key() attribute.Key {
 }
 
 // KeyValue is the `auth.level` attribute set to this value.
+//
+// The zero Level is not a valid value. KeyValue returns an invalid
+// attribute.KeyValue for it, which the generated instruments, spans, events,
+// and entities drop.
 func (v Level) KeyValue() attribute.KeyValue {
+	if !v.ok {
+		return attribute.KeyValue{}
+	}
 	return levelKey.Int(v.value)
 }
 
@@ -26,12 +36,12 @@ var (
 	// LevelLow is the 1 member of `auth.level`.
 	//
 	// Single factor.
-	LevelLow = Level{value: 1}
+	LevelLow = Level{value: 1, ok: true}
 
 	// LevelHigh is the 2 member of `auth.level`.
 	//
 	// Multiple factors.
-	LevelHigh = Level{value: 2}
+	LevelHigh = Level{value: 2, ok: true}
 )
 
 // methodKey is the attribute key of `auth.method`.
@@ -40,7 +50,10 @@ const methodKey = attribute.Key("auth.method")
 // Method is a value of `auth.method`.
 //
 // How the user was authenticated.
-type Method struct{ value string }
+type Method struct {
+	value string
+	ok    bool
+}
 
 // Key is the attribute key, for filters and views that need it.
 func (Method) Key() attribute.Key {
@@ -48,7 +61,14 @@ func (Method) Key() attribute.Key {
 }
 
 // KeyValue is the `auth.method` attribute set to this value.
+//
+// The zero Method is not a valid value. KeyValue returns an invalid
+// attribute.KeyValue for it, which the generated instruments, spans, events,
+// and entities drop.
 func (v Method) KeyValue() attribute.KeyValue {
+	if !v.ok {
+		return attribute.KeyValue{}
+	}
 	return methodKey.String(v.value)
 }
 
@@ -56,12 +76,12 @@ var (
 	// MethodPassword is the "password" member of `auth.method`.
 	//
 	// A password was checked.
-	MethodPassword = Method{value: "password"}
+	MethodPassword = Method{value: "password", ok: true}
 
 	// MethodToken is the "token" member of `auth.method`.
 	//
 	// A bearer token was checked.
-	MethodToken = Method{value: "token"}
+	MethodToken = Method{value: "token", ok: true}
 )
 
 // userIDKey is the attribute key of `auth.user.id`.

@@ -190,7 +190,9 @@ func (m TaskActive) Add(ctx context.Context, incr int64, myappTaskState myappatt
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1)
-	kvs = append(kvs, myappTaskState.KeyValue())
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
 
@@ -207,7 +209,9 @@ func (o TaskActiveObserver) Observe(value int64, myappTaskState myappattr.TaskSt
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1)
-	kvs = append(kvs, myappTaskState.KeyValue())
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 
@@ -348,9 +352,13 @@ func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID mya
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
-	kvs = append(kvs, myappTaskID.KeyValue())
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskDurationAttr())
+		if kv := opt.taskDurationAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
@@ -426,10 +434,16 @@ func (m TaskRetryDuration) Record(ctx context.Context, value float64, myappTaskI
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
-	kvs = append(kvs, myappTaskID.KeyValue())
-	kvs = append(kvs, myappTaskState.KeyValue())
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskRetryDurationAttr())
+		if kv := opt.taskRetryDurationAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
@@ -507,7 +521,9 @@ func (m TaskStarted) Add(ctx context.Context, incr int64, opts ...TaskStartedAtt
 	}
 	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskStartedAttr())
+		if kv := opt.taskStartedAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
@@ -526,7 +542,9 @@ func (o TaskStartedObserver) Observe(value int64, opts ...TaskStartedAttr) {
 	}
 	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskStartedAttr())
+		if kv := opt.taskStartedAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }

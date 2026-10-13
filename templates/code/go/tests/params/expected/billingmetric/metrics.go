@@ -91,9 +91,13 @@ func (m InvoiceAmount) Record(ctx context.Context, value float64, billingInvoice
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
-	kvs = append(kvs, billingInvoiceID.KeyValue())
+	if kv := billingInvoiceID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.invoiceAmountAttr())
+		if kv := opt.invoiceAmountAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }

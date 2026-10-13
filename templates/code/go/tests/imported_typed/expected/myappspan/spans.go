@@ -64,7 +64,9 @@ func (s TaskDispatch) End(opts ...trace.SpanEndOption) {
 func (s TaskDispatch) SetAttributes(attrs ...TaskDispatchAttr) {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
-		kvs = append(kvs, attr.taskDispatchStartAttr())
+		if kv := attr.taskDispatchStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	s.Span().SetAttributes(kvs...)
 }
@@ -88,10 +90,16 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 // each placeholder replaced by the value of the attribute it names.
 func StartTaskDispatch(ctx context.Context, tracer myapptracer.Tracer, errorType errorattr.Type, myappTaskID myappattr.TaskID, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
-	kvs = append(kvs, errorType.KeyValue())
-	kvs = append(kvs, myappTaskID.KeyValue())
+	if kv := errorType.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskDispatchStartAttr())
+		if kv := opt.taskDispatchStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	name := "task " + myappTaskID.KeyValue().Value.Emit() + " failed with " + errorType.KeyValue().Value.Emit()
 	ctx, span := tracer.TraceTracer().Start(

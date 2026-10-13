@@ -40,6 +40,16 @@ for test_dir in "${PACKAGE_DIR}"/tests/*/; do
   mkdir -p "${package_dir}"
   cp -R "${expected}/." "${package_dir}/"
 
+  # Hand-written consumer tests exercise the generated API the way a user of
+  # it would. They mirror expected's package layout, e.g.
+  # consumer/myappattr/attributes_test.go sits beside expected/myappattr, so
+  # they land in the same package directory and are gofmt-checked and
+  # type-checked alongside the generated code.
+  consumer="${test_dir}consumer"
+  if [[ -d "${consumer}" ]]; then
+    cp -R "${consumer}/." "${package_dir}/"
+  fi
+
   # A test that maps an attribute namespace to a dependency registry, via
   # `imported_import_paths`, needs that dependency actually generated into the
   # module too, so the typed references it emits resolve to a real package.
@@ -74,9 +84,63 @@ for test_dir in "${PACKAGE_DIR}"/tests/*/; do
     cd "${module_dir}"
     go mod init "${module_path}" >/dev/null 2>&1
     go get "go.opentelemetry.io/otel@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/metric@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/trace@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/log@${OTEL_GO_LOG_VERSION}" "go.opentelemetry.io/otel/sdk@${OTEL_GO_VERSION}" 2>&1 | grep -v "^go: " || true
+    if [[ -d "${consumer}" ]]; then
+      go get "go.opentelemetry.io/otel/sdk/metric@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/sdk/log@${OTEL_GO_LOG_VERSION}" 2>&1 | grep -v "^go: " || true
+    fi
     go mod tidy
     go build ./...
     go vet ./...
   ) || { echo "  FAIL: ${test_name} does not build."; exit 1; }
   echo "  PASS: ${test_name} builds and vets."
+
+  if [[ -d "${consumer}" ]]; then
+    (
+      cd "${module_dir}"
+      go test ./...
+    ) || { echo "  FAIL: ${test_name} consumer tests failed."; exit 1; }
+    echo "  PASS: ${test_name} consumer tests pass."
+  fi
+
+  compile_fail="${test_dir}compile-fail"
+  if [[ -d "${compile_fail}" ]]; then
+    for invalid_file in "${compile_fail}"/*.go; do
+      [[ -e "${invalid_file}" ]] || continue
+      case_name="$(basename "${invalid_file}" .go)"
+      expected_error="${compile_fail}/${case_name}.expected-error.txt"
+      if [[ ! -s "${expected_error}" ]]; then
+        echo "  FAIL: ${test_name}/compile-fail/${case_name}.go has no ${case_name}.expected-error.txt, or it is empty."
+        exit 1
+      fi
+
+      cf_module_dir="${WORK_DIR}/${test_name}-compile-fail-${case_name}"
+      cf_package_dir="${cf_module_dir}${import_path#"${module_path}"}"
+      mkdir -p "${cf_package_dir}"
+      cp -R "${expected}/." "${cf_package_dir}/"
+      if [[ -f "${dependency_params}" ]]; then
+        cp -R "${dependency_observed}/." "${cf_module_dir}${dependency_import_path#"${module_path}"}/"
+      fi
+      invalid_dir="${cf_module_dir}/invalidconsumer"
+      mkdir -p "${invalid_dir}"
+      cp "${invalid_file}" "${invalid_dir}/$(basename "${invalid_file}")"
+
+      diagnostics="${WORK_DIR}/${test_name}-${case_name}.diagnostics.txt"
+      (
+        cd "${cf_module_dir}"
+        go mod init "${module_path}" >/dev/null 2>&1
+        go get "go.opentelemetry.io/otel@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/metric@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/trace@${OTEL_GO_VERSION}" "go.opentelemetry.io/otel/log@${OTEL_GO_LOG_VERSION}" "go.opentelemetry.io/otel/sdk@${OTEL_GO_VERSION}" 2>&1 | grep -v "^go: " || true
+        go mod tidy >/dev/null 2>&1 || true
+      ) || { echo "  FAIL: ${test_name}/compile-fail/${case_name}.go: could not set up its module."; exit 1; }
+
+      if ( cd "${cf_module_dir}" && go build ./... >"${diagnostics}" 2>&1 ); then
+        echo "  FAIL: ${test_name}/compile-fail/${case_name}.go built, but it must not."
+        exit 1
+      fi
+      if ! grep -Fqf "${expected_error}" "${diagnostics}"; then
+        echo "  FAIL: ${test_name}/compile-fail/${case_name}.go failed, but not with the expected error:"
+        cat "${diagnostics}"
+        exit 1
+      fi
+      echo "  PASS: ${test_name}/compile-fail/${case_name}.go fails with the expected error."
+    done
+  fi
 done

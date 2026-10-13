@@ -1,0 +1,1 @@
+cannot use "running" (untyped string constant) as myappattr.TaskState value
