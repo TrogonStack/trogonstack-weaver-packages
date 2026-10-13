@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.3](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.2...v0.1.3) (2026-10-13)
+
+
+### Features
+
+* **rust:** Accept the global meter provider without a wrapper type ([#45](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/45)) ([45342bf](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/45342bfe0fd6c23b11034bb12b4ce33bf38d79e8))
+
+
+### Bug Fixes
+
+* **go:** Align generated names with the official semantic conventions packages ([#44](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/44)) ([7942249](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/7942249efdecb1f2796b351d47462792cc4642ca))
+
 ## [0.1.2](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.1...v0.1.2) (2026-10-13)
 
 
