@@ -71,6 +71,17 @@ let tracer = semconv::tracer::Tracer::new(&provider, options);
 ```
 
 Use `InstrumentationOptions::default()` when no scope attributes are needed.
+
+The constructors accept unsized providers, so a handle can come straight from
+the global provider without a wrapper type:
+
+```rust
+let meter = semconv::meter::Meter::new(
+    &*opentelemetry::global::meter_provider(),
+    semconv::options::InstrumentationOptions::default(),
+);
+```
+
 The instrumentation identity is fixed during generation. Set
 `instrumentation_name` and `instrumentation_version` in the Weaver params to
 choose its name and version. The name defaults to `generated-semconv`; an empty

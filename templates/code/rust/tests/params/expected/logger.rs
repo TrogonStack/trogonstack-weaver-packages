@@ -4,7 +4,7 @@ use super::options::InstrumentationOptions;
 pub struct Logger<L: opentelemetry::logs::Logger = <opentelemetry::logs::NoopLoggerProvider as opentelemetry::logs::LoggerProvider>::Logger>(L);
 
 impl<L: opentelemetry::logs::Logger> Logger<L> {
-    pub fn new<P: opentelemetry::logs::LoggerProvider<Logger = L>>(provider: &P, options: InstrumentationOptions) -> Self {
+    pub fn new<P: opentelemetry::logs::LoggerProvider<Logger = L> + ?Sized>(provider: &P, options: InstrumentationOptions) -> Self {
         let logger = provider.logger_with_scope(options.scope.into());
         Self(logger)
     }

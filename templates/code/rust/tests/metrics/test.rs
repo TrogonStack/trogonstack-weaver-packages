@@ -365,3 +365,32 @@ fn instruments_expose_registry_metadata_as_constants() {
         metric::AuthAttempts::DESCRIPTION
     );
 }
+
+#[test]
+fn meter_accepts_the_global_provider_trait_object() {
+    let (provider, exporter) = provider();
+    opentelemetry::global::set_meter_provider(provider.clone());
+    let meter = meter::Meter::new(
+        &*opentelemetry::global::meter_provider(),
+        InstrumentationOptions::default(),
+    );
+    metric::MyappTaskStarted::new(&meter).add(
+        1,
+        [metric::MyappTaskStartedAttr::TaskId(
+            attribute::MyappTaskId::from("global"),
+        )],
+    );
+
+    provider.force_flush().unwrap();
+    let exported = exporter.get_finished_metrics().unwrap();
+    let scope = exported[0].scope_metrics().next().unwrap();
+    assert_eq!(scope.scope().name(), "generated-semconv");
+    assert_eq!(
+        scope.scope().schema_url(),
+        Some(generated_semconv::SCHEMA_URL)
+    );
+    assert_eq!(
+        scope.metrics().next().unwrap().name(),
+        metric::MyappTaskStarted::NAME
+    );
+}
