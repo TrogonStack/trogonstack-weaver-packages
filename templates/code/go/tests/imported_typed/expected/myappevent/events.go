@@ -63,9 +63,11 @@ func EmitTaskErrored(ctx context.Context, logger myapplogger.Logger, errorType e
 	var record log.Record
 	record.SetEventName("myapp.task.errored")
 	record.SetSeverity(log.SeverityInfo)
-	record.AddAttributes(
-		errorType.KeyValue(),
-	)
+	kvs := make([]attribute.KeyValue, 0, 1)
+	if kv := errorType.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	record.AddAttributes(kvs...)
 	for _, opt := range opts {
 		opt.taskErroredOption(&record)
 	}

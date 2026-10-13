@@ -109,11 +109,19 @@ func (m {{ name }}) {{ method }}(ctx context.Context, {{ arg }} {{ gotype }}{% f
 {%- if def.required or def.optional %}
 	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
 {%- for req in def.required %}
+{%- if req.imported %}
 	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
+{%- else %}
+	if kv := {{ n.unexported(req.attr_param) }}.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+{%- endif %}
 {%- endfor %}
 {%- if def.optional %}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.{{ private }}Attr())
+		if kv := opt.{{ private }}Attr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 {%- endif %}
 	m.inst.{{ method }}(ctx, {{ arg }}, metric.WithAttributes(kvs...))
@@ -139,11 +147,19 @@ func (o {{ observer }}) Observe(value {{ gotype }}{% for req in def.required %},
 {%- if def.required or def.optional %}
 	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
 {%- for req in def.required %}
+{%- if req.imported %}
 	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
+{%- else %}
+	if kv := {{ n.unexported(req.attr_param) }}.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+{%- endif %}
 {%- endfor %}
 {%- if def.optional %}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.{{ private }}Attr())
+		if kv := opt.{{ private }}Attr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 {%- endif %}
 	o.o.Observe(value, metric.WithAttributes(kvs...))

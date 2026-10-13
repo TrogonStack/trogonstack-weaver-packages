@@ -62,9 +62,9 @@ func EmitUpstreamFailed(ctx context.Context, logger semconvlogger.Logger, errorT
 	var record log.Record
 	record.SetEventName("edge.upstream.failed")
 	record.SetSeverity(log.SeverityInfo)
-	record.AddAttributes(
-		attribute.String("error.type", errorType),
-	)
+	kvs := make([]attribute.KeyValue, 0, 1)
+	kvs = append(kvs, attribute.String("error.type", errorType))
+	record.AddAttributes(kvs...)
 	for _, opt := range opts {
 		opt.upstreamFailedOption(&record)
 	}

@@ -77,7 +77,9 @@ func (s UpstreamRequest) End(opts ...trace.SpanEndOption) {
 func (s UpstreamRequest) SetAttributes(attrs ...UpstreamRequestAttr) {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
-		kvs = append(kvs, attr.upstreamRequestStartAttr())
+		if kv := attr.upstreamRequestStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	s.Span().SetAttributes(kvs...)
 }
@@ -104,7 +106,9 @@ func StartUpstreamRequest(ctx context.Context, tracer semconvtracer.Tracer, serv
 	kvs = append(kvs, attribute.String("server.address", serverAddress))
 	kvs = append(kvs, attribute.Int("server.port", serverPort))
 	for _, opt := range opts {
-		kvs = append(kvs, opt.upstreamRequestStartAttr())
+		if kv := opt.upstreamRequestStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	name := attribute.String("server.address", serverAddress).Value.Emit() + ":" + attribute.Int("server.port", serverPort).Value.Emit()
 	ctx, span := tracer.TraceTracer().Start(

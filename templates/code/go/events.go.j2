@@ -70,7 +70,13 @@ func With{{ name }}Timestamp(timestamp time.Time) {{ option }} {
 type {{ private }}Event{{ optname }} struct{ v {{ attr_type(opt) }} }
 
 func (o {{ private }}Event{{ optname }}) {{ private }}Option(record *log.Record) {
+{%- if opt.imported %}
 	record.AddAttributes({{ attr_kv(opt, "o.v") }})
+{%- else %}
+	if kv := o.v.KeyValue(); kv.Valid() {
+		record.AddAttributes(kv)
+	}
+{%- endif %}
 }
 
 {{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on the event.", opt.requirement_doc] | select | join("\n\n") | comment }}
@@ -84,11 +90,17 @@ func {{ emit }}(ctx context.Context, logger {{ n.root() }}logger.Logger{% for re
 	record.SetEventName({{ def.name | tojson }})
 	record.SetSeverity(log.SeverityInfo)
 {%- if def.required %}
-	record.AddAttributes(
+	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }})
 {%- for req in def.required %}
-		{{ attr_kv(req, n.unexported(req.attr_param)) }},
+{%- if req.imported %}
+	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
+{%- else %}
+	if kv := {{ n.unexported(req.attr_param) }}.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+{%- endif %}
 {%- endfor %}
-	)
+	record.AddAttributes(kvs...)
 {%- endif %}
 	for _, opt := range opts {
 		opt.{{ private }}Option(&record)

@@ -10,7 +10,10 @@ const methodKey = attribute.Key("auth.method")
 // Method is a value of `auth.method`.
 //
 // How the user was authenticated.
-type Method struct{ value string }
+type Method struct {
+	value string
+	ok    bool
+}
 
 // Key is the attribute key, for filters and views that need it.
 func (Method) Key() attribute.Key {
@@ -18,7 +21,14 @@ func (Method) Key() attribute.Key {
 }
 
 // KeyValue is the `auth.method` attribute set to this value.
+//
+// The zero Method is not a valid value. KeyValue returns an invalid
+// attribute.KeyValue for it, which the generated instruments, spans, events,
+// and entities drop.
 func (v Method) KeyValue() attribute.KeyValue {
+	if !v.ok {
+		return attribute.KeyValue{}
+	}
 	return methodKey.String(v.value)
 }
 
@@ -26,12 +36,12 @@ var (
 	// MethodPassword is the "password" member of `auth.method`.
 	//
 	// A password was checked.
-	MethodPassword = Method{value: "password"}
+	MethodPassword = Method{value: "password", ok: true}
 
 	// MethodToken is the "token" member of `auth.method`.
 	//
 	// A bearer token was checked.
-	MethodToken = Method{value: "token"}
+	MethodToken = Method{value: "token", ok: true}
 )
 
 // successKey is the attribute key of `auth.success`.

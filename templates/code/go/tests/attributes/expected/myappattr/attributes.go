@@ -112,7 +112,10 @@ const taskLaneKey = attribute.Key("myapp.task.lane")
 // Lane the task was scheduled in.
 //
 // Deprecated: Lanes were replaced by priorities.
-type TaskLane struct{ value string }
+type TaskLane struct {
+	value string
+	ok    bool
+}
 
 // Key is the attribute key, for filters and views that need it.
 func (TaskLane) Key() attribute.Key {
@@ -120,7 +123,14 @@ func (TaskLane) Key() attribute.Key {
 }
 
 // KeyValue is the `myapp.task.lane` attribute set to this value.
+//
+// The zero TaskLane is not a valid value. KeyValue returns an invalid
+// attribute.KeyValue for it, which the generated instruments, spans, events,
+// and entities drop.
 func (v TaskLane) KeyValue() attribute.KeyValue {
+	if !v.ok {
+		return attribute.KeyValue{}
+	}
 	return taskLaneKey.String(v.value)
 }
 
@@ -130,14 +140,14 @@ var (
 	// The fast lane.
 	//
 	// Deprecated: Lanes were replaced by priorities.
-	TaskLaneFast = TaskLane{value: "fast"}
+	TaskLaneFast = TaskLane{value: "fast", ok: true}
 
 	// TaskLaneSlow is the "slow" member of `myapp.task.lane`.
 	//
 	// The slow lane.
 	//
 	// Deprecated: Every task runs in the fast lane.
-	TaskLaneSlow = TaskLane{value: "slow"}
+	TaskLaneSlow = TaskLane{value: "slow", ok: true}
 )
 
 // taskOwnerKey is the attribute key of `myapp.task.owner`.
@@ -175,7 +185,10 @@ const taskPreemptibleKey = attribute.Key("myapp.task.preemptible")
 // TaskPreemptible is a value of `myapp.task.preemptible`.
 //
 // Whether the scheduler may preempt the task.
-type TaskPreemptible struct{ value bool }
+type TaskPreemptible struct {
+	value bool
+	ok    bool
+}
 
 // Key is the attribute key, for filters and views that need it.
 func (TaskPreemptible) Key() attribute.Key {
@@ -183,7 +196,14 @@ func (TaskPreemptible) Key() attribute.Key {
 }
 
 // KeyValue is the `myapp.task.preemptible` attribute set to this value.
+//
+// The zero TaskPreemptible is not a valid value. KeyValue returns an invalid
+// attribute.KeyValue for it, which the generated instruments, spans, events,
+// and entities drop.
 func (v TaskPreemptible) KeyValue() attribute.KeyValue {
+	if !v.ok {
+		return attribute.KeyValue{}
+	}
 	return taskPreemptibleKey.Bool(v.value)
 }
 
@@ -191,13 +211,13 @@ var (
 	// TaskPreemptibleAllowed is the true member of `myapp.task.preemptible`.
 	//
 	// The scheduler may preempt the task.
-	TaskPreemptibleAllowed = TaskPreemptible{value: true}
+	TaskPreemptibleAllowed = TaskPreemptible{value: true, ok: true}
 
 	// TaskPreemptibleForbidden is the false member of
 	// `myapp.task.preemptible`.
 	//
 	// The task runs to completion.
-	TaskPreemptibleForbidden = TaskPreemptible{value: false}
+	TaskPreemptibleForbidden = TaskPreemptible{value: false, ok: true}
 )
 
 // taskProgressKey is the attribute key of `myapp.task.progress`.
@@ -252,7 +272,10 @@ const taskSampleRateKey = attribute.Key("myapp.task.sample_rate")
 // TaskSampleRate is a value of `myapp.task.sample_rate`.
 //
 // Fraction of tasks whose telemetry is sampled.
-type TaskSampleRate struct{ value float64 }
+type TaskSampleRate struct {
+	value float64
+	ok    bool
+}
 
 // Key is the attribute key, for filters and views that need it.
 func (TaskSampleRate) Key() attribute.Key {
@@ -260,7 +283,14 @@ func (TaskSampleRate) Key() attribute.Key {
 }
 
 // KeyValue is the `myapp.task.sample_rate` attribute set to this value.
+//
+// The zero TaskSampleRate is not a valid value. KeyValue returns an invalid
+// attribute.KeyValue for it, which the generated instruments, spans, events,
+// and entities drop.
 func (v TaskSampleRate) KeyValue() attribute.KeyValue {
+	if !v.ok {
+		return attribute.KeyValue{}
+	}
 	return taskSampleRateKey.Float64(v.value)
 }
 
@@ -268,12 +298,12 @@ var (
 	// TaskSampleRateTenth is the 0.1 member of `myapp.task.sample_rate`.
 	//
 	// One task in ten is sampled.
-	TaskSampleRateTenth = TaskSampleRate{value: 0.1}
+	TaskSampleRateTenth = TaskSampleRate{value: 0.1, ok: true}
 
 	// TaskSampleRateAll is the 1 member of `myapp.task.sample_rate`.
 	//
 	// Every task is sampled.
-	TaskSampleRateAll = TaskSampleRate{value: 1}
+	TaskSampleRateAll = TaskSampleRate{value: 1, ok: true}
 )
 
 // taskShardIdsKey is the attribute key of `myapp.task.shard_ids`.
@@ -305,7 +335,10 @@ const taskStateKey = attribute.Key("myapp.task.state")
 // TaskState is a value of `myapp.task.state`.
 //
 // Current state of the task.
-type TaskState struct{ value string }
+type TaskState struct {
+	value string
+	ok    bool
+}
 
 // Key is the attribute key, for filters and views that need it.
 func (TaskState) Key() attribute.Key {
@@ -313,7 +346,14 @@ func (TaskState) Key() attribute.Key {
 }
 
 // KeyValue is the `myapp.task.state` attribute set to this value.
+//
+// The zero TaskState is not a valid value. KeyValue returns an invalid
+// attribute.KeyValue for it, which the generated instruments, spans, events,
+// and entities drop.
 func (v TaskState) KeyValue() attribute.KeyValue {
+	if !v.ok {
+		return attribute.KeyValue{}
+	}
 	return taskStateKey.String(v.value)
 }
 
@@ -321,21 +361,21 @@ var (
 	// TaskStateQueued is the "queued" member of `myapp.task.state`.
 	//
 	// The task is waiting to run.
-	TaskStateQueued = TaskState{value: "queued"}
+	TaskStateQueued = TaskState{value: "queued", ok: true}
 
 	// TaskStateRunning is the "running" member of `myapp.task.state`.
 	//
 	// The task is running.
 	//
 	// A task stays running until it finishes or is cancelled.
-	TaskStateRunning = TaskState{value: "running"}
+	TaskStateRunning = TaskState{value: "running", ok: true}
 
 	// TaskStatePaused is the "paused" member of `myapp.task.state`.
 	//
 	// The task was paused.
 	//
 	// Deprecated: Paused tasks are reported as queued.
-	TaskStatePaused = TaskState{value: "paused"}
+	TaskStatePaused = TaskState{value: "paused", ok: true}
 )
 
 // taskTagsKey is the attribute key of `myapp.task.tags`.

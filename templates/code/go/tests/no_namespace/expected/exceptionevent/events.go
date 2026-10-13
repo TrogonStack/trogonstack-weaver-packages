@@ -6,6 +6,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
 
 	"example.com/semconv/exceptionattr"
@@ -44,7 +45,9 @@ func WithTimestamp(timestamp time.Time) Option {
 type bareEventMessage struct{ v exceptionattr.Message }
 
 func (o bareEventMessage) bareOption(record *log.Record) {
-	record.AddAttributes(o.v.KeyValue())
+	if kv := o.v.KeyValue(); kv.Valid() {
+		record.AddAttributes(kv)
+	}
 }
 
 // WithMessage sets `exception.message` on the event.
@@ -60,9 +63,11 @@ func Emit(ctx context.Context, logger semconvlogger.Logger, exceptionType except
 	var record log.Record
 	record.SetEventName("exception")
 	record.SetSeverity(log.SeverityInfo)
-	record.AddAttributes(
-		exceptionType.KeyValue(),
-	)
+	kvs := make([]attribute.KeyValue, 0, 1)
+	if kv := exceptionType.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	record.AddAttributes(kvs...)
 	for _, opt := range opts {
 		opt.bareOption(&record)
 	}

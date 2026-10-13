@@ -73,7 +73,9 @@ func (s Span) End(opts ...trace.SpanEndOption) {
 func (s Span) SetAttributes(attrs ...Attr) {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
-		kvs = append(kvs, attr.bareStartAttr())
+		if kv := attr.bareStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	s.Span().SetAttributes(kvs...)
 }
@@ -96,9 +98,13 @@ func Start(ctx context.Context, tracer semconvtracer.Tracer, name Name, heartbea
 		name = Name{value: "heartbeat"}
 	}
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
-	kvs = append(kvs, heartbeatSequence.KeyValue())
+	if kv := heartbeatSequence.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.bareStartAttr())
+		if kv := opt.bareStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	ctx, span := tracer.TraceTracer().Start(
 		ctx,

@@ -85,7 +85,10 @@ const hostTypeKey = attribute.Key("myapp.host.type")
 // HostType is a value of `myapp.host.type`.
 //
 // Type of the host.
-type HostType struct{ value string }
+type HostType struct {
+	value string
+	ok    bool
+}
 
 // Key is the attribute key, for filters and views that need it.
 func (HostType) Key() attribute.Key {
@@ -93,7 +96,14 @@ func (HostType) Key() attribute.Key {
 }
 
 // KeyValue is the `myapp.host.type` attribute set to this value.
+//
+// The zero HostType is not a valid value. KeyValue returns an invalid
+// attribute.KeyValue for it, which the generated instruments, spans, events,
+// and entities drop.
 func (v HostType) KeyValue() attribute.KeyValue {
+	if !v.ok {
+		return attribute.KeyValue{}
+	}
 	return hostTypeKey.String(v.value)
 }
 
@@ -101,12 +111,12 @@ var (
 	// HostTypePhysical is the "physical" member of `myapp.host.type`.
 	//
 	// A physical host.
-	HostTypePhysical = HostType{value: "physical"}
+	HostTypePhysical = HostType{value: "physical", ok: true}
 
 	// HostTypeVirtual is the "virtual" member of `myapp.host.type`.
 	//
 	// A virtual host.
-	HostTypeVirtual = HostType{value: "virtual"}
+	HostTypeVirtual = HostType{value: "virtual", ok: true}
 )
 
 // queueNameKey is the attribute key of `myapp.queue.name`.

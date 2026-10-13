@@ -102,7 +102,9 @@ func (s {{ span }}) End(opts ...trace.SpanEndOption) {
 func (s {{ span }}) SetAttributes(attrs ...{{ name }}Attr) {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
-		kvs = append(kvs, attr.{{ private }}StartAttr())
+		if kv := attr.{{ private }}StartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	s.Span().SetAttributes(kvs...)
 }
@@ -128,11 +130,19 @@ func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if no
 {%- if def.required or def.optional %}
 	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
 {%- for req in def.required %}
+{%- if req.imported %}
 	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
+{%- else %}
+	if kv := {{ n.unexported(req.attr_param) }}.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+{%- endif %}
 {%- endfor %}
 {%- if def.optional %}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.{{ private }}StartAttr())
+		if kv := opt.{{ private }}StartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 {%- endif %}
 {%- endif %}

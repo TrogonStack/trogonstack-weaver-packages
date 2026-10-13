@@ -79,7 +79,10 @@ const taskStateKey = attribute.Key("myapp.task.state")
 // TaskState is a value of `myapp.task.state`.
 //
 // Current state of the task.
-type TaskState struct{ value string }
+type TaskState struct {
+	value string
+	ok    bool
+}
 
 // Key is the attribute key, for filters and views that need it.
 func (TaskState) Key() attribute.Key {
@@ -87,7 +90,14 @@ func (TaskState) Key() attribute.Key {
 }
 
 // KeyValue is the `myapp.task.state` attribute set to this value.
+//
+// The zero TaskState is not a valid value. KeyValue returns an invalid
+// attribute.KeyValue for it, which the generated instruments, spans, events,
+// and entities drop.
 func (v TaskState) KeyValue() attribute.KeyValue {
+	if !v.ok {
+		return attribute.KeyValue{}
+	}
 	return taskStateKey.String(v.value)
 }
 
@@ -95,10 +105,10 @@ var (
 	// TaskStateQueued is the "queued" member of `myapp.task.state`.
 	//
 	// The task is waiting to run.
-	TaskStateQueued = TaskState{value: "queued"}
+	TaskStateQueued = TaskState{value: "queued", ok: true}
 
 	// TaskStateDone is the "done" member of `myapp.task.state`.
 	//
 	// The task finished.
-	TaskStateDone = TaskState{value: "done"}
+	TaskStateDone = TaskState{value: "done", ok: true}
 )

@@ -79,9 +79,13 @@ func (m TaskFailed) Add(ctx context.Context, incr int64, errorType string, myapp
 	}
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	kvs = append(kvs, attribute.String("error.type", errorType))
-	kvs = append(kvs, myappTaskID.KeyValue())
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskFailedAttr())
+		if kv := opt.taskFailedAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
@@ -100,9 +104,13 @@ func (o TaskFailedObserver) Observe(value int64, errorType string, myappTaskID m
 	}
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	kvs = append(kvs, attribute.String("error.type", errorType))
-	kvs = append(kvs, myappTaskID.KeyValue())
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskFailedAttr())
+		if kv := opt.taskFailedAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }

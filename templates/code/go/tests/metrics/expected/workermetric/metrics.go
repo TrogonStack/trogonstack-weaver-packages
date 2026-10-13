@@ -97,9 +97,13 @@ func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID mya
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
-	kvs = append(kvs, myappTaskID.KeyValue())
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	for _, opt := range opts {
-		kvs = append(kvs, opt.taskDurationAttr())
+		if kv := opt.taskDurationAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }

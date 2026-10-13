@@ -60,7 +60,9 @@ func (m TaskStarted) Add(ctx context.Context, incr int64, myappTaskState myappat
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1)
-	kvs = append(kvs, myappTaskState.KeyValue())
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
 
@@ -77,7 +79,9 @@ func (o TaskStartedObserver) Observe(value int64, myappTaskState myappattr.TaskS
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1)
-	kvs = append(kvs, myappTaskState.KeyValue())
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 

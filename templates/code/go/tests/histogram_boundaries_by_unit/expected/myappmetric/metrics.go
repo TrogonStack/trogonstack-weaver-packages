@@ -61,7 +61,9 @@ func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID mya
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1)
-	kvs = append(kvs, myappTaskID.KeyValue())
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
 
@@ -113,7 +115,9 @@ func (m TaskLatency) Record(ctx context.Context, value float64, myappTaskID myap
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1)
-	kvs = append(kvs, myappTaskID.KeyValue())
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
 
@@ -167,7 +171,9 @@ func (m TaskRetryDuration) Record(ctx context.Context, value float64, myappTaskI
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1)
-	kvs = append(kvs, myappTaskID.KeyValue())
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
 
@@ -218,6 +224,8 @@ func (m TaskSize) Record(ctx context.Context, value float64, myappTaskID myappat
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1)
-	kvs = append(kvs, myappTaskID.KeyValue())
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }
