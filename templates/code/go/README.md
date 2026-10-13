@@ -332,7 +332,7 @@ has nothing left after its namespace. Rather than failing, it renders
 unprefixed, in its own `<name>span` package:
 
 ```go
-ctx, span := heartbeatspan.Start(ctx, tracer, heartbeatattr.NewSequence(1))
+ctx, span := heartbeatspan.Start(ctx, tracer, heartbeatspan.Name{}, heartbeatattr.NewSequence(1))
 defer span.End()
 ```
 
