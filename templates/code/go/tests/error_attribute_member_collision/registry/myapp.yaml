@@ -1,0 +1,17 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.state
+    type:
+      members:
+        - id: done
+          value: done
+          stability: stable
+          brief: The task finished.
+    stability: stable
+    brief: State of the task.
+    examples: ["done"]
+  - key: myapp.task.state.done
+    type: boolean
+    stability: stable
+    brief: Whether the task finished.
+    examples: [true]

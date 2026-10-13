@@ -17,14 +17,14 @@ type EntityAttr interface {
 	bareEntityAttr() attribute.KeyValue
 }
 
-type bareEntityName struct{ v hostattr.NameAttr }
+type bareEntityName struct{ v hostattr.Name }
 
 func (o bareEntityName) bareEntityAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
 // WithEntityName sets `host.name` on the entity.
-func WithEntityName(v hostattr.NameAttr) EntityAttr {
+func WithEntityName(v hostattr.Name) EntityAttr {
 	return bareEntityName{v: v}
 }
 
@@ -39,7 +39,7 @@ type Entity struct{ attrs []attribute.KeyValue }
 
 // NewEntity builds a Entity from its required attributes and any given
 // options.
-func NewEntity(hostID hostattr.IDAttr, opts ...EntityAttr) Entity {
+func NewEntity(hostID hostattr.ID, opts ...EntityAttr) Entity {
 	attrs := make([]attribute.KeyValue, 0, 1+len(opts))
 	attrs = append(attrs, hostID.KeyValue())
 	for _, opt := range opts {

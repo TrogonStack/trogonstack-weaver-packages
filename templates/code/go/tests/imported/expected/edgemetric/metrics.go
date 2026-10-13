@@ -12,54 +12,75 @@ import (
 	"example.com/semconv/semconvmeter"
 )
 
-// UpstreamDurationHistogramAttr is an attribute `edge.upstream.duration`
-// accepts in addition to the ones UpstreamDurationHistogram.Record requires.
-type UpstreamDurationHistogramAttr interface {
-	upstreamDurationHistogramAttr() attribute.KeyValue
+// UpstreamDurationAttr is an attribute `edge.upstream.duration` accepts in
+// addition to the ones UpstreamDuration.Record requires.
+type UpstreamDurationAttr interface {
+	upstreamDurationAttr() attribute.KeyValue
 }
 
-type upstreamDurationHistogramServerPort struct{ v int }
+type upstreamDurationServerPort struct{ v int }
 
-func (o upstreamDurationHistogramServerPort) upstreamDurationHistogramAttr() attribute.KeyValue {
+func (o upstreamDurationServerPort) upstreamDurationAttr() attribute.KeyValue {
 	return attribute.Int("server.port", o.v)
 }
 
-// WithUpstreamDurationHistogramServerPort attaches `server.port` to
-// UpstreamDurationHistogram.
-func WithUpstreamDurationHistogramServerPort(v int) UpstreamDurationHistogramAttr {
-	return upstreamDurationHistogramServerPort{v: v}
+// WithUpstreamDurationServerPort attaches `server.port` to UpstreamDuration.
+func WithUpstreamDurationServerPort(v int) UpstreamDurationAttr {
+	return upstreamDurationServerPort{v: v}
 }
 
-// UpstreamDurationHistogram is `edge.upstream.duration`.
+// UpstreamDuration is `edge.upstream.duration`.
 //
 // Time spent waiting on an upstream server.
-type UpstreamDurationHistogram struct{ inst metric.Float64Histogram }
+type UpstreamDuration struct{ inst metric.Float64Histogram }
 
-// NewUpstreamDurationHistogram creates the `edge.upstream.duration`
-// instrument from meter.
-func NewUpstreamDurationHistogram(meter semconvmeter.Meter) (UpstreamDurationHistogram, error) {
+// NewUpstreamDuration creates the `edge.upstream.duration` instrument from
+// meter.
+func NewUpstreamDuration(meter semconvmeter.Meter) (UpstreamDuration, error) {
+	var m UpstreamDuration
 	inst, err := meter.MetricMeter().Float64Histogram(
-		"edge.upstream.duration",
-		metric.WithDescription("Time spent waiting on an upstream server."),
-		metric.WithUnit("s"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.WithExplicitBucketBoundaries(0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10),
 	)
 	if err != nil {
-		return UpstreamDurationHistogram{}, fmt.Errorf("create the %s instrument: %w", "edge.upstream.duration", err)
+		return UpstreamDuration{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return UpstreamDurationHistogram{inst: inst}, nil
+	return UpstreamDuration{inst: inst}, nil
+}
+
+// Name returns the name `edge.upstream.duration` records under.
+func (UpstreamDuration) Name() string {
+	return "edge.upstream.duration"
+}
+
+// Unit returns the unit of `edge.upstream.duration`.
+func (UpstreamDuration) Unit() string {
+	return "s"
+}
+
+// Description returns the description of `edge.upstream.duration`.
+func (UpstreamDuration) Description() string {
+	return "Time spent waiting on an upstream server."
+}
+
+// Inst returns the underlying metric.Float64Histogram, or nil for the zero
+// UpstreamDuration.
+func (m UpstreamDuration) Inst() metric.Float64Histogram {
+	return m.inst
 }
 
 // Record records one `edge.upstream.duration` measurement. The zero
-// UpstreamDurationHistogram records nothing.
-func (m UpstreamDurationHistogram) Record(ctx context.Context, value float64, serverAddress string, opts ...UpstreamDurationHistogramAttr) {
+// UpstreamDuration records nothing.
+func (m UpstreamDuration) Record(ctx context.Context, value float64, serverAddress string, opts ...UpstreamDurationAttr) {
 	if m.inst == nil {
 		return
 	}
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
 	kvs = append(kvs, attribute.String("server.address", serverAddress))
 	for _, opt := range opts {
-		kvs = append(kvs, opt.upstreamDurationHistogramAttr())
+		kvs = append(kvs, opt.upstreamDurationAttr())
 	}
 	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
 }

@@ -13,28 +13,49 @@ import (
 	"example.com/acme/acmeconv/v1.2.0/myappattr"
 )
 
-// TaskStartedCounter is `myapp.task.started`.
+// TaskStarted is `myapp.task.started`.
 //
 // Number of tasks started.
-type TaskStartedCounter struct{ inst metric.Int64Counter }
+type TaskStarted struct{ inst metric.Int64Counter }
 
-// NewTaskStartedCounter creates the `myapp.task.started` instrument from
-// meter.
-func NewTaskStartedCounter(meter acmeconvmeter.Meter) (TaskStartedCounter, error) {
+// NewTaskStarted creates the `myapp.task.started` instrument from meter.
+func NewTaskStarted(meter acmeconvmeter.Meter) (TaskStarted, error) {
+	var m TaskStarted
 	inst, err := meter.MetricMeter().Int64Counter(
-		"myapp.task.started",
-		metric.WithDescription("Number of tasks started."),
-		metric.WithUnit("{task}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 	)
 	if err != nil {
-		return TaskStartedCounter{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.started", err)
+		return TaskStarted{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskStartedCounter{inst: inst}, nil
+	return TaskStarted{inst: inst}, nil
 }
 
-// Add records one `myapp.task.started` measurement. The zero
-// TaskStartedCounter records nothing.
-func (m TaskStartedCounter) Add(ctx context.Context, incr int64, myappTaskState myappattr.TaskStateAttr) {
+// Name returns the name `myapp.task.started` records under.
+func (TaskStarted) Name() string {
+	return "myapp.task.started"
+}
+
+// Unit returns the unit of `myapp.task.started`.
+func (TaskStarted) Unit() string {
+	return "{task}"
+}
+
+// Description returns the description of `myapp.task.started`.
+func (TaskStarted) Description() string {
+	return "Number of tasks started."
+}
+
+// Inst returns the underlying metric.Int64Counter, or nil for the zero
+// TaskStarted.
+func (m TaskStarted) Inst() metric.Int64Counter {
+	return m.inst
+}
+
+// Add records one `myapp.task.started` measurement. The zero TaskStarted
+// records nothing.
+func (m TaskStarted) Add(ctx context.Context, incr int64, myappTaskState myappattr.TaskState) {
 	if m.inst == nil {
 		return
 	}
@@ -43,15 +64,15 @@ func (m TaskStartedCounter) Add(ctx context.Context, incr int64, myappTaskState 
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
 
-// TaskStartedCounterObserver records `myapp.task.started` observations from
-// the callback of a TaskStartedObservableCounter. The zero
-// TaskStartedCounterObserver records nothing.
-type TaskStartedCounterObserver struct {
+// TaskStartedObserver records `myapp.task.started` observations from the
+// callback of a TaskStartedObservable. The zero TaskStartedObserver records
+// nothing.
+type TaskStartedObserver struct {
 	o metric.Int64Observer
 }
 
 // Observe records one `myapp.task.started` observation.
-func (o TaskStartedCounterObserver) Observe(value int64, myappTaskState myappattr.TaskStateAttr) {
+func (o TaskStartedObserver) Observe(value int64, myappTaskState myappattr.TaskState) {
 	if o.o == nil {
 		return
 	}
@@ -60,36 +81,57 @@ func (o TaskStartedCounterObserver) Observe(value int64, myappTaskState myappatt
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 
-// TaskStartedCounterCallback observes `myapp.task.started` through o on
-// every collection of a TaskStartedObservableCounter.
+// TaskStartedCallback observes `myapp.task.started` through o on every
+// collection of a TaskStartedObservable.
 //
 // An error it returns is returned by the collection that ran it, and the
 // observations made before it returned are still recorded.
-type TaskStartedCounterCallback func(ctx context.Context, o TaskStartedCounterObserver) error
+type TaskStartedCallback func(ctx context.Context, o TaskStartedObserver) error
 
-// TaskStartedObservableCounter is the asynchronous form of
-// TaskStartedCounter, observed through the callback it was created with.
-type TaskStartedObservableCounter struct {
+// TaskStartedObservable is the asynchronous form of TaskStarted, observed
+// through the callback it was created with.
+type TaskStartedObservable struct {
 	inst metric.Int64ObservableCounter
 }
 
-// NewTaskStartedObservableCounter creates the `myapp.task.started`
-// instrument from meter and registers callback to observe it on every
-// collection.
-func NewTaskStartedObservableCounter(meter acmeconvmeter.Meter, callback TaskStartedCounterCallback) (TaskStartedObservableCounter, error) {
+// NewTaskStartedObservable creates the `myapp.task.started` instrument from
+// meter and registers callback to observe it on every collection.
+func NewTaskStartedObservable(meter acmeconvmeter.Meter, callback TaskStartedCallback) (TaskStartedObservable, error) {
+	var m TaskStartedObservable
 	if callback == nil {
-		return TaskStartedObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "myapp.task.started")
+		return TaskStartedObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
 	inst, err := meter.MetricMeter().Int64ObservableCounter(
-		"myapp.task.started",
-		metric.WithDescription("Number of tasks started."),
-		metric.WithUnit("{task}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			return callback(ctx, TaskStartedCounterObserver{o: o})
+			return callback(ctx, TaskStartedObserver{o: o})
 		}),
 	)
 	if err != nil {
-		return TaskStartedObservableCounter{}, fmt.Errorf("create the %s instrument: %w", "myapp.task.started", err)
+		return TaskStartedObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return TaskStartedObservableCounter{inst: inst}, nil
+	return TaskStartedObservable{inst: inst}, nil
+}
+
+// Name returns the name `myapp.task.started` records under.
+func (TaskStartedObservable) Name() string {
+	return TaskStarted{}.Name()
+}
+
+// Unit returns the unit of `myapp.task.started`.
+func (TaskStartedObservable) Unit() string {
+	return TaskStarted{}.Unit()
+}
+
+// Description returns the description of `myapp.task.started`.
+func (TaskStartedObservable) Description() string {
+	return TaskStarted{}.Description()
+}
+
+// Inst returns the underlying metric.Int64ObservableCounter, or nil for the
+// zero TaskStartedObservable.
+func (m TaskStartedObservable) Inst() metric.Int64ObservableCounter {
+	return m.inst
 }

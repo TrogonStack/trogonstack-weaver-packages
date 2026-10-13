@@ -13,27 +13,49 @@ import (
 	"example.com/semconv/semconvmeter"
 )
 
-// AttemptsCounter is `auth.attempts`.
+// Attempts is `auth.attempts`.
 //
 // Number of authentication attempts.
-type AttemptsCounter struct{ inst metric.Int64Counter }
+type Attempts struct{ inst metric.Int64Counter }
 
-// NewAttemptsCounter creates the `auth.attempts` instrument from meter.
-func NewAttemptsCounter(meter semconvmeter.Meter) (AttemptsCounter, error) {
+// NewAttempts creates the `auth.attempts` instrument from meter.
+func NewAttempts(meter semconvmeter.Meter) (Attempts, error) {
+	var m Attempts
 	inst, err := meter.MetricMeter().Int64Counter(
-		"auth.attempts",
-		metric.WithDescription("Number of authentication attempts."),
-		metric.WithUnit("{attempt}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 	)
 	if err != nil {
-		return AttemptsCounter{}, fmt.Errorf("create the %s instrument: %w", "auth.attempts", err)
+		return Attempts{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return AttemptsCounter{inst: inst}, nil
+	return Attempts{inst: inst}, nil
 }
 
-// Add records one `auth.attempts` measurement. The zero AttemptsCounter
-// records nothing.
-func (m AttemptsCounter) Add(ctx context.Context, incr int64, authMethod authattr.MethodAttr, authSuccess authattr.SuccessAttr) {
+// Name returns the name `auth.attempts` records under.
+func (Attempts) Name() string {
+	return "auth.attempts"
+}
+
+// Unit returns the unit of `auth.attempts`.
+func (Attempts) Unit() string {
+	return "{attempt}"
+}
+
+// Description returns the description of `auth.attempts`.
+func (Attempts) Description() string {
+	return "Number of authentication attempts."
+}
+
+// Inst returns the underlying metric.Int64Counter, or nil for the zero
+// Attempts.
+func (m Attempts) Inst() metric.Int64Counter {
+	return m.inst
+}
+
+// Add records one `auth.attempts` measurement. The zero Attempts records
+// nothing.
+func (m Attempts) Add(ctx context.Context, incr int64, authMethod authattr.Method, authSuccess authattr.Success) {
 	if m.inst == nil {
 		return
 	}
@@ -43,15 +65,14 @@ func (m AttemptsCounter) Add(ctx context.Context, incr int64, authMethod authatt
 	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
 }
 
-// AttemptsCounterObserver records `auth.attempts` observations from the
-// callback of a AttemptsObservableCounter. The zero AttemptsCounterObserver
-// records nothing.
-type AttemptsCounterObserver struct {
+// AttemptsObserver records `auth.attempts` observations from the callback of
+// a AttemptsObservable. The zero AttemptsObserver records nothing.
+type AttemptsObserver struct {
 	o metric.Int64Observer
 }
 
 // Observe records one `auth.attempts` observation.
-func (o AttemptsCounterObserver) Observe(value int64, authMethod authattr.MethodAttr, authSuccess authattr.SuccessAttr) {
+func (o AttemptsObserver) Observe(value int64, authMethod authattr.Method, authSuccess authattr.Success) {
 	if o.o == nil {
 		return
 	}
@@ -61,35 +82,57 @@ func (o AttemptsCounterObserver) Observe(value int64, authMethod authattr.Method
 	o.o.Observe(value, metric.WithAttributes(kvs...))
 }
 
-// AttemptsCounterCallback observes `auth.attempts` through o on every
-// collection of a AttemptsObservableCounter.
+// AttemptsCallback observes `auth.attempts` through o on every collection of
+// a AttemptsObservable.
 //
 // An error it returns is returned by the collection that ran it, and the
 // observations made before it returned are still recorded.
-type AttemptsCounterCallback func(ctx context.Context, o AttemptsCounterObserver) error
+type AttemptsCallback func(ctx context.Context, o AttemptsObserver) error
 
-// AttemptsObservableCounter is the asynchronous form of AttemptsCounter,
-// observed through the callback it was created with.
-type AttemptsObservableCounter struct {
+// AttemptsObservable is the asynchronous form of Attempts, observed through
+// the callback it was created with.
+type AttemptsObservable struct {
 	inst metric.Int64ObservableCounter
 }
 
-// NewAttemptsObservableCounter creates the `auth.attempts` instrument from
-// meter and registers callback to observe it on every collection.
-func NewAttemptsObservableCounter(meter semconvmeter.Meter, callback AttemptsCounterCallback) (AttemptsObservableCounter, error) {
+// NewAttemptsObservable creates the `auth.attempts` instrument from meter
+// and registers callback to observe it on every collection.
+func NewAttemptsObservable(meter semconvmeter.Meter, callback AttemptsCallback) (AttemptsObservable, error) {
+	var m AttemptsObservable
 	if callback == nil {
-		return AttemptsObservableCounter{}, fmt.Errorf("create the %s instrument: the callback is nil", "auth.attempts")
+		return AttemptsObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
 	inst, err := meter.MetricMeter().Int64ObservableCounter(
-		"auth.attempts",
-		metric.WithDescription("Number of authentication attempts."),
-		metric.WithUnit("{attempt}"),
+		m.Name(),
+		metric.WithDescription(m.Description()),
+		metric.WithUnit(m.Unit()),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			return callback(ctx, AttemptsCounterObserver{o: o})
+			return callback(ctx, AttemptsObserver{o: o})
 		}),
 	)
 	if err != nil {
-		return AttemptsObservableCounter{}, fmt.Errorf("create the %s instrument: %w", "auth.attempts", err)
+		return AttemptsObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
 	}
-	return AttemptsObservableCounter{inst: inst}, nil
+	return AttemptsObservable{inst: inst}, nil
+}
+
+// Name returns the name `auth.attempts` records under.
+func (AttemptsObservable) Name() string {
+	return Attempts{}.Name()
+}
+
+// Unit returns the unit of `auth.attempts`.
+func (AttemptsObservable) Unit() string {
+	return Attempts{}.Unit()
+}
+
+// Description returns the description of `auth.attempts`.
+func (AttemptsObservable) Description() string {
+	return Attempts{}.Description()
+}
+
+// Inst returns the underlying metric.Int64ObservableCounter, or nil for the
+// zero AttemptsObservable.
+func (m AttemptsObservable) Inst() metric.Int64ObservableCounter {
+	return m.inst
 }

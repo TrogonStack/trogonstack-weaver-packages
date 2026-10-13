@@ -7,41 +7,41 @@ import "go.opentelemetry.io/otel/attribute"
 // taskIDKey is the attribute key of `myapp.task.id`.
 const taskIDKey = attribute.Key("myapp.task.id")
 
-// TaskIDAttr is a value of `myapp.task.id`.
+// TaskID is a value of `myapp.task.id`.
 //
 // Unique identifier of the task.
-type TaskIDAttr struct{ value string }
+type TaskID struct{ value string }
 
-// NewTaskIDAttr returns a value of `myapp.task.id`.
-func NewTaskIDAttr(value string) TaskIDAttr {
-	return TaskIDAttr{value: value}
+// NewTaskID returns a value of `myapp.task.id`.
+func NewTaskID(value string) TaskID {
+	return TaskID{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskIDAttr) Key() attribute.Key {
+func (TaskID) Key() attribute.Key {
 	return taskIDKey
 }
 
 // KeyValue is the `myapp.task.id` attribute set to this value.
-func (v TaskIDAttr) KeyValue() attribute.KeyValue {
+func (v TaskID) KeyValue() attribute.KeyValue {
 	return taskIDKey.String(v.value)
 }
 
 // taskStateKey is the attribute key of `myapp.task.state`.
 const taskStateKey = attribute.Key("myapp.task.state")
 
-// TaskStateAttr is a value of `myapp.task.state`.
+// TaskState is a value of `myapp.task.state`.
 //
 // Current state of the task.
-type TaskStateAttr struct{ value string }
+type TaskState struct{ value string }
 
 // Key is the attribute key, for filters and views that need it.
-func (TaskStateAttr) Key() attribute.Key {
+func (TaskState) Key() attribute.Key {
 	return taskStateKey
 }
 
 // KeyValue is the `myapp.task.state` attribute set to this value.
-func (v TaskStateAttr) KeyValue() attribute.KeyValue {
+func (v TaskState) KeyValue() attribute.KeyValue {
 	return taskStateKey.String(v.value)
 }
 
@@ -49,10 +49,10 @@ var (
 	// TaskStateQueued is the "queued" member of `myapp.task.state`.
 	//
 	// The task is waiting to run.
-	TaskStateQueued = TaskStateAttr{value: "queued"}
+	TaskStateQueued = TaskState{value: "queued"}
 
 	// TaskStateDone is the "done" member of `myapp.task.state`.
 	//
 	// The task finished.
-	TaskStateDone = TaskStateAttr{value: "done"}
+	TaskStateDone = TaskState{value: "done"}
 )

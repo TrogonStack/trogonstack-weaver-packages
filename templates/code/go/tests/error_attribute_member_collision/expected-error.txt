@@ -1,0 +1,1 @@
+package myappattr has attributes that render to the same Go identifier: myapp.task.state and myapp.task.state.done

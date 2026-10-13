@@ -7,18 +7,18 @@ import "go.opentelemetry.io/otel/attribute"
 // levelKey is the attribute key of `auth.level`.
 const levelKey = attribute.Key("auth.level")
 
-// LevelAttr is a value of `auth.level`.
+// Level is a value of `auth.level`.
 //
 // Assurance level of the authentication.
-type LevelAttr struct{ value int }
+type Level struct{ value int }
 
 // Key is the attribute key, for filters and views that need it.
-func (LevelAttr) Key() attribute.Key {
+func (Level) Key() attribute.Key {
 	return levelKey
 }
 
 // KeyValue is the `auth.level` attribute set to this value.
-func (v LevelAttr) KeyValue() attribute.KeyValue {
+func (v Level) KeyValue() attribute.KeyValue {
 	return levelKey.Int(v.value)
 }
 
@@ -26,29 +26,29 @@ var (
 	// LevelLow is the 1 member of `auth.level`.
 	//
 	// Single factor.
-	LevelLow = LevelAttr{value: 1}
+	LevelLow = Level{value: 1}
 
 	// LevelHigh is the 2 member of `auth.level`.
 	//
 	// Multiple factors.
-	LevelHigh = LevelAttr{value: 2}
+	LevelHigh = Level{value: 2}
 )
 
 // methodKey is the attribute key of `auth.method`.
 const methodKey = attribute.Key("auth.method")
 
-// MethodAttr is a value of `auth.method`.
+// Method is a value of `auth.method`.
 //
 // How the user was authenticated.
-type MethodAttr struct{ value string }
+type Method struct{ value string }
 
 // Key is the attribute key, for filters and views that need it.
-func (MethodAttr) Key() attribute.Key {
+func (Method) Key() attribute.Key {
 	return methodKey
 }
 
 // KeyValue is the `auth.method` attribute set to this value.
-func (v MethodAttr) KeyValue() attribute.KeyValue {
+func (v Method) KeyValue() attribute.KeyValue {
 	return methodKey.String(v.value)
 }
 
@@ -56,33 +56,33 @@ var (
 	// MethodPassword is the "password" member of `auth.method`.
 	//
 	// A password was checked.
-	MethodPassword = MethodAttr{value: "password"}
+	MethodPassword = Method{value: "password"}
 
 	// MethodToken is the "token" member of `auth.method`.
 	//
 	// A bearer token was checked.
-	MethodToken = MethodAttr{value: "token"}
+	MethodToken = Method{value: "token"}
 )
 
 // userIDKey is the attribute key of `auth.user.id`.
 const userIDKey = attribute.Key("auth.user.id")
 
-// UserIDAttr is a value of `auth.user.id`.
+// UserID is a value of `auth.user.id`.
 //
 // Identifier of the authenticated user.
-type UserIDAttr struct{ value string }
+type UserID struct{ value string }
 
-// NewUserIDAttr returns a value of `auth.user.id`.
-func NewUserIDAttr(value string) UserIDAttr {
-	return UserIDAttr{value: value}
+// NewUserID returns a value of `auth.user.id`.
+func NewUserID(value string) UserID {
+	return UserID{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (UserIDAttr) Key() attribute.Key {
+func (UserID) Key() attribute.Key {
 	return userIDKey
 }
 
 // KeyValue is the `auth.user.id` attribute set to this value.
-func (v UserIDAttr) KeyValue() attribute.KeyValue {
+func (v UserID) KeyValue() attribute.KeyValue {
 	return userIDKey.String(v.value)
 }

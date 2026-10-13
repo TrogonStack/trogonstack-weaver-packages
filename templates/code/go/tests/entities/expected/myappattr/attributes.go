@@ -9,91 +9,91 @@ import "go.opentelemetry.io/otel/attribute"
 // Deprecated: Use `myapp.host.cpu.logical_count` instead.
 const hostCPUCountKey = attribute.Key("myapp.host.cpu.count")
 
-// HostCPUCountAttr is a value of `myapp.host.cpu.count`.
+// HostCPUCount is a value of `myapp.host.cpu.count`.
 //
 // Number of CPUs the host has.
 //
 // Deprecated: Use `myapp.host.cpu.logical_count` instead.
-type HostCPUCountAttr struct{ value int }
+type HostCPUCount struct{ value int }
 
-// NewHostCPUCountAttr returns a value of `myapp.host.cpu.count`.
+// NewHostCPUCount returns a value of `myapp.host.cpu.count`.
 //
 // Deprecated: Use `myapp.host.cpu.logical_count` instead.
-func NewHostCPUCountAttr(value int) HostCPUCountAttr {
-	return HostCPUCountAttr{value: value}
+func NewHostCPUCount(value int) HostCPUCount {
+	return HostCPUCount{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (HostCPUCountAttr) Key() attribute.Key {
+func (HostCPUCount) Key() attribute.Key {
 	return hostCPUCountKey
 }
 
 // KeyValue is the `myapp.host.cpu.count` attribute set to this value.
-func (v HostCPUCountAttr) KeyValue() attribute.KeyValue {
+func (v HostCPUCount) KeyValue() attribute.KeyValue {
 	return hostCPUCountKey.Int(v.value)
 }
 
 // hostNameKey is the attribute key of `myapp.host.name`.
 const hostNameKey = attribute.Key("myapp.host.name")
 
-// HostNameAttr is a value of `myapp.host.name`.
+// HostName is a value of `myapp.host.name`.
 //
 // Name of the host.
-type HostNameAttr struct{ value string }
+type HostName struct{ value string }
 
-// NewHostNameAttr returns a value of `myapp.host.name`.
-func NewHostNameAttr(value string) HostNameAttr {
-	return HostNameAttr{value: value}
+// NewHostName returns a value of `myapp.host.name`.
+func NewHostName(value string) HostName {
+	return HostName{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (HostNameAttr) Key() attribute.Key {
+func (HostName) Key() attribute.Key {
 	return hostNameKey
 }
 
 // KeyValue is the `myapp.host.name` attribute set to this value.
-func (v HostNameAttr) KeyValue() attribute.KeyValue {
+func (v HostName) KeyValue() attribute.KeyValue {
 	return hostNameKey.String(v.value)
 }
 
 // hostRoleKey is the attribute key of `myapp.host.role`.
 const hostRoleKey = attribute.Key("myapp.host.role")
 
-// HostRoleAttr is a value of `myapp.host.role`.
+// HostRole is a value of `myapp.host.role`.
 //
 // Role the host plays in the cluster.
-type HostRoleAttr struct{ value string }
+type HostRole struct{ value string }
 
-// NewHostRoleAttr returns a value of `myapp.host.role`.
-func NewHostRoleAttr(value string) HostRoleAttr {
-	return HostRoleAttr{value: value}
+// NewHostRole returns a value of `myapp.host.role`.
+func NewHostRole(value string) HostRole {
+	return HostRole{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (HostRoleAttr) Key() attribute.Key {
+func (HostRole) Key() attribute.Key {
 	return hostRoleKey
 }
 
 // KeyValue is the `myapp.host.role` attribute set to this value.
-func (v HostRoleAttr) KeyValue() attribute.KeyValue {
+func (v HostRole) KeyValue() attribute.KeyValue {
 	return hostRoleKey.String(v.value)
 }
 
 // hostTypeKey is the attribute key of `myapp.host.type`.
 const hostTypeKey = attribute.Key("myapp.host.type")
 
-// HostTypeAttr is a value of `myapp.host.type`.
+// HostType is a value of `myapp.host.type`.
 //
 // Type of the host.
-type HostTypeAttr struct{ value string }
+type HostType struct{ value string }
 
 // Key is the attribute key, for filters and views that need it.
-func (HostTypeAttr) Key() attribute.Key {
+func (HostType) Key() attribute.Key {
 	return hostTypeKey
 }
 
 // KeyValue is the `myapp.host.type` attribute set to this value.
-func (v HostTypeAttr) KeyValue() attribute.KeyValue {
+func (v HostType) KeyValue() attribute.KeyValue {
 	return hostTypeKey.String(v.value)
 }
 
@@ -101,56 +101,56 @@ var (
 	// HostTypePhysical is the "physical" member of `myapp.host.type`.
 	//
 	// A physical host.
-	HostTypePhysical = HostTypeAttr{value: "physical"}
+	HostTypePhysical = HostType{value: "physical"}
 
 	// HostTypeVirtual is the "virtual" member of `myapp.host.type`.
 	//
 	// A virtual host.
-	HostTypeVirtual = HostTypeAttr{value: "virtual"}
+	HostTypeVirtual = HostType{value: "virtual"}
 )
 
 // queueNameKey is the attribute key of `myapp.queue.name`.
 const queueNameKey = attribute.Key("myapp.queue.name")
 
-// QueueNameAttr is a value of `myapp.queue.name`.
+// QueueName is a value of `myapp.queue.name`.
 //
 // Name of the queue.
-type QueueNameAttr struct{ value string }
+type QueueName struct{ value string }
 
-// NewQueueNameAttr returns a value of `myapp.queue.name`.
-func NewQueueNameAttr(value string) QueueNameAttr {
-	return QueueNameAttr{value: value}
+// NewQueueName returns a value of `myapp.queue.name`.
+func NewQueueName(value string) QueueName {
+	return QueueName{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (QueueNameAttr) Key() attribute.Key {
+func (QueueName) Key() attribute.Key {
 	return queueNameKey
 }
 
 // KeyValue is the `myapp.queue.name` attribute set to this value.
-func (v QueueNameAttr) KeyValue() attribute.KeyValue {
+func (v QueueName) KeyValue() attribute.KeyValue {
 	return queueNameKey.String(v.value)
 }
 
 // queueSizeKey is the attribute key of `myapp.queue.size`.
 const queueSizeKey = attribute.Key("myapp.queue.size")
 
-// QueueSizeAttr is a value of `myapp.queue.size`.
+// QueueSize is a value of `myapp.queue.size`.
 //
 // Number of items currently in the queue.
-type QueueSizeAttr struct{ value int }
+type QueueSize struct{ value int }
 
-// NewQueueSizeAttr returns a value of `myapp.queue.size`.
-func NewQueueSizeAttr(value int) QueueSizeAttr {
-	return QueueSizeAttr{value: value}
+// NewQueueSize returns a value of `myapp.queue.size`.
+func NewQueueSize(value int) QueueSize {
+	return QueueSize{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (QueueSizeAttr) Key() attribute.Key {
+func (QueueSize) Key() attribute.Key {
 	return queueSizeKey
 }
 
 // KeyValue is the `myapp.queue.size` attribute set to this value.
-func (v QueueSizeAttr) KeyValue() attribute.KeyValue {
+func (v QueueSize) KeyValue() attribute.KeyValue {
 	return queueSizeKey.Int(v.value)
 }

@@ -7,22 +7,22 @@ import "go.opentelemetry.io/otel/attribute"
 // hostNameKey is the attribute key of `worker.host.name`.
 const hostNameKey = attribute.Key("worker.host.name")
 
-// HostNameAttr is a value of `worker.host.name`.
+// HostName is a value of `worker.host.name`.
 //
 // Name of the worker host.
-type HostNameAttr struct{ value string }
+type HostName struct{ value string }
 
-// NewHostNameAttr returns a value of `worker.host.name`.
-func NewHostNameAttr(value string) HostNameAttr {
-	return HostNameAttr{value: value}
+// NewHostName returns a value of `worker.host.name`.
+func NewHostName(value string) HostName {
+	return HostName{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (HostNameAttr) Key() attribute.Key {
+func (HostName) Key() attribute.Key {
 	return hostNameKey
 }
 
 // KeyValue is the `worker.host.name` attribute set to this value.
-func (v HostNameAttr) KeyValue() attribute.KeyValue {
+func (v HostName) KeyValue() attribute.KeyValue {
 	return hostNameKey.String(v.value)
 }

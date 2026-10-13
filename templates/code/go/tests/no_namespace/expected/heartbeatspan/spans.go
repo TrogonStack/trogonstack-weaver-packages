@@ -27,7 +27,7 @@ type Attr interface {
 	bareAttr()
 }
 
-type bareSpanSource struct{ v heartbeatattr.SourceAttr }
+type bareSpanSource struct{ v heartbeatattr.Source }
 
 func (o bareSpanSource) bareStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
@@ -37,7 +37,7 @@ func (bareSpanSource) bareAttr() {}
 
 // WithSource sets `heartbeat.source` on a Span, when Start starts it or
 // later through SetAttributes.
-func WithSource(v heartbeatattr.SourceAttr) Attr {
+func WithSource(v heartbeatattr.Source) Attr {
 	return bareSpanSource{v: v}
 }
 
@@ -91,7 +91,7 @@ func (s Span) SetStatus(code codes.Code, description string) {
 // Start starts the `heartbeat` span from tracer with span kind internal.
 //
 // A periodic liveness signal.
-func Start(ctx context.Context, tracer semconvtracer.Tracer, name Name, heartbeatSequence heartbeatattr.SequenceAttr, opts ...StartAttr) (context.Context, Span) {
+func Start(ctx context.Context, tracer semconvtracer.Tracer, name Name, heartbeatSequence heartbeatattr.Sequence, opts ...StartAttr) (context.Context, Span) {
 	if name.value == "" {
 		name = Name{value: "heartbeat"}
 	}

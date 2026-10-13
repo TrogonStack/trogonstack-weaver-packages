@@ -7,18 +7,18 @@ import "go.opentelemetry.io/otel/attribute"
 // methodKey is the attribute key of `auth.method`.
 const methodKey = attribute.Key("auth.method")
 
-// MethodAttr is a value of `auth.method`.
+// Method is a value of `auth.method`.
 //
 // How the user was authenticated.
-type MethodAttr struct{ value string }
+type Method struct{ value string }
 
 // Key is the attribute key, for filters and views that need it.
-func (MethodAttr) Key() attribute.Key {
+func (Method) Key() attribute.Key {
 	return methodKey
 }
 
 // KeyValue is the `auth.method` attribute set to this value.
-func (v MethodAttr) KeyValue() attribute.KeyValue {
+func (v Method) KeyValue() attribute.KeyValue {
 	return methodKey.String(v.value)
 }
 
@@ -26,33 +26,33 @@ var (
 	// MethodPassword is the "password" member of `auth.method`.
 	//
 	// A password was checked.
-	MethodPassword = MethodAttr{value: "password"}
+	MethodPassword = Method{value: "password"}
 
 	// MethodToken is the "token" member of `auth.method`.
 	//
 	// A bearer token was checked.
-	MethodToken = MethodAttr{value: "token"}
+	MethodToken = Method{value: "token"}
 )
 
 // successKey is the attribute key of `auth.success`.
 const successKey = attribute.Key("auth.success")
 
-// SuccessAttr is a value of `auth.success`.
+// Success is a value of `auth.success`.
 //
 // Whether the attempt succeeded.
-type SuccessAttr struct{ value bool }
+type Success struct{ value bool }
 
-// NewSuccessAttr returns a value of `auth.success`.
-func NewSuccessAttr(value bool) SuccessAttr {
-	return SuccessAttr{value: value}
+// NewSuccess returns a value of `auth.success`.
+func NewSuccess(value bool) Success {
+	return Success{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (SuccessAttr) Key() attribute.Key {
+func (Success) Key() attribute.Key {
 	return successKey
 }
 
 // KeyValue is the `auth.success` attribute set to this value.
-func (v SuccessAttr) KeyValue() attribute.KeyValue {
+func (v Success) KeyValue() attribute.KeyValue {
 	return successKey.Bool(v.value)
 }

@@ -91,7 +91,7 @@ func WithTaskFinishedTimestamp(timestamp time.Time) TaskFinishedOption {
 	return taskFinishedEventTimestamp{v: timestamp}
 }
 
-type taskFinishedEventTaskAttempt struct{ v myappattr.TaskAttemptAttr }
+type taskFinishedEventTaskAttempt struct{ v myappattr.TaskAttempt }
 
 func (o taskFinishedEventTaskAttempt) taskFinishedOption(record *log.Record) {
 	record.AddAttributes(o.v.KeyValue())
@@ -100,7 +100,7 @@ func (o taskFinishedEventTaskAttempt) taskFinishedOption(record *log.Record) {
 // WithTaskFinishedTaskAttempt sets `myapp.task.attempt` on the event.
 //
 // Recommended: When the task ran more than once.
-func WithTaskFinishedTaskAttempt(v myappattr.TaskAttemptAttr) TaskFinishedOption {
+func WithTaskFinishedTaskAttempt(v myappattr.TaskAttempt) TaskFinishedOption {
 	return taskFinishedEventTaskAttempt{v: v}
 }
 
@@ -111,7 +111,7 @@ func WithTaskFinishedTaskAttempt(v myappattr.TaskAttemptAttr) TaskFinishedOption
 // A task reached a final state on a worker.
 //
 // Emitted once per task, after its last attempt.
-func EmitTaskFinished(ctx context.Context, logger semconvlogger.Logger, myappTaskState myappattr.TaskStateAttr, workerHostName workerattr.HostNameAttr, opts ...TaskFinishedOption) {
+func EmitTaskFinished(ctx context.Context, logger semconvlogger.Logger, myappTaskState myappattr.TaskState, workerHostName workerattr.HostName, opts ...TaskFinishedOption) {
 	var record log.Record
 	record.SetEventName("worker.task.finished")
 	record.SetSeverity(log.SeverityInfo)

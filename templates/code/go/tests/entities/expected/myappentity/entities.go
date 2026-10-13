@@ -11,38 +11,37 @@ import (
 	"example.com/semconv"
 )
 
-// HostEntityAttr is an attribute NewHostEntity accepts in addition to the
-// ones it requires.
-type HostEntityAttr interface {
+// HostAttr is an attribute NewHost accepts in addition to the ones it
+// requires.
+type HostAttr interface {
 	hostEntityAttr() attribute.KeyValue
 }
 
-type hostEntityHostCPUCount struct{ v myappattr.HostCPUCountAttr }
+type hostEntityHostCPUCount struct{ v myappattr.HostCPUCount }
 
 func (o hostEntityHostCPUCount) hostEntityAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithHostEntityHostCPUCount sets `myapp.host.cpu.count` on the entity.
+// WithHostHostCPUCount sets `myapp.host.cpu.count` on the entity.
 //
 // Opt-in: the convention records it only when a user asks for it.
-func WithHostEntityHostCPUCount(v myappattr.HostCPUCountAttr) HostEntityAttr {
+func WithHostHostCPUCount(v myappattr.HostCPUCount) HostAttr {
 	return hostEntityHostCPUCount{v: v}
 }
 
-type hostEntityHostType struct{ v myappattr.HostTypeAttr }
+type hostEntityHostType struct{ v myappattr.HostType }
 
 func (o hostEntityHostType) hostEntityAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithHostEntityHostType sets `myapp.host.type` on the entity.
-func WithHostEntityHostType(v myappattr.HostTypeAttr) HostEntityAttr {
+// WithHostHostType sets `myapp.host.type` on the entity.
+func WithHostHostType(v myappattr.HostType) HostAttr {
 	return hostEntityHostType{v: v}
 }
 
-// HostEntity is the `myapp.host` entity. The zero HostEntity has no
-// attributes.
+// Host is the `myapp.host` entity. The zero Host has no attributes.
 //
 // A host running the application.
 //
@@ -51,22 +50,21 @@ func WithHostEntityHostType(v myappattr.HostTypeAttr) HostEntityAttr {
 // Identifies the entity: `myapp.host.name`.
 //
 // Describes the entity: `myapp.host.cpu.count`, `myapp.host.type`.
-type HostEntity struct{ attrs []attribute.KeyValue }
+type Host struct{ attrs []attribute.KeyValue }
 
-// NewHostEntity builds a HostEntity from its required attributes and any
-// given options.
-func NewHostEntity(myappHostName myappattr.HostNameAttr, opts ...HostEntityAttr) HostEntity {
+// NewHost builds a Host from its required attributes and any given options.
+func NewHost(myappHostName myappattr.HostName, opts ...HostAttr) Host {
 	attrs := make([]attribute.KeyValue, 0, 1+len(opts))
 	attrs = append(attrs, myappHostName.KeyValue())
 	for _, opt := range opts {
 		attrs = append(attrs, opt.hostEntityAttr())
 	}
-	return HostEntity{attrs: attrs}
+	return Host{attrs: attrs}
 }
 
-// Attributes returns a copy of the entity's attributes. The zero HostEntity
+// Attributes returns a copy of the entity's attributes. The zero Host
 // returns none.
-func (e HostEntity) Attributes() []attribute.KeyValue {
+func (e Host) Attributes() []attribute.KeyValue {
 	out := make([]attribute.KeyValue, len(e.attrs))
 	copy(out, e.attrs)
 	return out
@@ -74,43 +72,42 @@ func (e HostEntity) Attributes() []attribute.KeyValue {
 
 // Resource returns a *resource.Resource built from the entity's attributes,
 // tied to semconv.SchemaURL.
-func (e HostEntity) Resource() *resource.Resource {
+func (e Host) Resource() *resource.Resource {
 	return resource.NewWithAttributes(semconv.SchemaURL, e.attrs...)
 }
 
-// HostWorkerEntityAttr is an attribute NewHostWorkerEntity accepts in
-// addition to the ones it requires.
-type HostWorkerEntityAttr interface {
+// HostWorkerAttr is an attribute NewHostWorker accepts in addition to the
+// ones it requires.
+type HostWorkerAttr interface {
 	hostWorkerEntityAttr() attribute.KeyValue
 }
 
-type hostWorkerEntityHostCPUCount struct{ v myappattr.HostCPUCountAttr }
+type hostWorkerEntityHostCPUCount struct{ v myappattr.HostCPUCount }
 
 func (o hostWorkerEntityHostCPUCount) hostWorkerEntityAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithHostWorkerEntityHostCPUCount sets `myapp.host.cpu.count` on the
-// entity.
+// WithHostWorkerHostCPUCount sets `myapp.host.cpu.count` on the entity.
 //
 // Opt-in: the convention records it only when a user asks for it.
-func WithHostWorkerEntityHostCPUCount(v myappattr.HostCPUCountAttr) HostWorkerEntityAttr {
+func WithHostWorkerHostCPUCount(v myappattr.HostCPUCount) HostWorkerAttr {
 	return hostWorkerEntityHostCPUCount{v: v}
 }
 
-type hostWorkerEntityHostType struct{ v myappattr.HostTypeAttr }
+type hostWorkerEntityHostType struct{ v myappattr.HostType }
 
 func (o hostWorkerEntityHostType) hostWorkerEntityAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithHostWorkerEntityHostType sets `myapp.host.type` on the entity.
-func WithHostWorkerEntityHostType(v myappattr.HostTypeAttr) HostWorkerEntityAttr {
+// WithHostWorkerHostType sets `myapp.host.type` on the entity.
+func WithHostWorkerHostType(v myappattr.HostType) HostWorkerAttr {
 	return hostWorkerEntityHostType{v: v}
 }
 
-// HostWorkerEntity is the `myapp.host.worker` entity, a refinement of
-// `myapp.host`. The zero HostWorkerEntity has no attributes.
+// HostWorker is the `myapp.host.worker` entity, a refinement of `myapp.host`.
+// The zero HostWorker has no attributes.
 //
 // A host dedicated to running worker processes.
 //
@@ -120,23 +117,23 @@ func WithHostWorkerEntityHostType(v myappattr.HostTypeAttr) HostWorkerEntityAttr
 //
 // Describes the entity: `myapp.host.cpu.count`, `myapp.host.role`,
 // `myapp.host.type`.
-type HostWorkerEntity struct{ attrs []attribute.KeyValue }
+type HostWorker struct{ attrs []attribute.KeyValue }
 
-// NewHostWorkerEntity builds a HostWorkerEntity from its required attributes
-// and any given options.
-func NewHostWorkerEntity(myappHostName myappattr.HostNameAttr, myappHostRole myappattr.HostRoleAttr, opts ...HostWorkerEntityAttr) HostWorkerEntity {
+// NewHostWorker builds a HostWorker from its required attributes and any
+// given options.
+func NewHostWorker(myappHostName myappattr.HostName, myappHostRole myappattr.HostRole, opts ...HostWorkerAttr) HostWorker {
 	attrs := make([]attribute.KeyValue, 0, 2+len(opts))
 	attrs = append(attrs, myappHostName.KeyValue())
 	attrs = append(attrs, myappHostRole.KeyValue())
 	for _, opt := range opts {
 		attrs = append(attrs, opt.hostWorkerEntityAttr())
 	}
-	return HostWorkerEntity{attrs: attrs}
+	return HostWorker{attrs: attrs}
 }
 
-// Attributes returns a copy of the entity's attributes. The zero
-// HostWorkerEntity returns none.
-func (e HostWorkerEntity) Attributes() []attribute.KeyValue {
+// Attributes returns a copy of the entity's attributes. The zero HostWorker
+// returns none.
+func (e HostWorker) Attributes() []attribute.KeyValue {
 	out := make([]attribute.KeyValue, len(e.attrs))
 	copy(out, e.attrs)
 	return out
@@ -144,51 +141,50 @@ func (e HostWorkerEntity) Attributes() []attribute.KeyValue {
 
 // Resource returns a *resource.Resource built from the entity's attributes,
 // tied to semconv.SchemaURL.
-func (e HostWorkerEntity) Resource() *resource.Resource {
+func (e HostWorker) Resource() *resource.Resource {
 	return resource.NewWithAttributes(semconv.SchemaURL, e.attrs...)
 }
 
-// QueueEntityAttr is an attribute NewQueueEntity accepts in addition to the
-// ones it requires.
-type QueueEntityAttr interface {
+// QueueAttr is an attribute NewQueue accepts in addition to the ones it
+// requires.
+type QueueAttr interface {
 	queueEntityAttr() attribute.KeyValue
 }
 
-type queueEntityQueueSize struct{ v myappattr.QueueSizeAttr }
+type queueEntityQueueSize struct{ v myappattr.QueueSize }
 
 func (o queueEntityQueueSize) queueEntityAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithQueueEntityQueueSize sets `myapp.queue.size` on the entity.
-func WithQueueEntityQueueSize(v myappattr.QueueSizeAttr) QueueEntityAttr {
+// WithQueueQueueSize sets `myapp.queue.size` on the entity.
+func WithQueueQueueSize(v myappattr.QueueSize) QueueAttr {
 	return queueEntityQueueSize{v: v}
 }
 
-// QueueEntity is the `myapp.queue` entity. The zero QueueEntity has no
-// attributes.
+// Queue is the `myapp.queue` entity. The zero Queue has no attributes.
 //
 // A queue of tasks.
 //
 // Identifies the entity: `myapp.queue.name`.
 //
 // Describes the entity: `myapp.queue.size`.
-type QueueEntity struct{ attrs []attribute.KeyValue }
+type Queue struct{ attrs []attribute.KeyValue }
 
-// NewQueueEntity builds a QueueEntity from its required attributes and any
-// given options.
-func NewQueueEntity(myappQueueName myappattr.QueueNameAttr, opts ...QueueEntityAttr) QueueEntity {
+// NewQueue builds a Queue from its required attributes and any given
+// options.
+func NewQueue(myappQueueName myappattr.QueueName, opts ...QueueAttr) Queue {
 	attrs := make([]attribute.KeyValue, 0, 1+len(opts))
 	attrs = append(attrs, myappQueueName.KeyValue())
 	for _, opt := range opts {
 		attrs = append(attrs, opt.queueEntityAttr())
 	}
-	return QueueEntity{attrs: attrs}
+	return Queue{attrs: attrs}
 }
 
-// Attributes returns a copy of the entity's attributes. The zero QueueEntity
+// Attributes returns a copy of the entity's attributes. The zero Queue
 // returns none.
-func (e QueueEntity) Attributes() []attribute.KeyValue {
+func (e Queue) Attributes() []attribute.KeyValue {
 	out := make([]attribute.KeyValue, len(e.attrs))
 	copy(out, e.attrs)
 	return out
@@ -196,6 +192,6 @@ func (e QueueEntity) Attributes() []attribute.KeyValue {
 
 // Resource returns a *resource.Resource built from the entity's attributes,
 // tied to semconv.SchemaURL.
-func (e QueueEntity) Resource() *resource.Resource {
+func (e Queue) Resource() *resource.Resource {
 	return resource.NewWithAttributes(semconv.SchemaURL, e.attrs...)
 }

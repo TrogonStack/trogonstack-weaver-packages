@@ -43,7 +43,7 @@ func WithTaskFinishedTimestamp(timestamp time.Time) TaskFinishedOption {
 	return taskFinishedEventTimestamp{v: timestamp}
 }
 
-type taskFinishedEventTaskAttempt struct{ v myappattr.TaskAttemptAttr }
+type taskFinishedEventTaskAttempt struct{ v myappattr.TaskAttempt }
 
 func (o taskFinishedEventTaskAttempt) taskFinishedOption(record *log.Record) {
 	record.AddAttributes(o.v.KeyValue())
@@ -52,11 +52,11 @@ func (o taskFinishedEventTaskAttempt) taskFinishedOption(record *log.Record) {
 // WithTaskFinishedTaskAttempt sets `myapp.task.attempt` on the event.
 //
 // Recommended: When the task ran more than once.
-func WithTaskFinishedTaskAttempt(v myappattr.TaskAttemptAttr) TaskFinishedOption {
+func WithTaskFinishedTaskAttempt(v myappattr.TaskAttempt) TaskFinishedOption {
 	return taskFinishedEventTaskAttempt{v: v}
 }
 
-type taskFinishedEventHostName struct{ v workerattr.HostNameAttr }
+type taskFinishedEventHostName struct{ v workerattr.HostName }
 
 func (o taskFinishedEventHostName) taskFinishedOption(record *log.Record) {
 	record.AddAttributes(o.v.KeyValue())
@@ -65,7 +65,7 @@ func (o taskFinishedEventHostName) taskFinishedOption(record *log.Record) {
 // WithTaskFinishedHostName sets `worker.host.name` on the event.
 //
 // Opt-in: the convention records it only when a user asks for it.
-func WithTaskFinishedHostName(v workerattr.HostNameAttr) TaskFinishedOption {
+func WithTaskFinishedHostName(v workerattr.HostName) TaskFinishedOption {
 	return taskFinishedEventHostName{v: v}
 }
 
@@ -76,7 +76,7 @@ func WithTaskFinishedHostName(v workerattr.HostNameAttr) TaskFinishedOption {
 // A task reached a final state.
 //
 // Emitted once per task, after its last attempt.
-func EmitTaskFinished(ctx context.Context, logger semconvlogger.Logger, myappTaskState myappattr.TaskStateAttr, opts ...TaskFinishedOption) {
+func EmitTaskFinished(ctx context.Context, logger semconvlogger.Logger, myappTaskState myappattr.TaskState, opts ...TaskFinishedOption) {
 	var record log.Record
 	record.SetEventName("myapp.task.finished")
 	record.SetSeverity(log.SeverityInfo)
@@ -132,7 +132,7 @@ func WithTaskRetriedTimestamp(timestamp time.Time) TaskRetriedOption {
 // for it.
 //
 // Deprecated: Read the attempt from `myapp.task.finished` instead.
-func EmitTaskRetried(ctx context.Context, logger semconvlogger.Logger, myappTaskAttempt myappattr.TaskAttemptAttr, opts ...TaskRetriedOption) {
+func EmitTaskRetried(ctx context.Context, logger semconvlogger.Logger, myappTaskAttempt myappattr.TaskAttempt, opts ...TaskRetriedOption) {
 	var record log.Record
 	record.SetEventName("myapp.task.retried")
 	record.SetSeverity(log.SeverityInfo)

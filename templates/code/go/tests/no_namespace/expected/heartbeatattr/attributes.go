@@ -7,45 +7,45 @@ import "go.opentelemetry.io/otel/attribute"
 // sequenceKey is the attribute key of `heartbeat.sequence`.
 const sequenceKey = attribute.Key("heartbeat.sequence")
 
-// SequenceAttr is a value of `heartbeat.sequence`.
+// Sequence is a value of `heartbeat.sequence`.
 //
 // Sequence number of the heartbeat.
-type SequenceAttr struct{ value int }
+type Sequence struct{ value int }
 
-// NewSequenceAttr returns a value of `heartbeat.sequence`.
-func NewSequenceAttr(value int) SequenceAttr {
-	return SequenceAttr{value: value}
+// NewSequence returns a value of `heartbeat.sequence`.
+func NewSequence(value int) Sequence {
+	return Sequence{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (SequenceAttr) Key() attribute.Key {
+func (Sequence) Key() attribute.Key {
 	return sequenceKey
 }
 
 // KeyValue is the `heartbeat.sequence` attribute set to this value.
-func (v SequenceAttr) KeyValue() attribute.KeyValue {
+func (v Sequence) KeyValue() attribute.KeyValue {
 	return sequenceKey.Int(v.value)
 }
 
 // sourceKey is the attribute key of `heartbeat.source`.
 const sourceKey = attribute.Key("heartbeat.source")
 
-// SourceAttr is a value of `heartbeat.source`.
+// Source is a value of `heartbeat.source`.
 //
 // Name of the component that sent the heartbeat.
-type SourceAttr struct{ value string }
+type Source struct{ value string }
 
-// NewSourceAttr returns a value of `heartbeat.source`.
-func NewSourceAttr(value string) SourceAttr {
-	return SourceAttr{value: value}
+// NewSource returns a value of `heartbeat.source`.
+func NewSource(value string) Source {
+	return Source{value: value}
 }
 
 // Key is the attribute key, for filters and views that need it.
-func (SourceAttr) Key() attribute.Key {
+func (Source) Key() attribute.Key {
 	return sourceKey
 }
 
 // KeyValue is the `heartbeat.source` attribute set to this value.
-func (v SourceAttr) KeyValue() attribute.KeyValue {
+func (v Source) KeyValue() attribute.KeyValue {
 	return sourceKey.String(v.value)
 }
