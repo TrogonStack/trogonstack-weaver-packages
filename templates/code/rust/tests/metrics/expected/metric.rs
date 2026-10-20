@@ -7,13 +7,11 @@ pub struct AuthAttempts {
 
 impl AuthAttempts {
     pub const NAME: &'static str = "auth.attempts";
-    pub const UNIT: &'static str = "{attempt}";
-    pub const DESCRIPTION: &'static str = "Number of authentication attempts.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of authentication attempts.")
+            .with_unit("{attempt}")
             .build();
         Self { instrument }
     }
@@ -44,13 +42,11 @@ pub struct AuthAttemptsObservable {
 
 impl AuthAttemptsObservable {
     pub const NAME: &'static str = AuthAttempts::NAME;
-    pub const UNIT: &'static str = AuthAttempts::UNIT;
-    pub const DESCRIPTION: &'static str = AuthAttempts::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(AuthAttemptsObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of authentication attempts.")
+            .with_unit("{attempt}")
             .with_callback(move |observer| callback(AuthAttemptsObserver { observer }))
             .build();
         Self { _instrument: instrument }
@@ -69,13 +65,11 @@ pub struct MyappQueueDepth {
 
 impl MyappQueueDepth {
     pub const NAME: &'static str = "myapp.queue.depth";
-    pub const UNIT: &'static str = "{task}";
-    pub const DESCRIPTION: &'static str = "Number of tasks waiting in the queue.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().i64_gauge(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of tasks waiting in the queue.")
+            .with_unit("{task}")
             .build();
         Self { instrument }
     }
@@ -106,13 +100,11 @@ pub struct MyappQueueDepthObservable {
 
 impl MyappQueueDepthObservable {
     pub const NAME: &'static str = MyappQueueDepth::NAME;
-    pub const UNIT: &'static str = MyappQueueDepth::UNIT;
-    pub const DESCRIPTION: &'static str = MyappQueueDepth::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(MyappQueueDepthObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().i64_observable_gauge(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of tasks waiting in the queue.")
+            .with_unit("{task}")
             .with_callback(move |observer| callback(MyappQueueDepthObserver { observer }))
             .build();
         Self { _instrument: instrument }
@@ -130,13 +122,11 @@ pub struct MyappTaskActive {
 
 impl MyappTaskActive {
     pub const NAME: &'static str = "myapp.task.active";
-    pub const UNIT: &'static str = "{task}";
-    pub const DESCRIPTION: &'static str = "Number of tasks currently running.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().i64_up_down_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of tasks currently running.")
+            .with_unit("{task}")
             .build();
         Self { instrument }
     }
@@ -167,13 +157,11 @@ pub struct MyappTaskActiveObservable {
 
 impl MyappTaskActiveObservable {
     pub const NAME: &'static str = MyappTaskActive::NAME;
-    pub const UNIT: &'static str = MyappTaskActive::UNIT;
-    pub const DESCRIPTION: &'static str = MyappTaskActive::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(MyappTaskActiveObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().i64_observable_up_down_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of tasks currently running.")
+            .with_unit("{task}")
             .with_callback(move |observer| callback(MyappTaskActiveObserver { observer }))
             .build();
         Self { _instrument: instrument }
@@ -209,13 +197,11 @@ pub struct MyappTaskDuration {
 
 impl MyappTaskDuration {
     pub const NAME: &'static str = "myapp.task.duration";
-    pub const UNIT: &'static str = "s";
-    pub const DESCRIPTION: &'static str = "Time a task took from start to finish.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Time a task took from start to finish.")
+            .with_unit("s")
             .with_boundaries(vec![0_f64, 0.005_f64, 0.01_f64, 0.1_f64, 1_f64, 10_f64])
             .build();
         Self { instrument }
@@ -239,13 +225,11 @@ pub struct MyappTaskFloatActive {
 
 impl MyappTaskFloatActive {
     pub const NAME: &'static str = "myapp.task.float.active";
-    pub const UNIT: &'static str = "{task}";
-    pub const DESCRIPTION: &'static str = "Fractional active task adjustment.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_up_down_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Fractional active task adjustment.")
+            .with_unit("{task}")
             .build();
         Self { instrument }
     }
@@ -276,13 +260,11 @@ pub struct MyappTaskFloatActiveObservable {
 
 impl MyappTaskFloatActiveObservable {
     pub const NAME: &'static str = MyappTaskFloatActive::NAME;
-    pub const UNIT: &'static str = MyappTaskFloatActive::UNIT;
-    pub const DESCRIPTION: &'static str = MyappTaskFloatActive::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(MyappTaskFloatActiveObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().f64_observable_up_down_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Fractional active task adjustment.")
+            .with_unit("{task}")
             .with_callback(move |observer| callback(MyappTaskFloatActiveObserver { observer }))
             .build();
         Self { _instrument: instrument }
@@ -300,13 +282,11 @@ pub struct MyappTaskFloatDepth {
 
 impl MyappTaskFloatDepth {
     pub const NAME: &'static str = "myapp.task.float.depth";
-    pub const UNIT: &'static str = "{task}";
-    pub const DESCRIPTION: &'static str = "Fractional queue depth.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_gauge(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Fractional queue depth.")
+            .with_unit("{task}")
             .build();
         Self { instrument }
     }
@@ -337,13 +317,11 @@ pub struct MyappTaskFloatDepthObservable {
 
 impl MyappTaskFloatDepthObservable {
     pub const NAME: &'static str = MyappTaskFloatDepth::NAME;
-    pub const UNIT: &'static str = MyappTaskFloatDepth::UNIT;
-    pub const DESCRIPTION: &'static str = MyappTaskFloatDepth::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(MyappTaskFloatDepthObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().f64_observable_gauge(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Fractional queue depth.")
+            .with_unit("{task}")
             .with_callback(move |observer| callback(MyappTaskFloatDepthObserver { observer }))
             .build();
         Self { _instrument: instrument }
@@ -361,13 +339,11 @@ pub struct MyappTaskFloatStarted {
 
 impl MyappTaskFloatStarted {
     pub const NAME: &'static str = "myapp.task.float.started";
-    pub const UNIT: &'static str = "{task}";
-    pub const DESCRIPTION: &'static str = "Fractional tasks started.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Fractional tasks started.")
+            .with_unit("{task}")
             .build();
         Self { instrument }
     }
@@ -398,13 +374,11 @@ pub struct MyappTaskFloatStartedObservable {
 
 impl MyappTaskFloatStartedObservable {
     pub const NAME: &'static str = MyappTaskFloatStarted::NAME;
-    pub const UNIT: &'static str = MyappTaskFloatStarted::UNIT;
-    pub const DESCRIPTION: &'static str = MyappTaskFloatStarted::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(MyappTaskFloatStartedObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().f64_observable_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Fractional tasks started.")
+            .with_unit("{task}")
             .with_callback(move |observer| callback(MyappTaskFloatStartedObserver { observer }))
             .build();
         Self { _instrument: instrument }
@@ -422,13 +396,11 @@ pub struct MyappTaskPayload {
 
 impl MyappTaskPayload {
     pub const NAME: &'static str = "myapp.task.payload";
-    pub const UNIT: &'static str = "By";
-    pub const DESCRIPTION: &'static str = "Task payload size.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_histogram(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Task payload size.")
+            .with_unit("By")
             .with_boundaries(vec![128_f64, 256_f64, 1024_f64])
             .build();
         Self { instrument }
@@ -465,13 +437,11 @@ pub struct MyappTaskRetryDuration {
 
 impl MyappTaskRetryDuration {
     pub const NAME: &'static str = "myapp.task.duration";
-    pub const UNIT: &'static str = "s";
-    pub const DESCRIPTION: &'static str = "Time a task took from start to finish.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Time a task took from start to finish.")
+            .with_unit("s")
             .with_boundaries(vec![0_f64, 0.005_f64, 0.01_f64, 0.1_f64, 1_f64, 10_f64])
             .build();
         Self { instrument }
@@ -509,13 +479,11 @@ pub struct MyappTaskStarted {
 
 impl MyappTaskStarted {
     pub const NAME: &'static str = "myapp.task.started";
-    pub const UNIT: &'static str = "{task}";
-    pub const DESCRIPTION: &'static str = "Number of tasks started.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of tasks started.")
+            .with_unit("{task}")
             .build();
         Self { instrument }
     }
@@ -548,13 +516,11 @@ pub struct MyappTaskStartedObservable {
 
 impl MyappTaskStartedObservable {
     pub const NAME: &'static str = MyappTaskStarted::NAME;
-    pub const UNIT: &'static str = MyappTaskStarted::UNIT;
-    pub const DESCRIPTION: &'static str = MyappTaskStarted::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(MyappTaskStartedObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of tasks started.")
+            .with_unit("{task}")
             .with_callback(move |observer| callback(MyappTaskStartedObserver { observer }))
             .build();
         Self { _instrument: instrument }
@@ -590,13 +556,11 @@ pub struct WorkerTaskDuration {
 
 impl WorkerTaskDuration {
     pub const NAME: &'static str = "myapp.task.duration";
-    pub const UNIT: &'static str = "s";
-    pub const DESCRIPTION: &'static str = "Time a task took from start to finish.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Time a task took from start to finish.")
+            .with_unit("s")
             .with_boundaries(vec![0_f64, 0.005_f64, 0.01_f64, 0.1_f64, 1_f64, 10_f64])
             .build();
         Self { instrument }

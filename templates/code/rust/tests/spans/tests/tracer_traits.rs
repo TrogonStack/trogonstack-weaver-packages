@@ -1,5 +1,6 @@
-use generated_semconv::{options::InstrumentationOptions, scope::Scope, tracer, SCHEMA_URL};
-use opentelemetry::trace::{Span as _, Tracer as _};
+use generated_semconv::{
+    attribute, options::InstrumentationOptions, scope::Scope, trace, tracer, SCHEMA_URL,
+};
 use opentelemetry::{Context, InstrumentationScope, KeyValue};
 use opentelemetry_sdk::trace::{InMemorySpanExporter, SdkTracerProvider};
 use std::fmt::Debug;
@@ -30,7 +31,13 @@ fn cloned_sdk_tracer_preserves_scope_and_exports_spans() {
     require_clone_and_debug(&original);
     let cloned = original.clone();
     drop(original);
-    let mut span = cloned.inner().start("cloned-handle");
+    let mut span = trace::start_myapp_task_run(
+        &Context::new(),
+        &cloned,
+        trace::MyappTaskRunName::from("cloned-handle"),
+        attribute::MyappTaskState::Done,
+        [],
+    );
     span.end();
     provider.force_flush().unwrap();
     let spans = exporter.get_finished_spans().unwrap();
@@ -65,7 +72,13 @@ impl opentelemetry::trace::TracerProvider for BareProvider {
 #[test]
 fn custom_tracer_without_clone_or_debug_still_constructs_and_starts_spans() {
     let tracer = tracer::Tracer::new(&BareProvider, InstrumentationOptions::default());
-    let mut span = tracer.inner().start("bare-handle");
+    let mut span = trace::start_myapp_task_run(
+        &Context::new(),
+        &tracer,
+        trace::MyappTaskRunName::from("bare-handle"),
+        attribute::MyappTaskState::Done,
+        [],
+    );
     assert!(!span.is_recording());
     span.end();
 }

@@ -7,13 +7,11 @@ pub struct DemoLiteralCount {
 
 impl DemoLiteralCount {
     pub const NAME: &'static str = "demo.literal.count";
-    pub const UNIT: &'static str = "literal\\b\\u1234";
-    pub const DESCRIPTION: &'static str = "literal \\b \\f \\u1234";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("literal \\b \\f \\u1234")
+            .with_unit("literal\\b\\u1234")
             .build();
         Self { instrument }
     }
@@ -44,13 +42,11 @@ pub struct DemoLiteralCountObservable {
 
 impl DemoLiteralCountObservable {
     pub const NAME: &'static str = DemoLiteralCount::NAME;
-    pub const UNIT: &'static str = DemoLiteralCount::UNIT;
-    pub const DESCRIPTION: &'static str = DemoLiteralCount::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(DemoLiteralCountObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("literal \\b \\f \\u1234")
+            .with_unit("literal\\b\\u1234")
             .with_callback(move |observer| callback(DemoLiteralCountObserver { observer }))
             .build();
         Self { _instrument: instrument }

@@ -7,13 +7,11 @@ pub struct CapsHttp2STATUSCount {
 
 impl CapsHttp2STATUSCount {
     pub const NAME: &'static str = "caps.http2_STATUS.count";
-    pub const UNIT: &'static str = "{item}";
-    pub const DESCRIPTION: &'static str = "Synthetic count.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Synthetic count.")
+            .with_unit("{item}")
             .build();
         Self { instrument }
     }
@@ -44,13 +42,11 @@ pub struct CapsHttp2STATUSCountObservable {
 
 impl CapsHttp2STATUSCountObservable {
     pub const NAME: &'static str = CapsHttp2STATUSCount::NAME;
-    pub const UNIT: &'static str = CapsHttp2STATUSCount::UNIT;
-    pub const DESCRIPTION: &'static str = CapsHttp2STATUSCount::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(CapsHttp2STATUSCountObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Synthetic count.")
+            .with_unit("{item}")
             .with_callback(move |observer| callback(CapsHttp2STATUSCountObserver { observer }))
             .build();
         Self { _instrument: instrument }
