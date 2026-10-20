@@ -1,0 +1,28 @@
+{% import "header.j2" as h -%}
+{% import "names.j2" as n -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
+{{ h.header() }}
+
+package scope
+
+import (
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
+)
+
+{{ ["Meter is a metric.Meter whose instrumentation scope carries the registry's schema URL. Every instrument in the registry is created from one, so everything it records is tied to the registry's schema.", "The zero Meter creates instruments that record nothing."] | join("\n\n") | comment }}
+type Meter struct{ meter metric.Meter }
+
+{{ ["NewMeter returns a Meter that creates instruments from m."] | join | comment }}
+func NewMeter(m metric.Meter) Meter {
+	return Meter{meter: m}
+}
+
+{{ ["MetricMeter returns the metric.Meter inside m, or a no-op one for the zero Meter."] | join | comment }}
+func MetricMeter(m Meter) metric.Meter {
+	if m.meter == nil {
+		return noop.Meter{}
+	}
+	return m.meter
+}
+{% endfilter %}

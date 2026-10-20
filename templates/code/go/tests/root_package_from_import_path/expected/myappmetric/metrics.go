@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"example.com/acme/acmeconv/acmeconvmeter"
+	"example.com/acme/acmeconv/internal/scope"
 	"example.com/acme/acmeconv/myappattr"
 )
 
@@ -21,10 +22,10 @@ type TaskStarted struct{ inst metric.Int64Counter }
 // NewTaskStarted creates the `myapp.task.started` instrument from meter.
 func NewTaskStarted(meter acmeconvmeter.Meter) (TaskStarted, error) {
 	var m TaskStarted
-	inst, err := meter.MetricMeter().Int64Counter(
+	inst, err := scope.MetricMeter(meter).Int64Counter(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of tasks started."),
+		metric.WithUnit("{task}"),
 	)
 	if err != nil {
 		return TaskStarted{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
@@ -35,22 +36,6 @@ func NewTaskStarted(meter acmeconvmeter.Meter) (TaskStarted, error) {
 // Name returns the name `myapp.task.started` records under.
 func (TaskStarted) Name() string {
 	return "myapp.task.started"
-}
-
-// Unit returns the unit of `myapp.task.started`.
-func (TaskStarted) Unit() string {
-	return "{task}"
-}
-
-// Description returns the description of `myapp.task.started`.
-func (TaskStarted) Description() string {
-	return "Number of tasks started."
-}
-
-// Inst returns the underlying metric.Int64Counter, or nil for the zero
-// TaskStarted.
-func (m TaskStarted) Inst() metric.Int64Counter {
-	return m.inst
 }
 
 // Add records one `myapp.task.started` measurement. The zero TaskStarted
@@ -105,10 +90,10 @@ func NewTaskStartedObservable(meter acmeconvmeter.Meter, callback TaskStartedCal
 	if callback == nil {
 		return TaskStartedObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
-	inst, err := meter.MetricMeter().Int64ObservableCounter(
+	inst, err := scope.MetricMeter(meter).Int64ObservableCounter(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of tasks started."),
+		metric.WithUnit("{task}"),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
 			return callback(ctx, TaskStartedObserver{o: o})
 		}),
@@ -122,20 +107,4 @@ func NewTaskStartedObservable(meter acmeconvmeter.Meter, callback TaskStartedCal
 // Name returns the name `myapp.task.started` records under.
 func (TaskStartedObservable) Name() string {
 	return TaskStarted{}.Name()
-}
-
-// Unit returns the unit of `myapp.task.started`.
-func (TaskStartedObservable) Unit() string {
-	return TaskStarted{}.Unit()
-}
-
-// Description returns the description of `myapp.task.started`.
-func (TaskStartedObservable) Description() string {
-	return TaskStarted{}.Description()
-}
-
-// Inst returns the underlying metric.Int64ObservableCounter, or nil for the
-// zero TaskStartedObservable.
-func (m TaskStartedObservable) Inst() metric.Int64ObservableCounter {
-	return m.inst
 }

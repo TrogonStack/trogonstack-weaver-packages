@@ -105,9 +105,9 @@ func {{ emit }}(ctx context.Context, logger {{ n.root() }}logger.Logger{% for re
 	for _, opt := range opts {
 		opt.{{ private }}Option(&record)
 	}
-	if !logger.LogLogger().Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
+	if !scope.LogLogger(logger).Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
 		return
 	}
-	logger.LogLogger().Emit(ctx, record)
+	scope.LogLogger(logger).Emit(ctx, record)
 }
 {% endfor %}{% endfilter %}

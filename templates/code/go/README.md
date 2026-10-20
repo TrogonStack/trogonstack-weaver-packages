@@ -42,6 +42,7 @@ that carries the registry's schema URL:
 | `<root>tracer/tracer.go`        | The `Tracer` that starts spans tied to the schema.                     |
 | `<root>logger/doc.go`           | Package comment for the logger package, when the registry has events.  |
 | `<root>logger/logger.go`        | The `Logger` that emits events tied to the schema.                     |
+| `internal/scope/`               | The raw meter, tracer, and logger, importable only by generated code.  |
 | `<namespace>attr/doc.go`        | Package comment for the attribute package.                             |
 | `<namespace>attr/attributes.go` | A typed value per attribute, plus enum members as package variables.   |
 | `<namespace>metric/doc.go`      | Package comment for the metric package.                                |
@@ -117,13 +118,18 @@ only code that records metrics imports the metric API through it.
 A schema URL passed in the options is replaced. The zero `Meter` creates
 instruments that record nothing.
 
+A `Meter` has no exported methods or fields, and the raw `metric.Meter` is not
+reachable from it. Only the generated instruments use it, so every metric that
+is recorded goes through the typed API. The raw handles of the meter, tracer,
+and logger live in `internal/scope`, which Go lets only code below the output
+directory import.
+
 ### Tracer
 
 When the registry declares a span, `<root>tracer` holds a `Tracer` built the
 same way as the meter, with `SchemaURL` set on its instrumentation scope, so
-spans started from it are tied to the registry's schema. The generated
-[span starters](#spans) take it, and `TraceTracer` exposes the underlying
-`trace.Tracer` for spans the registry does not declare:
+spans started from it are tied to the registry's schema. It is consumed only
+through the generated [span starters](#spans), which take it:
 
 ```go
 tracer := semconvtracer.New(provider, "example.com/myservice")
@@ -135,9 +141,8 @@ The zero `Tracer` starts spans that record nothing.
 
 When the registry declares an event, `<root>logger` holds a `Logger` built the
 same way, over the OpenTelemetry Logs API, so log records emitted from it are
-tied to the registry's schema. The generated [event emitters](#events) take
-it, and `LogLogger` exposes the underlying `log.Logger` for records the
-registry does not declare:
+tied to the registry's schema. It is consumed only through the generated
+[event emitters](#events), which take it:
 
 ```go
 logger := semconvlogger.New(provider, "example.com/myservice")
@@ -177,19 +182,16 @@ created and runs on every collection. An error it returns is returned by that
 collection, and the observations made before it are still recorded. Histograms
 have no asynchronous form in OpenTelemetry, so they get none.
 
-Like the official `semconv` packages, each instrument type, synchronous or
-observable, reports its registry metadata through `Name`, `Unit`, and
-`Description`, which work on the zero value, and exposes the underlying
-OpenTelemetry instrument through `Inst`:
+Each instrument type, synchronous or observable, reports the name it records
+under through `Name`, which works on the zero value, so SDK views and tests can
+refer to it. The underlying OpenTelemetry instrument, the unit, and the
+description are not exposed, so an instrument can only record through its typed
+methods. A refinement reports the name of the metric it refines, since both
+record into one instrument:
 
 ```go
 myappmetric.TaskDuration{}.Name() // "myapp.task.duration"
-duration.Inst()                   // metric.Float64Histogram
 ```
-
-`Unit` and `Description` return an empty string when the registry sets none.
-A refinement reports the name of the metric it refines, since both record into
-one instrument.
 
 Go cannot check a requirement condition, so conditionally required,
 recommended, and opt-in attributes are all options. The option's doc comment
@@ -313,8 +315,18 @@ Every attribute given to the starter is set as the span starts, since a sampler
 sees only those. An option for an attribute marked `sampling_relevant` returns
 only `<Name>StartAttr`, which the starter accepts, while every other option
 returns `<Name>Attr`, which `SetAttributes` also accepts after the span started.
-`<Name>` also has `End`, `RecordError`, `SetStatus`, and `Span` for the
-underlying `trace.Span`. The zero `<Name>` records nothing.
+`<Name>` also has `End`, `SpanContext`, `IsRecording`, and `SetStatus`. A span
+with late attributes also has `AddEvent`, `AddLink`, and `RecordError`, which
+take the same `<Name>Attr` options as `SetAttributes`, while one without takes
+no attributes there. A span with a typed `<Name>Name` also has `SetName`, and a
+span named from its attributes has none, so its name stays derived. The zero
+`<Name>` records nothing.
+
+The raw `trace.Span` is not exposed, and no method accepts a `trace.Link` or a
+`trace.EventOption`, so a span only records the attributes its convention
+declares. The typed span is the only generated surface, and the `context.Context`
+the starter returns carries the underlying span as the OpenTelemetry API's own
+boundary for context propagation.
 
 The span name comes from `name.note`, read only for a name template: a single
 code span holding at least one `{placeholder}`, each the key of an attribute
@@ -431,8 +443,8 @@ since the registry does not pass an attribute's deprecation on to its members
 ### Not generated
 
 An event body has no registry form, so events are emitted without one. Span
-events and links have no registry form either, so `Span` exposes the
-`trace.Span` they are added through.
+events and links have no registry form either, so `AddEvent` and `AddLink`
+take only the span's declared late attributes.
 Attribute `examples` and an attribute's `entity_associations` are not
 rendered either, since neither has a Go API counterpart.
 

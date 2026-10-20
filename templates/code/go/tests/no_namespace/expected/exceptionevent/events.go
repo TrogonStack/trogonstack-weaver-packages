@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/log"
 
 	"example.com/semconv/exceptionattr"
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/semconvlogger"
 )
 
@@ -71,8 +72,8 @@ func Emit(ctx context.Context, logger semconvlogger.Logger, exceptionType except
 	for _, opt := range opts {
 		opt.bareOption(&record)
 	}
-	if !logger.LogLogger().Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
+	if !scope.LogLogger(logger).Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
 		return
 	}
-	logger.LogLogger().Emit(ctx, record)
+	scope.LogLogger(logger).Emit(ctx, record)
 }

@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
 
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/myappattr"
 	"example.com/semconv/semconvlogger"
 	"example.com/semconv/workerattr"
@@ -56,10 +57,10 @@ func EmitHostStarted(ctx context.Context, logger semconvlogger.Logger, opts ...H
 	for _, opt := range opts {
 		opt.hostStartedOption(&record)
 	}
-	if !logger.LogLogger().Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
+	if !scope.LogLogger(logger).Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
 		return
 	}
-	logger.LogLogger().Emit(ctx, record)
+	scope.LogLogger(logger).Emit(ctx, record)
 }
 
 // TaskFinishedOption sets an attribute, the severity, or the timestamp of an
@@ -129,8 +130,8 @@ func EmitTaskFinished(ctx context.Context, logger semconvlogger.Logger, myappTas
 	for _, opt := range opts {
 		opt.taskFinishedOption(&record)
 	}
-	if !logger.LogLogger().Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
+	if !scope.LogLogger(logger).Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
 		return
 	}
-	logger.LogLogger().Emit(ctx, record)
+	scope.LogLogger(logger).Emit(ctx, record)
 }

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"example.com/semconv/authattr"
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/myappattr"
 	"example.com/semconv/semconvmeter"
 )
@@ -26,10 +27,10 @@ type QueueDepth struct{ inst metric.Int64Gauge }
 // Deprecated: Replaced by `myapp.task.active`.
 func NewQueueDepth(meter semconvmeter.Meter) (QueueDepth, error) {
 	var m QueueDepth
-	inst, err := meter.MetricMeter().Int64Gauge(
+	inst, err := scope.MetricMeter(meter).Int64Gauge(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of tasks waiting in the queue."),
+		metric.WithUnit("{task}"),
 	)
 	if err != nil {
 		return QueueDepth{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
@@ -40,22 +41,6 @@ func NewQueueDepth(meter semconvmeter.Meter) (QueueDepth, error) {
 // Name returns the name `myapp.queue.depth` records under.
 func (QueueDepth) Name() string {
 	return "myapp.queue.depth"
-}
-
-// Unit returns the unit of `myapp.queue.depth`.
-func (QueueDepth) Unit() string {
-	return "{task}"
-}
-
-// Description returns the description of `myapp.queue.depth`.
-func (QueueDepth) Description() string {
-	return "Number of tasks waiting in the queue."
-}
-
-// Inst returns the underlying metric.Int64Gauge, or nil for the zero
-// QueueDepth.
-func (m QueueDepth) Inst() metric.Int64Gauge {
-	return m.inst
 }
 
 // Record records one `myapp.queue.depth` measurement. The zero QueueDepth
@@ -108,10 +93,10 @@ func NewQueueDepthObservable(meter semconvmeter.Meter, callback QueueDepthCallba
 	if callback == nil {
 		return QueueDepthObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
-	inst, err := meter.MetricMeter().Int64ObservableGauge(
+	inst, err := scope.MetricMeter(meter).Int64ObservableGauge(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of tasks waiting in the queue."),
+		metric.WithUnit("{task}"),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
 			return callback(ctx, QueueDepthObserver{o: o})
 		}),
@@ -127,22 +112,6 @@ func (QueueDepthObservable) Name() string {
 	return QueueDepth{}.Name()
 }
 
-// Unit returns the unit of `myapp.queue.depth`.
-func (QueueDepthObservable) Unit() string {
-	return QueueDepth{}.Unit()
-}
-
-// Description returns the description of `myapp.queue.depth`.
-func (QueueDepthObservable) Description() string {
-	return QueueDepth{}.Description()
-}
-
-// Inst returns the underlying metric.Int64ObservableGauge, or nil for the
-// zero QueueDepthObservable.
-func (m QueueDepthObservable) Inst() metric.Int64ObservableGauge {
-	return m.inst
-}
-
 // TaskActive is `myapp.task.active`.
 //
 // Number of tasks currently running.
@@ -151,10 +120,10 @@ type TaskActive struct{ inst metric.Int64UpDownCounter }
 // NewTaskActive creates the `myapp.task.active` instrument from meter.
 func NewTaskActive(meter semconvmeter.Meter) (TaskActive, error) {
 	var m TaskActive
-	inst, err := meter.MetricMeter().Int64UpDownCounter(
+	inst, err := scope.MetricMeter(meter).Int64UpDownCounter(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of tasks currently running."),
+		metric.WithUnit("{task}"),
 	)
 	if err != nil {
 		return TaskActive{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
@@ -165,22 +134,6 @@ func NewTaskActive(meter semconvmeter.Meter) (TaskActive, error) {
 // Name returns the name `myapp.task.active` records under.
 func (TaskActive) Name() string {
 	return "myapp.task.active"
-}
-
-// Unit returns the unit of `myapp.task.active`.
-func (TaskActive) Unit() string {
-	return "{task}"
-}
-
-// Description returns the description of `myapp.task.active`.
-func (TaskActive) Description() string {
-	return "Number of tasks currently running."
-}
-
-// Inst returns the underlying metric.Int64UpDownCounter, or nil for the zero
-// TaskActive.
-func (m TaskActive) Inst() metric.Int64UpDownCounter {
-	return m.inst
 }
 
 // Add records one `myapp.task.active` measurement. The zero TaskActive
@@ -235,10 +188,10 @@ func NewTaskActiveObservable(meter semconvmeter.Meter, callback TaskActiveCallba
 	if callback == nil {
 		return TaskActiveObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
-	inst, err := meter.MetricMeter().Int64ObservableUpDownCounter(
+	inst, err := scope.MetricMeter(meter).Int64ObservableUpDownCounter(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of tasks currently running."),
+		metric.WithUnit("{task}"),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
 			return callback(ctx, TaskActiveObserver{o: o})
 		}),
@@ -252,22 +205,6 @@ func NewTaskActiveObservable(meter semconvmeter.Meter, callback TaskActiveCallba
 // Name returns the name `myapp.task.active` records under.
 func (TaskActiveObservable) Name() string {
 	return TaskActive{}.Name()
-}
-
-// Unit returns the unit of `myapp.task.active`.
-func (TaskActiveObservable) Unit() string {
-	return TaskActive{}.Unit()
-}
-
-// Description returns the description of `myapp.task.active`.
-func (TaskActiveObservable) Description() string {
-	return TaskActive{}.Description()
-}
-
-// Inst returns the underlying metric.Int64ObservableUpDownCounter, or nil
-// for the zero TaskActiveObservable.
-func (m TaskActiveObservable) Inst() metric.Int64ObservableUpDownCounter {
-	return m.inst
 }
 
 // TaskDurationAttr is an attribute `myapp.task.duration` accepts in addition
@@ -312,10 +249,10 @@ type TaskDuration struct{ inst metric.Float64Histogram }
 // NewTaskDuration creates the `myapp.task.duration` instrument from meter.
 func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
 	var m TaskDuration
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Time a task took from start to finish."),
+		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries(0, 0.005, 0.01, 0.1, 1, 10),
 	)
 	if err != nil {
@@ -327,22 +264,6 @@ func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
 // Name returns the name `myapp.task.duration` records under.
 func (TaskDuration) Name() string {
 	return "myapp.task.duration"
-}
-
-// Unit returns the unit of `myapp.task.duration`.
-func (TaskDuration) Unit() string {
-	return "s"
-}
-
-// Description returns the description of `myapp.task.duration`.
-func (TaskDuration) Description() string {
-	return "Time a task took from start to finish."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// TaskDuration.
-func (m TaskDuration) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `myapp.task.duration` measurement. The zero
@@ -394,10 +315,10 @@ type TaskRetryDuration struct{ inst metric.Float64Histogram }
 // meter.
 func NewTaskRetryDuration(meter semconvmeter.Meter) (TaskRetryDuration, error) {
 	var m TaskRetryDuration
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Time a task took from start to finish."),
+		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries(0, 0.005, 0.01, 0.1, 1, 10),
 	)
 	if err != nil {
@@ -409,22 +330,6 @@ func NewTaskRetryDuration(meter semconvmeter.Meter) (TaskRetryDuration, error) {
 // Name returns the name `myapp.task.retry.duration` records under.
 func (TaskRetryDuration) Name() string {
 	return "myapp.task.duration"
-}
-
-// Unit returns the unit of `myapp.task.retry.duration`.
-func (TaskRetryDuration) Unit() string {
-	return "s"
-}
-
-// Description returns the description of `myapp.task.retry.duration`.
-func (TaskRetryDuration) Description() string {
-	return "Time a task took from start to finish."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// TaskRetryDuration.
-func (m TaskRetryDuration) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `myapp.task.retry.duration` measurement. The zero
@@ -481,10 +386,10 @@ type TaskStarted struct{ inst metric.Int64Counter }
 // for it.
 func NewTaskStarted(meter semconvmeter.Meter) (TaskStarted, error) {
 	var m TaskStarted
-	inst, err := meter.MetricMeter().Int64Counter(
+	inst, err := scope.MetricMeter(meter).Int64Counter(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of tasks started."),
+		metric.WithUnit("{task}"),
 	)
 	if err != nil {
 		return TaskStarted{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
@@ -495,22 +400,6 @@ func NewTaskStarted(meter semconvmeter.Meter) (TaskStarted, error) {
 // Name returns the name `myapp.task.started` records under.
 func (TaskStarted) Name() string {
 	return "myapp.task.started"
-}
-
-// Unit returns the unit of `myapp.task.started`.
-func (TaskStarted) Unit() string {
-	return "{task}"
-}
-
-// Description returns the description of `myapp.task.started`.
-func (TaskStarted) Description() string {
-	return "Number of tasks started."
-}
-
-// Inst returns the underlying metric.Int64Counter, or nil for the zero
-// TaskStarted.
-func (m TaskStarted) Inst() metric.Int64Counter {
-	return m.inst
 }
 
 // Add records one `myapp.task.started` measurement. The zero TaskStarted
@@ -575,10 +464,10 @@ func NewTaskStartedObservable(meter semconvmeter.Meter, callback TaskStartedCall
 	if callback == nil {
 		return TaskStartedObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
-	inst, err := meter.MetricMeter().Int64ObservableCounter(
+	inst, err := scope.MetricMeter(meter).Int64ObservableCounter(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of tasks started."),
+		metric.WithUnit("{task}"),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
 			return callback(ctx, TaskStartedObserver{o: o})
 		}),
@@ -592,20 +481,4 @@ func NewTaskStartedObservable(meter semconvmeter.Meter, callback TaskStartedCall
 // Name returns the name `myapp.task.started` records under.
 func (TaskStartedObservable) Name() string {
 	return TaskStarted{}.Name()
-}
-
-// Unit returns the unit of `myapp.task.started`.
-func (TaskStartedObservable) Unit() string {
-	return TaskStarted{}.Unit()
-}
-
-// Description returns the description of `myapp.task.started`.
-func (TaskStartedObservable) Description() string {
-	return TaskStarted{}.Description()
-}
-
-// Inst returns the underlying metric.Int64ObservableCounter, or nil for the
-// zero TaskStartedObservable.
-func (m TaskStartedObservable) Inst() metric.Int64ObservableCounter {
-	return m.inst
 }

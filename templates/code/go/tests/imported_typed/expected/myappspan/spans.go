@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 
+	"example.com/internal/scope"
 	"example.com/myappattr"
 	"example.com/myapptracer"
 	"example.com/upstream/errorattr"
@@ -46,9 +47,7 @@ func WithTaskDispatchServerPort(v int) TaskDispatchAttr {
 // TaskDispatch records nothing.
 type TaskDispatch struct{ span trace.Span }
 
-// Span returns the underlying trace.Span, or a no-op one for the zero
-// TaskDispatch.
-func (s TaskDispatch) Span() trace.Span {
+func (s TaskDispatch) raw() trace.Span {
 	if s.span == nil {
 		return noop.Span{}
 	}
@@ -57,28 +56,52 @@ func (s TaskDispatch) Span() trace.Span {
 
 // End ends the span.
 func (s TaskDispatch) End(opts ...trace.SpanEndOption) {
-	s.Span().End(opts...)
+	s.raw().End(opts...)
 }
 
-// SetAttributes sets attributes on the span after it started.
-func (s TaskDispatch) SetAttributes(attrs ...TaskDispatchAttr) {
+// SpanContext returns the span context of the span.
+func (s TaskDispatch) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s TaskDispatch) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+func (TaskDispatch) lateAttrs(attrs []TaskDispatchAttr) []attribute.KeyValue {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
 		if kv := attr.taskDispatchStartAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
 		}
 	}
-	s.Span().SetAttributes(kvs...)
+	return kvs
 }
 
-// RecordError records err as an exception event on the span.
-func (s TaskDispatch) RecordError(err error, opts ...trace.EventOption) {
-	s.Span().RecordError(err, opts...)
+// SetAttributes sets attributes on the span after it started.
+func (s TaskDispatch) SetAttributes(attrs ...TaskDispatchAttr) {
+	s.raw().SetAttributes(s.lateAttrs(attrs)...)
+}
+
+// AddEvent adds an event called name to the span, with attrs.
+func (s TaskDispatch) AddEvent(name string, attrs ...TaskDispatchAttr) {
+	s.raw().AddEvent(name, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// AddLink links the span to sc, with attrs.
+func (s TaskDispatch) AddLink(sc trace.SpanContext, attrs ...TaskDispatchAttr) {
+	s.raw().AddLink(trace.Link{SpanContext: sc, Attributes: s.lateAttrs(attrs)})
+}
+
+// RecordError records err as an exception event on the span, with attrs.
+func (s TaskDispatch) RecordError(err error, attrs ...TaskDispatchAttr) {
+	s.raw().RecordError(err, trace.WithAttributes(s.lateAttrs(attrs)...))
 }
 
 // SetStatus sets the status of the span.
 func (s TaskDispatch) SetStatus(code codes.Code, description string) {
-	s.Span().SetStatus(code, description)
+	s.raw().SetStatus(code, description)
 }
 
 // StartTaskDispatch starts the `myapp.task.dispatch` span from tracer with
@@ -102,7 +125,7 @@ func StartTaskDispatch(ctx context.Context, tracer myapptracer.Tracer, errorType
 		}
 	}
 	name := "task " + myappTaskID.KeyValue().Value.Emit() + " failed with " + errorType.KeyValue().Value.Emit()
-	ctx, span := tracer.TraceTracer().Start(
+	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,
 		trace.WithSpanKind(trace.SpanKindInternal),

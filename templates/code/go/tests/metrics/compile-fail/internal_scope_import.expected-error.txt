@@ -1,0 +1,1 @@
+use of internal package example.com/semconv/internal/scope not allowed

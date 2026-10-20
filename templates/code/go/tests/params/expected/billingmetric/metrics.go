@@ -12,6 +12,7 @@ import (
 
 	"example.com/acme/internal/acmesemconv/acmesemconvmeter"
 	"example.com/acme/internal/acmesemconv/billingattr"
+	"example.com/acme/internal/acmesemconv/internal/scope"
 	"example.com/acme/internal/acmesemconv/myappattr"
 )
 
@@ -52,10 +53,10 @@ type InvoiceAmount struct{ inst metric.Float64Histogram }
 // meter.
 func NewInvoiceAmount(meter acmesemconvmeter.Meter) (InvoiceAmount, error) {
 	var m InvoiceAmount
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Amount of each issued invoice."),
+		metric.WithUnit("{currency_unit}"),
 	)
 	if err != nil {
 		return InvoiceAmount{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
@@ -66,22 +67,6 @@ func NewInvoiceAmount(meter acmesemconvmeter.Meter) (InvoiceAmount, error) {
 // Name returns the name `acme.billing.invoice.amount` records under.
 func (InvoiceAmount) Name() string {
 	return "acme.billing.invoice.amount"
-}
-
-// Unit returns the unit of `acme.billing.invoice.amount`.
-func (InvoiceAmount) Unit() string {
-	return "{currency_unit}"
-}
-
-// Description returns the description of `acme.billing.invoice.amount`.
-func (InvoiceAmount) Description() string {
-	return "Amount of each issued invoice."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// InvoiceAmount.
-func (m InvoiceAmount) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `acme.billing.invoice.amount` measurement. The zero

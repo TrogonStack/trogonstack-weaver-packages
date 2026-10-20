@@ -85,8 +85,7 @@ func New{{ name }}Name(name string) {{ name }}Name {
 {{ [span ~ " is a started span of `" ~ def.id ~ "`. The zero " ~ span ~ " records nothing.", deprecated] | select | join("\n\n") | comment }}
 type {{ span }} struct{ span trace.Span }
 
-{{ ["Span returns the underlying trace.Span, or a no-op one for the zero " ~ span ~ "."] | join | comment }}
-func (s {{ span }}) Span() trace.Span {
+func (s {{ span }}) raw() trace.Span {
 	if s.span == nil {
 		return noop.Span{}
 	}
@@ -95,28 +94,76 @@ func (s {{ span }}) Span() trace.Span {
 
 {{ ["End ends the span."] | join | comment }}
 func (s {{ span }}) End(opts ...trace.SpanEndOption) {
-	s.Span().End(opts...)
+	s.raw().End(opts...)
+}
+
+{{ ["SpanContext returns the span context of the span."] | join | comment }}
+func (s {{ span }}) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+{{ ["IsRecording reports whether the span records events."] | join | comment }}
+func (s {{ span }}) IsRecording() bool {
+	return s.raw().IsRecording()
 }
 {% if def.has_late_attrs %}
-{{ ["SetAttributes sets attributes on the span after it started."] | join | comment }}
-func (s {{ span }}) SetAttributes(attrs ...{{ name }}Attr) {
+func ({{ span }}) lateAttrs(attrs []{{ name }}Attr) []attribute.KeyValue {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
 		if kv := attr.{{ private }}StartAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
 		}
 	}
-	s.Span().SetAttributes(kvs...)
-}
-{% endif %}
-{{ ["RecordError records err as an exception event on the span."] | join | comment }}
-func (s {{ span }}) RecordError(err error, opts ...trace.EventOption) {
-	s.Span().RecordError(err, opts...)
+	return kvs
 }
 
+{{ ["SetAttributes sets attributes on the span after it started."] | join | comment }}
+func (s {{ span }}) SetAttributes(attrs ...{{ name }}Attr) {
+	s.raw().SetAttributes(s.lateAttrs(attrs)...)
+}
+
+{{ ["AddEvent adds an event called name to the span, with attrs."] | join | comment }}
+func (s {{ span }}) AddEvent(name string, attrs ...{{ name }}Attr) {
+	s.raw().AddEvent(name, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+{{ ["AddLink links the span to sc, with attrs."] | join | comment }}
+func (s {{ span }}) AddLink(sc trace.SpanContext, attrs ...{{ name }}Attr) {
+	s.raw().AddLink(trace.Link{SpanContext: sc, Attributes: s.lateAttrs(attrs)})
+}
+
+{{ ["RecordError records err as an exception event on the span, with attrs."] | join | comment }}
+func (s {{ span }}) RecordError(err error, attrs ...{{ name }}Attr) {
+	s.raw().RecordError(err, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+{% else %}
+{{ ["AddEvent adds an event called name to the span."] | join | comment }}
+func (s {{ span }}) AddEvent(name string) {
+	s.raw().AddEvent(name)
+}
+
+{{ ["AddLink links the span to sc."] | join | comment }}
+func (s {{ span }}) AddLink(sc trace.SpanContext) {
+	s.raw().AddLink(trace.Link{SpanContext: sc})
+}
+
+{{ ["RecordError records err as an exception event on the span."] | join | comment }}
+func (s {{ span }}) RecordError(err error) {
+	s.raw().RecordError(err)
+}
+{% endif %}
+{%- if not def.name_parts %}
+{{ ["SetName sets the name of the span. An empty " ~ name ~ "Name, including the zero one, names the span `" ~ def.type ~ "`."] | join | comment }}
+func (s {{ span }}) SetName(name {{ name }}Name) {
+	if name.value == "" {
+		name = {{ name }}Name{value: {{ def.type | tojson }}}
+	}
+	s.raw().SetName(name.value)
+}
+{% endif %}
 {{ ["SetStatus sets the status of the span."] | join | comment }}
 func (s {{ span }}) SetStatus(code codes.Code, description string) {
-	s.Span().SetStatus(code, description)
+	s.raw().SetStatus(code, description)
 }
 {%- set name_doc = "The span is named `" ~ def.name_template ~ "`, with each placeholder replaced by the value of the attribute it names." if def.name_parts else none %}
 
@@ -149,7 +196,7 @@ func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if no
 {%- if def.name_parts %}
 	name := {% for part in def.name_parts %}{% if not loop.first %} + {% endif %}{% if part.attr %}{{ attr_kv(part.attr, n.unexported(part.attr.attr_param)) }}.Value.Emit(){% else %}{{ part.text | tojson }}{% endif %}{% endfor %}
 {%- endif %}
-	ctx, span := tracer.TraceTracer().Start(
+	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 {%- if def.name_parts %}
 		name,

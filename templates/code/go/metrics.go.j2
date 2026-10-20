@@ -67,10 +67,10 @@ type {{ name }} struct{ inst metric.{{ instrument }} }
 {{ ["New" ~ name ~ " creates the `" ~ def.instrument_name ~ "` instrument from meter.", opt_in, deprecated] | select | join("\n\n") | comment }}
 func New{{ name }}(meter {{ n.root() }}meter.Meter) ({{ name }}, error) {
 	var m {{ name }}
-	inst, err := meter.MetricMeter().{{ instrument }}(
+	inst, err := scope.MetricMeter(meter).{{ instrument }}(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription({{ (def.description or "") | trim | tojson }}),
+		metric.WithUnit({{ (def.unit or "") | tojson }}),
 {%- if def.bucket_boundaries %}
 		metric.WithExplicitBucketBoundaries({{ def.bucket_boundaries | join(", ") }}),
 {%- endif %}
@@ -84,21 +84,6 @@ func New{{ name }}(meter {{ n.root() }}meter.Meter) ({{ name }}, error) {
 {{ ["Name returns the name `" ~ def.name ~ "` records under."] | join | comment }}
 func ({{ name }}) Name() string {
 	return {{ def.instrument_name | tojson }}
-}
-
-{{ ["Unit returns the unit of `" ~ def.name ~ "`."] | join | comment }}
-func ({{ name }}) Unit() string {
-	return {{ (def.unit or "") | tojson }}
-}
-
-{{ ["Description returns the description of `" ~ def.name ~ "`."] | join | comment }}
-func ({{ name }}) Description() string {
-	return {{ (def.description or "") | trim | tojson }}
-}
-
-{{ ["Inst returns the underlying metric." ~ instrument ~ ", or nil for the zero " ~ name ~ "."] | join | comment }}
-func (m {{ name }}) Inst() metric.{{ instrument }} {
-	return m.inst
 }
 
 {{ [method ~ " records one `" ~ def.name ~ "` measurement. The zero " ~ name ~ " records nothing."] | join | comment }}
@@ -182,10 +167,10 @@ func New{{ observable }}(meter {{ n.root() }}meter.Meter, callback {{ callback }
 	if callback == nil {
 		return {{ observable }}{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
-	inst, err := meter.MetricMeter().{{ value_type }}Observable{{ suffix }}(
+	inst, err := scope.MetricMeter(meter).{{ value_type }}Observable{{ suffix }}(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription({{ (def.description or "") | trim | tojson }}),
+		metric.WithUnit({{ (def.unit or "") | tojson }}),
 		metric.With{{ value_type }}Callback(func(ctx context.Context, o metric.{{ value_type }}Observer) error {
 			return callback(ctx, {{ observer }}{o: o})
 		}),
@@ -199,21 +184,6 @@ func New{{ observable }}(meter {{ n.root() }}meter.Meter, callback {{ callback }
 {{ ["Name returns the name `" ~ def.name ~ "` records under."] | join | comment }}
 func ({{ observable }}) Name() string {
 	return {{ name }}{}.Name()
-}
-
-{{ ["Unit returns the unit of `" ~ def.name ~ "`."] | join | comment }}
-func ({{ observable }}) Unit() string {
-	return {{ name }}{}.Unit()
-}
-
-{{ ["Description returns the description of `" ~ def.name ~ "`."] | join | comment }}
-func ({{ observable }}) Description() string {
-	return {{ name }}{}.Description()
-}
-
-{{ ["Inst returns the underlying metric." ~ value_type ~ "Observable" ~ suffix ~ ", or nil for the zero " ~ observable ~ "."] | join | comment }}
-func (m {{ observable }}) Inst() metric.{{ value_type }}Observable{{ suffix }} {
-	return m.inst
 }
 {%- endif %}
 {% endfor %}{% endfilter %}

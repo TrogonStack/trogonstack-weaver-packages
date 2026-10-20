@@ -4,29 +4,20 @@ package myapptracer
 
 import (
 	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 
 	myapp "example.com"
+	"example.com/internal/scope"
 )
 
 // Tracer is a trace.Tracer whose instrumentation scope carries
 // myapp.SchemaURL, so every span it starts is tied to the registry's schema.
 //
 // The zero Tracer starts spans that record nothing.
-type Tracer struct{ tracer trace.Tracer }
+type Tracer = scope.Tracer
 
 // New returns the tracer named name from provider, with myapp.SchemaURL set
 // on its instrumentation scope. A schema URL in opts is replaced.
 func New(provider trace.TracerProvider, name string, opts ...trace.TracerOption) Tracer {
 	opts = append(opts[:len(opts):len(opts)], trace.WithSchemaURL(myapp.SchemaURL))
-	return Tracer{tracer: provider.Tracer(name, opts...)}
-}
-
-// TraceTracer returns the underlying trace.Tracer, or a no-op one for the
-// zero Tracer.
-func (t Tracer) TraceTracer() trace.Tracer {
-	if t.tracer == nil {
-		return noop.Tracer{}
-	}
-	return t.tracer
+	return scope.NewTracer(provider.Tracer(name, opts...))
 }
