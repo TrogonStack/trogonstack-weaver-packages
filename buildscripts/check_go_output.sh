@@ -93,6 +93,19 @@ for test_dir in "${PACKAGE_DIR}"/tests/*/; do
   ) || { echo "  FAIL: ${test_name} does not build."; exit 1; }
   echo "  PASS: ${test_name} builds and vets."
 
+  # Generated code takes its providers as parameters, so it must never reach
+  # the OpenTelemetry globals.
+  global_imports="$(
+    cd "${module_dir}"
+    go list -f '{{range .Imports}}{{println .}}{{end}}' ./... |
+      grep -xE 'go\.opentelemetry\.io/otel|go\.opentelemetry\.io/otel/log/global' || true
+  )"
+  if [[ -n "${global_imports}" ]]; then
+    echo "  FAIL: ${test_name} imports the OpenTelemetry globals:"
+    echo "${global_imports}"
+    exit 1
+  fi
+
   if [[ -d "${consumer}" ]]; then
     (
       cd "${module_dir}"

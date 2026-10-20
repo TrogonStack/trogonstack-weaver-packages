@@ -22,6 +22,13 @@ for test_dir in "${PACKAGE_DIR}"/tests/*/; do
   fi
   echo "-> Checking Rust [${test_name}] ..."
 
+  # Generated code takes its providers as parameters, so it must never reach
+  # the OpenTelemetry globals.
+  if grep -rnF 'global::' "${expected}"; then
+    echo "  FAIL: ${test_name} reaches the OpenTelemetry globals."
+    exit 1
+  fi
+
   crate_dir="${WORK_DIR}/${test_name}"
   mkdir -p "${crate_dir}/src"
   cp -R "${expected}/." "${crate_dir}/src/"

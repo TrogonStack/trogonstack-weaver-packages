@@ -3,7 +3,6 @@ package myappattr_test
 import (
 	"testing"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
 	"example.com/semconv/myappattr"
@@ -25,26 +24,15 @@ func TestEnumMemberKeyValue(t *testing.T) {
 	}
 }
 
-func TestZeroValueEnumDropsWithoutReporting(t *testing.T) {
-	var reported error
-	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) { reported = err }))
-	t.Cleanup(func() { otel.SetErrorHandler(otel.ErrorHandlerFunc(func(error) {})) })
-
+func TestZeroValueEnumDrops(t *testing.T) {
 	kv := myappattr.TaskState{}.KeyValue()
 
 	if kv.Valid() {
 		t.Fatalf("KeyValue() = %v, want an invalid attribute.KeyValue", kv)
 	}
-	if reported != nil {
-		t.Fatalf("the zero TaskState reported %v, want nothing reported", reported)
-	}
 }
 
 func TestZeroValueBooleanEnumIsNotItsFalseMember(t *testing.T) {
-	var reported error
-	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) { reported = err }))
-	t.Cleanup(func() { otel.SetErrorHandler(otel.ErrorHandlerFunc(func(error) {})) })
-
 	if kv := myappattr.TaskPreemptibleForbidden.KeyValue(); !kv.Valid() || kv.Value.AsBool() {
 		t.Fatalf("TaskPreemptibleForbidden.KeyValue() = %v, want a valid false attribute", kv)
 	}
@@ -52,8 +40,5 @@ func TestZeroValueBooleanEnumIsNotItsFalseMember(t *testing.T) {
 	zero := myappattr.TaskPreemptible{}.KeyValue()
 	if zero.Valid() {
 		t.Fatalf("the zero TaskPreemptible.KeyValue() = %v, want an invalid attribute", zero)
-	}
-	if reported != nil {
-		t.Fatalf("the zero TaskPreemptible reported %v, want nothing reported", reported)
 	}
 }
