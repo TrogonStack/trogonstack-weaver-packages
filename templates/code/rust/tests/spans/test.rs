@@ -1,5 +1,5 @@
 use generated_semconv::{attribute, trace, tracer, SCHEMA_URL};
-use opentelemetry::trace::{Span, TraceContextExt};
+use opentelemetry::trace::TraceContextExt;
 use opentelemetry_sdk::trace::{InMemorySpanExporter, SdkTracerProvider};
 
 #[test]
@@ -16,8 +16,8 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
             },
         },
     );
-    let _: &opentelemetry_sdk::trace::SdkTracer = tracer.inner();
-    let mut parent = trace::start_myapp_task_dispatch(
+    let _: &tracer::Tracer<opentelemetry_sdk::trace::SdkTracer> = &tracer;
+    let parent = trace::start_myapp_task_dispatch(
         &opentelemetry::Context::new(),
         &tracer,
         attribute::WorkerHostName::from("worker-1"),
@@ -26,7 +26,8 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
             attribute::MyappTaskId::from("task-1"),
         )],
     );
-    let _: &mut opentelemetry_sdk::trace::Span = parent.span();
+    assert!(parent.is_recording());
+    assert!(parent.span_context().is_valid());
     let context = parent.into_context(&opentelemetry::Context::new());
     let mut child = trace::start_myapp_task_run(
         &context,
@@ -155,7 +156,7 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         assert!(spans.iter().any(|span| span.name == name));
     }
     let mut noop = trace::MyappTaskRun::default();
-    assert!(!noop.span().is_recording());
+    assert!(!noop.is_recording());
     noop.end();
 }
 
@@ -165,4 +166,106 @@ const _: &str = trace::MyappTaskRun::NAME;
 fn spans_expose_their_type_as_a_constant() {
     assert_eq!(trace::MyappTaskRun::NAME, "myapp.task.run");
     assert_eq!(trace::WorkerTaskDispatch::NAME, trace::MyappTaskDispatch::NAME);
+}
+
+#[test]
+fn typed_events_links_names_and_span_context_reach_the_exporter() {
+    let exporter = InMemorySpanExporter::default();
+    let provider = SdkTracerProvider::builder()
+        .with_simple_exporter(exporter.clone())
+        .build();
+    let tracer = tracer::Tracer::new(&provider, Default::default());
+    let linked = trace::start_myapp_task_run(
+        &opentelemetry::Context::new(),
+        &tracer,
+        trace::MyappTaskRunName::from("linked"),
+        attribute::MyappTaskState::Done,
+        [],
+    );
+    let linked_context = linked.span_context().clone();
+    let mut span = trace::start_myapp_task_dispatch(
+        &opentelemetry::Context::new(),
+        &tracer,
+        attribute::WorkerHostName::from("worker-1"),
+        attribute::WorkerHostPort::from(8080),
+        [],
+    );
+    assert!(span.is_recording());
+    assert!(span.span_context().is_valid());
+    let timestamp = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(5);
+    span.add_event(
+        "queued",
+        [trace::MyappTaskDispatchAttr::TaskAttempt(
+            attribute::MyappTaskAttempt::from(2),
+        )],
+    );
+    span.add_event_with_timestamp(
+        "retried",
+        timestamp,
+        [trace::MyappTaskDispatchAttr::QueueName(
+            attribute::MyappQueueName::from("reports"),
+        )],
+    );
+    span.add_link(
+        linked_context.clone(),
+        [trace::MyappTaskDispatchAttr::TaskAttempt(
+            attribute::MyappTaskAttempt::from(1),
+        )],
+    );
+    span.end();
+
+    let mut renamed = trace::start_myapp_name_static(
+        &opentelemetry::Context::new(),
+        &tracer,
+        trace::MyappNameStaticName::from("before"),
+    );
+    renamed.update_name(trace::MyappNameStaticName::from("after"));
+    renamed.add_event("plain");
+    renamed.add_event_with_timestamp("plain at", timestamp);
+    renamed.add_link(linked_context.clone());
+    renamed.end();
+    let mut defaulted = trace::start_myapp_name_static(
+        &opentelemetry::Context::new(),
+        &tracer,
+        trace::MyappNameStaticName::from("custom"),
+    );
+    defaulted.update_name(trace::MyappNameStaticName::default());
+    defaulted.end();
+
+    provider.force_flush().unwrap();
+    let spans = exporter.get_finished_spans().unwrap();
+    let dispatch = spans
+        .iter()
+        .find(|span| span.name == "dispatch worker-1:8080")
+        .unwrap();
+    let events = dispatch.events.iter().collect::<Vec<_>>();
+    assert_eq!(events.len(), 2);
+    assert_eq!(events[0].name, "queued");
+    assert_eq!(
+        events[0].attributes,
+        [opentelemetry::KeyValue::new("myapp.task.attempt", 2)]
+    );
+    assert_eq!(events[1].name, "retried");
+    assert_eq!(events[1].timestamp, timestamp);
+    assert_eq!(
+        events[1].attributes,
+        [opentelemetry::KeyValue::new("myapp.queue.name", "reports")]
+    );
+    let links = dispatch.links.iter().collect::<Vec<_>>();
+    assert_eq!(links.len(), 1);
+    assert_eq!(links[0].span_context, linked_context);
+    assert_eq!(
+        links[0].attributes,
+        [opentelemetry::KeyValue::new("myapp.task.attempt", 1)]
+    );
+    let renamed = spans.iter().find(|span| span.name == "after").unwrap();
+    assert_eq!(
+        renamed.events.iter().map(|event| event.name.as_ref()).collect::<Vec<_>>(),
+        ["plain", "plain at"]
+    );
+    assert!(renamed.events.iter().all(|event| event.attributes.is_empty()));
+    assert_eq!(renamed.links.iter().count(), 1);
+    assert!(spans
+        .iter()
+        .any(|span| span.name == trace::MyappNameStatic::NAME));
 }

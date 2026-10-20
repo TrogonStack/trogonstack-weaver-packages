@@ -13,11 +13,21 @@ impl<S: ::opentelemetry::trace::Span> BillingInvoiceIssue<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, ::std::vec::Vec::new());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, ::std::vec::Vec::new());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, ::std::vec::Vec::new());
+    }
 }
 
 impl BillingInvoiceIssue {

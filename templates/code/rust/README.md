@@ -49,9 +49,9 @@ and the `myapp.task.run` span starter becomes `trace::start_myapp_task_run`.
 | `attribute` | Attribute newtypes and enum variants, `KEY` and conversions into `KeyValue` or log `AnyValue`. |
 | `options`   | Typed instrumentation options containing scope configuration.                                  |
 | `scope`     | Scope attributes configuration; package identity is fixed.                                     |
-| `meter`     | Schema-aware `Meter`, with `new`, `inner`, and a no-op `Default`.                              |
-| `tracer`    | Schema-aware `Tracer`, with `new`, `inner`, and a no-op `Default`.                             |
-| `logger`    | Schema-aware generic `Logger`, with `new`, `inner`, and a no-op `Default`.                     |
+| `meter`     | Schema-aware `Meter`, with `new` and a no-op `Default`.                                        |
+| `tracer`    | Schema-aware `Tracer`, with `new` and a no-op `Default`.                                       |
+| `logger`    | Schema-aware generic `Logger`, with `new` and a no-op `Default`.                               |
 | `metric`    | Synchronous instruments and observable counters, up-down counters, and gauges.                 |
 | `trace`     | Span starters, typed names, start attributes, and attributes allowed after starting.           |
 | `event`     | Typed log event emitters and options for attributes, severity, and timestamp.                  |
@@ -71,6 +71,11 @@ let tracer = semconv::tracer::Tracer::new(&provider, options);
 ```
 
 Use `InstrumentationOptions::default()` when no scope attributes are needed.
+
+The schema-scoped meter, tracer, and logger are consumed only through the
+generated instruments, span starters, and emitters. They do not expose the
+underlying OpenTelemetry handle, so callers cannot record untyped attributes
+through them.
 
 The constructors accept unsized providers, so a handle can come straight from
 the global provider without a wrapper type:
@@ -156,12 +161,19 @@ registry type; static names stay borrowed and owned names move into the span.
 All starter attributes are present before sampling. Sampling-relevant
 attributes appear only in the start attribute enum. The separate late attribute
 enum is accepted by `set_attributes`. The wrapper exposes `end`,
-`end_with_timestamp`, `record_error`, `set_status`, and the underlying span.
-`into_context` transfers the span into a parent context for nested spans and
+`end_with_timestamp`, `record_error`, `set_status`, `span_context`, and
+`is_recording`. Events and links take the late attribute enum, so
+`add_event`, `add_event_with_timestamp`, and `add_link` accept only declared
+attributes; a span with no late attributes takes none. `update_name` is emitted
+for spans with a typed `Name` and is absent when the name is derived from
+attributes. The wrapper does not expose the underlying span, so every attribute
+it records is typed. `into_context` transfers the span into a parent context for nested spans and
 normal OpenTelemetry context attachment. The generated tracer and span wrappers
 retain the provider's concrete types. Their default type is the no-op API type;
 `into_context` uses OpenTelemetry's synchronization and type erasure when
-context integration is needed.
+context integration is needed. The typed span is the only generated surface;
+once the span is in a `Context`, the OpenTelemetry API's own `SpanRef` governs
+it, and context propagation is that API's boundary.
 
 Derived names borrow attribute values and write directly into a preallocated
 `String`, reserving known literal and string lengths plus space for other
@@ -225,25 +237,24 @@ string with `.into()` or `StringValue::from` at the call site.
 
 ### Signal metadata
 
-Signal types carry their registry metadata as associated constants, usable in
-`const` contexts. The generated code reads these constants, so each value
-appears once.
+Signal types carry their registry name as an associated constant, usable in
+`const` contexts. The generated code reads these constants, so each name
+appears once. Metric units and descriptions are not exposed; they reach the SDK
+when the instrument is built and appear on the exported metric.
 
-| Type                                | Constants                                                        |
-| ----------------------------------- | ---------------------------------------------------------------- |
-| `metric::MyappTaskDuration`         | `NAME`, `UNIT`, `DESCRIPTION`                                    |
-| `metric::MyappQueueDepthObservable` | `NAME`, `UNIT`, `DESCRIPTION`, defined as the synchronous type's |
-| `trace::MyappTaskRun`               | `NAME`, the span type                                            |
-| `event::MyappTaskFinished`          | `NAME`, the event name                                           |
-| `resource::MyappHost`               | `NAME`, the entity type                                          |
+| Type                                | Constants                                 |
+| ----------------------------------- | ----------------------------------------- |
+| `metric::MyappTaskDuration`         | `NAME`                                    |
+| `metric::MyappQueueDepthObservable` | `NAME`, defined as the synchronous type's |
+| `trace::MyappTaskRun`               | `NAME`, the span type                     |
+| `event::MyappTaskFinished`          | `NAME`, the event name                    |
+| `resource::MyappHost`               | `NAME`, the entity type                   |
 
-`UNIT` and `DESCRIPTION` are empty strings when the registry leaves them unset.
 Refinements report the type they refine. Each event has a unit struct that
 holds its `NAME`; emitting still goes through its `emit_` function.
 
 ```rust
 const DURATION: &str = metric::MyappTaskDuration::NAME;
-assert_eq!(metric::MyappTaskDuration::UNIT, "s");
 ```
 
 ## Parameters
@@ -270,9 +281,10 @@ ASCII letter-led dotted segments containing letters, digits, and underscores.
 Namespace segments must be lowercase and may contain digits and underscores.
 
 Conditional requirements remain options because Rust cannot prove registry
-conditions. Event bodies, span events, and links have no registry form; use
-the underlying OpenTelemetry handles when needed. Template and `any` attribute
-types are not generated.
+conditions. An event body has no registry form, so events are emitted without
+one. Span events and links have no registry form either, so `add_event`,
+`add_event_with_timestamp`, and `add_link` take only the span's declared late
+attributes. Template and `any` attribute types are not generated.
 
 ## Validate a change
 

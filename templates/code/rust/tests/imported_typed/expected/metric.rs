@@ -19,13 +19,11 @@ pub struct MyappTaskFailed {
 
 impl MyappTaskFailed {
     pub const NAME: &'static str = "myapp.task.failed";
-    pub const UNIT: &'static str = "{task}";
-    pub const DESCRIPTION: &'static str = "Number of tasks that failed.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of tasks that failed.")
+            .with_unit("{task}")
             .build();
         Self { instrument }
     }
@@ -60,13 +58,11 @@ pub struct MyappTaskFailedObservable {
 
 impl MyappTaskFailedObservable {
     pub const NAME: &'static str = MyappTaskFailed::NAME;
-    pub const UNIT: &'static str = MyappTaskFailed::UNIT;
-    pub const DESCRIPTION: &'static str = MyappTaskFailed::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(MyappTaskFailedObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of tasks that failed.")
+            .with_unit("{task}")
             .with_callback(move |observer| callback(MyappTaskFailedObserver { observer }))
             .build();
         Self { _instrument: instrument }

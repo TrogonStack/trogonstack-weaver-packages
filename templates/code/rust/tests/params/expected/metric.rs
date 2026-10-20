@@ -21,13 +21,11 @@ pub struct BillingInvoiceAmount {
 
 impl BillingInvoiceAmount {
     pub const NAME: &'static str = "acme.billing.invoice.amount";
-    pub const UNIT: &'static str = "{currency_unit}";
-    pub const DESCRIPTION: &'static str = "Amount of each issued invoice.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Amount of each issued invoice.")
+            .with_unit("{currency_unit}")
             .build();
         Self { instrument }
     }

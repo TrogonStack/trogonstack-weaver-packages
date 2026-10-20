@@ -13,11 +13,21 @@ impl<S: ::opentelemetry::trace::Span> MyappNameApostrophe<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, ::std::vec::Vec::new());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, ::std::vec::Vec::new());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, ::std::vec::Vec::new());
+    }
 }
 
 impl MyappNameApostrophe {
@@ -52,11 +62,21 @@ impl<S: ::opentelemetry::trace::Span> MyappNameArrays<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, ::std::vec::Vec::new());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, ::std::vec::Vec::new());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, ::std::vec::Vec::new());
+    }
 }
 
 impl MyappNameArrays {
@@ -96,11 +116,21 @@ impl<S: ::opentelemetry::trace::Span> MyappNameBackslash<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, ::std::vec::Vec::new());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, ::std::vec::Vec::new());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, ::std::vec::Vec::new());
+    }
 }
 
 impl MyappNameBackslash {
@@ -135,11 +165,21 @@ impl<S: ::opentelemetry::trace::Span> MyappNameControl<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, ::std::vec::Vec::new());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, ::std::vec::Vec::new());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, ::std::vec::Vec::new());
+    }
 }
 
 impl MyappNameControl {
@@ -174,11 +214,21 @@ impl<S: ::opentelemetry::trace::Span> MyappNameFloat<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, ::std::vec::Vec::new());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, ::std::vec::Vec::new());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, ::std::vec::Vec::new());
+    }
 }
 
 impl MyappNameFloat {
@@ -226,11 +276,25 @@ impl<S: ::opentelemetry::trace::Span> MyappNameStatic<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn update_name(&mut self, name: MyappNameStaticName) {
+        let name = if name.0.is_empty() { ::std::borrow::Cow::Borrowed(MyappNameStatic::NAME) } else { name.0 };
+        ::opentelemetry::trace::Span::update_name(&mut self.span, name);
+    }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, ::std::vec::Vec::new());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, ::std::vec::Vec::new());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, ::std::vec::Vec::new());
+    }
 }
 
 impl MyappNameStatic {
@@ -263,11 +327,21 @@ impl<S: ::opentelemetry::trace::Span> MyappNameUnicode<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, ::std::vec::Vec::new());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, ::std::vec::Vec::new());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, ::std::vec::Vec::new());
+    }
 }
 
 impl MyappNameUnicode {
@@ -318,11 +392,25 @@ impl<S: ::opentelemetry::trace::Span> MyappQueueDrain<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn update_name(&mut self, name: MyappQueueDrainName) {
+        let name = if name.0.is_empty() { ::std::borrow::Cow::Borrowed(MyappQueueDrain::NAME) } else { name.0 };
+        ::opentelemetry::trace::Span::update_name(&mut self.span, name);
+    }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, ::std::vec::Vec::new());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, ::std::vec::Vec::new());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, ::std::vec::Vec::new());
+    }
 }
 
 impl MyappQueueDrain {
@@ -389,11 +477,21 @@ impl<S: ::opentelemetry::trace::Span> MyappTaskDispatch<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, attributes: impl IntoIterator<Item = MyappTaskDispatchAttr>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskDispatchStartAttr::from(attribute))).collect());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime, attributes: impl IntoIterator<Item = MyappTaskDispatchAttr>) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskDispatchStartAttr::from(attribute))).collect());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext, attributes: impl IntoIterator<Item = MyappTaskDispatchAttr>) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskDispatchStartAttr::from(attribute))).collect());
+    }
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = MyappTaskDispatchAttr>) {
         for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(MyappTaskDispatchStartAttr::from(attribute))); }
     }
@@ -471,11 +569,25 @@ impl<S: ::opentelemetry::trace::Span> MyappTaskRun<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn update_name(&mut self, name: MyappTaskRunName) {
+        let name = if name.0.is_empty() { ::std::borrow::Cow::Borrowed(MyappTaskRun::NAME) } else { name.0 };
+        ::opentelemetry::trace::Span::update_name(&mut self.span, name);
+    }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, attributes: impl IntoIterator<Item = MyappTaskRunAttr>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskRunStartAttr::from(attribute))).collect());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime, attributes: impl IntoIterator<Item = MyappTaskRunAttr>) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskRunStartAttr::from(attribute))).collect());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext, attributes: impl IntoIterator<Item = MyappTaskRunAttr>) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskRunStartAttr::from(attribute))).collect());
+    }
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = MyappTaskRunAttr>) {
         for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(MyappTaskRunStartAttr::from(attribute))); }
     }
@@ -540,11 +652,21 @@ impl<S: ::opentelemetry::trace::Span> WorkerTaskDispatch<S> {
     {
         parent.with_span(self.span)
     }
-    pub fn span(&mut self) -> &mut S { &mut self.span }
+    pub fn span_context(&self) -> &::opentelemetry::trace::SpanContext { ::opentelemetry::trace::Span::span_context(&self.span) }
+    pub fn is_recording(&self) -> bool { ::opentelemetry::trace::Span::is_recording(&self.span) }
     pub fn end(&mut self) { ::opentelemetry::trace::Span::end(&mut self.span); }
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
+    pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, attributes: impl IntoIterator<Item = WorkerTaskDispatchAttr>) {
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(WorkerTaskDispatchStartAttr::from(attribute))).collect());
+    }
+    pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime, attributes: impl IntoIterator<Item = WorkerTaskDispatchAttr>) {
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(WorkerTaskDispatchStartAttr::from(attribute))).collect());
+    }
+    pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext, attributes: impl IntoIterator<Item = WorkerTaskDispatchAttr>) {
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(WorkerTaskDispatchStartAttr::from(attribute))).collect());
+    }
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = WorkerTaskDispatchAttr>) {
         for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(WorkerTaskDispatchStartAttr::from(attribute))); }
     }

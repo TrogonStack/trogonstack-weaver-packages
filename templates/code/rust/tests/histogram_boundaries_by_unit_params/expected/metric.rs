@@ -7,13 +7,11 @@ pub struct MyappTaskDuration {
 
 impl MyappTaskDuration {
     pub const NAME: &'static str = "myapp.task.duration";
-    pub const UNIT: &'static str = "s";
-    pub const DESCRIPTION: &'static str = "Time a task took from start to finish.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Time a task took from start to finish.")
+            .with_unit("s")
             .build();
         Self { instrument }
     }
@@ -34,13 +32,11 @@ pub struct MyappTaskQueueWait {
 
 impl MyappTaskQueueWait {
     pub const NAME: &'static str = "myapp.task.queue_wait";
-    pub const UNIT: &'static str = "min";
-    pub const DESCRIPTION: &'static str = "Time a task waited in the queue, in minutes.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Time a task waited in the queue, in minutes.")
+            .with_unit("min")
             .with_boundaries(vec![1_f64, 5_f64, 10_f64, 30_f64, 60_f64])
             .build();
         Self { instrument }

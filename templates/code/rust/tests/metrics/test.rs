@@ -351,19 +351,50 @@ fn alternate_numeric_types_export_sync_and_observable_measurements() {
 const _: &str = metric::MyappTaskDuration::NAME;
 
 #[test]
-fn instruments_expose_registry_metadata_as_constants() {
+fn instruments_expose_registry_name_as_constant() {
     assert_eq!(metric::MyappTaskDuration::NAME, "myapp.task.duration");
-    assert_eq!(metric::MyappTaskDuration::UNIT, "s");
+    assert_eq!(metric::AuthAttemptsObservable::NAME, metric::AuthAttempts::NAME);
+}
+
+#[test]
+fn instruments_export_registry_unit_and_description() {
+    let (provider, exporter) = provider();
+    let meter = meter::Meter::new(&provider, InstrumentationOptions::default());
+    metric::MyappTaskDuration::new(&meter).record(
+        0.1,
+        attribute::MyappTaskId::from("metadata"),
+        [],
+    );
+    let _observable = metric::AuthAttemptsObservable::new(&meter, |observer| {
+        observer.observe(
+            1,
+            attribute::AuthMethod::Password,
+            attribute::AuthSuccess::from(true),
+        );
+    });
+
+    provider.force_flush().unwrap();
+    let exported = exporter.get_finished_metrics().unwrap();
+    let scope = exported[0].scope_metrics().next().unwrap();
+    let find = |metric_name: &str| {
+        scope
+            .metrics()
+            .find(|metric| metric.name() == metric_name)
+            .unwrap()
+    };
+    let duration = find(metric::MyappTaskDuration::NAME);
+    assert_eq!(duration.unit(), "s");
     assert_eq!(
-        metric::MyappTaskDuration::DESCRIPTION,
+        duration.description(),
         "Time a task took from start to finish."
     );
-    assert_eq!(metric::AuthAttemptsObservable::NAME, metric::AuthAttempts::NAME);
-    assert_eq!(metric::AuthAttemptsObservable::UNIT, "{attempt}");
+    let observable = find(metric::AuthAttemptsObservable::NAME);
+    assert_eq!(observable.unit(), "{attempt}");
     assert_eq!(
-        metric::AuthAttemptsObservable::DESCRIPTION,
-        metric::AuthAttempts::DESCRIPTION
+        observable.description(),
+        "Number of authentication attempts."
     );
+    provider.shutdown().unwrap();
 }
 
 #[test]

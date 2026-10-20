@@ -8,7 +8,7 @@ impl<T: opentelemetry::trace::Tracer> Tracer<T> {
         let tracer = provider.tracer_with_scope(options.scope.into());
         Self(tracer)
     }
-    pub fn inner(&self) -> &T { &self.0 }
+    pub(super) fn inner(&self) -> &T { &self.0 }
 }
 
 impl Default for Tracer {

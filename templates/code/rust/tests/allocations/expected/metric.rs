@@ -19,13 +19,11 @@ pub struct ProbeOptional {
 
 impl ProbeOptional {
     pub const NAME: &'static str = "probe.optional";
-    pub const UNIT: &'static str = "{measurement}";
-    pub const DESCRIPTION: &'static str = "Measurements with optional numeric attributes.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Measurements with optional numeric attributes.")
+            .with_unit("{measurement}")
             .build();
         Self { instrument }
     }
@@ -60,13 +58,11 @@ pub struct ProbeOptionalObservable {
 
 impl ProbeOptionalObservable {
     pub const NAME: &'static str = ProbeOptional::NAME;
-    pub const UNIT: &'static str = ProbeOptional::UNIT;
-    pub const DESCRIPTION: &'static str = ProbeOptional::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(ProbeOptionalObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Measurements with optional numeric attributes.")
+            .with_unit("{measurement}")
             .with_callback(move |observer| callback(ProbeOptionalObserver { observer }))
             .build();
         Self { _instrument: instrument }
@@ -84,13 +80,11 @@ pub struct ProbeRequired {
 
 impl ProbeRequired {
     pub const NAME: &'static str = "probe.required";
-    pub const UNIT: &'static str = "{measurement}";
-    pub const DESCRIPTION: &'static str = "Measurements with a required numeric attribute.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Measurements with a required numeric attribute.")
+            .with_unit("{measurement}")
             .build();
         Self { instrument }
     }
@@ -121,13 +115,11 @@ pub struct ProbeRequiredObservable {
 
 impl ProbeRequiredObservable {
     pub const NAME: &'static str = ProbeRequired::NAME;
-    pub const UNIT: &'static str = ProbeRequired::UNIT;
-    pub const DESCRIPTION: &'static str = ProbeRequired::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(ProbeRequiredObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Measurements with a required numeric attribute.")
+            .with_unit("{measurement}")
             .with_callback(move |observer| callback(ProbeRequiredObserver { observer }))
             .build();
         Self { _instrument: instrument }

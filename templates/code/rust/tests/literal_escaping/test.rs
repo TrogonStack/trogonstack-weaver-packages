@@ -42,9 +42,3 @@ fn signal_metadata_preserves_literal_backslash_sequences() {
     assert_eq!(metric.description(), r"literal \b \f \u1234");
     assert_eq!(metric.unit(), r"literal\b\u1234");
 }
-
-#[test]
-fn metadata_constants_preserve_literal_backslash_sequences() {
-    assert_eq!(DemoLiteralCount::UNIT, r"literal\b\u1234");
-    assert_eq!(DemoLiteralCount::DESCRIPTION, r"literal \b \f \u1234");
-}

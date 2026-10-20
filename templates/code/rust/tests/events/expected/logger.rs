@@ -8,7 +8,7 @@ impl<L: opentelemetry::logs::Logger> Logger<L> {
         let logger = provider.logger_with_scope(options.scope.into());
         Self(logger)
     }
-    pub fn inner(&self) -> &L { &self.0 }
+    pub(super) fn inner(&self) -> &L { &self.0 }
 }
 
 impl Default for Logger {

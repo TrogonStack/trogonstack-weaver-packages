@@ -19,13 +19,11 @@ pub struct EdgeUpstreamDuration {
 
 impl EdgeUpstreamDuration {
     pub const NAME: &'static str = "edge.upstream.duration";
-    pub const UNIT: &'static str = "s";
-    pub const DESCRIPTION: &'static str = "Time spent waiting on an upstream server.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().f64_histogram(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Time spent waiting on an upstream server.")
+            .with_unit("s")
             .with_boundaries(vec![0.005_f64, 0.01_f64, 0.025_f64, 0.05_f64, 0.075_f64, 0.1_f64, 0.25_f64, 0.5_f64, 0.75_f64, 1_f64, 2.5_f64, 5_f64, 7.5_f64, 10_f64])
             .build();
         Self { instrument }
@@ -61,13 +59,11 @@ pub struct MyappTaskFailed {
 
 impl MyappTaskFailed {
     pub const NAME: &'static str = "myapp.task.failed";
-    pub const UNIT: &'static str = "{task}";
-    pub const DESCRIPTION: &'static str = "Number of tasks that failed.";
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().u64_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of tasks that failed.")
+            .with_unit("{task}")
             .build();
         Self { instrument }
     }
@@ -102,13 +98,11 @@ pub struct MyappTaskFailedObservable {
 
 impl MyappTaskFailedObservable {
     pub const NAME: &'static str = MyappTaskFailed::NAME;
-    pub const UNIT: &'static str = MyappTaskFailed::UNIT;
-    pub const DESCRIPTION: &'static str = MyappTaskFailed::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn(MyappTaskFailedObserver<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().u64_observable_counter(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description("Number of tasks that failed.")
+            .with_unit("{task}")
             .with_callback(move |observer| callback(MyappTaskFailedObserver { observer }))
             .build();
         Self { _instrument: instrument }

@@ -36,13 +36,11 @@ pub struct {{ name }} {
 
 impl {{ name }} {
     pub const NAME: &'static str = {{ h.literal(def.instrument_name) }};
-    pub const UNIT: &'static str = {{ h.literal(def.unit or '') }};
-    pub const DESCRIPTION: &'static str = {{ h.literal((def.description or '') | trim) }};
 
     pub fn new(meter: &super::meter::Meter) -> Self {
         let instrument = meter.inner().{{ builder }}(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description({{ h.literal((def.description or '') | trim) }})
+            .with_unit({{ h.literal(def.unit or '') }})
 {% if def.bucket_boundaries %}
             .with_boundaries(vec![{% for bound in def.bucket_boundaries %}{{ bound }}_f64{% if not loop.last %}, {% endif %}{% endfor %}])
 {% endif %}
@@ -94,13 +92,11 @@ pub struct {{ observable }} {
 
 impl {{ observable }} {
     pub const NAME: &'static str = {{ name }}::NAME;
-    pub const UNIT: &'static str = {{ name }}::UNIT;
-    pub const DESCRIPTION: &'static str = {{ name }}::DESCRIPTION;
 
     pub fn new(meter: &super::meter::Meter, callback: impl Fn({{ name }}Observer<'_>) + Send + Sync + 'static) -> Self {
         let instrument = meter.inner().{{ value_type }}_observable_{{ 'up_down_counter' if def.instrument == 'updowncounter' else def.instrument }}(Self::NAME)
-            .with_description(Self::DESCRIPTION)
-            .with_unit(Self::UNIT)
+            .with_description({{ h.literal((def.description or '') | trim) }})
+            .with_unit({{ h.literal(def.unit or '') }})
             .with_callback(move |observer| callback({{ name }}Observer { observer }))
             .build();
         Self { _instrument: instrument }
