@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.4...v0.1.5) (2026-10-20)
+
+
+### Bug Fixes
+
+* **go:** Keep recording behind the generated typed instruments ([#51](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/51)) ([70f0ef5](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/70f0ef58d3224d412ffc13838407e49c9fcba5ea))
+* **rust:** Keep recording behind the generated typed instruments ([#50](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/50)) ([b1acbb4](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/b1acbb40bc063fc8113084b953e14612c5f62dd2))
+
 ## [0.1.4](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.3...v0.1.4) (2026-10-13)
 
 
