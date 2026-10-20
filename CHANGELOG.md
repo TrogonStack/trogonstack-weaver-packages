@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.5...v0.1.6) (2026-10-20)
+
+
+### Bug Fixes
+
+* Inject OpenTelemetry providers instead of reading globals ([#53](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/53)) ([61114c3](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/61114c394ab994959301d86cb114ef9c2153309e))
+
 ## [0.1.5](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.4...v0.1.5) (2026-10-20)
 
 
