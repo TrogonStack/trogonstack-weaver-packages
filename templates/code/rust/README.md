@@ -77,14 +77,16 @@ generated instruments, span starters, and emitters. They do not expose the
 underlying OpenTelemetry handle, so callers cannot record untyped attributes
 through them.
 
-The constructors accept unsized providers, so a handle can come straight from
-the global provider without a wrapper type:
+The generated code never reads the OpenTelemetry globals. Build each provider
+once in `main` and pass it, or the handles built from it, to whatever records
+telemetry, so a test can hand in its own provider and run in parallel with
+others. The constructors accept unsized providers, so a component can depend on
+`&dyn MeterProvider` rather than on the SDK type:
 
 ```rust
-let meter = semconv::meter::Meter::new(
-    &*opentelemetry::global::meter_provider(),
-    semconv::options::InstrumentationOptions::default(),
-);
+fn task_metrics(provider: &dyn opentelemetry::metrics::MeterProvider) -> semconv::meter::Meter {
+    semconv::meter::Meter::new(provider, semconv::options::InstrumentationOptions::default())
+}
 ```
 
 The instrumentation identity is fixed during generation. Set

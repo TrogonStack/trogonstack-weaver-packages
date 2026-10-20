@@ -398,17 +398,14 @@ fn instruments_export_registry_unit_and_description() {
 }
 
 #[test]
-fn meter_accepts_the_global_provider_trait_object() {
+fn meter_accepts_a_provider_trait_object() {
     let (provider, exporter) = provider();
-    opentelemetry::global::set_meter_provider(provider.clone());
-    let meter = meter::Meter::new(
-        &*opentelemetry::global::meter_provider(),
-        InstrumentationOptions::default(),
-    );
+    let dyn_provider: &dyn opentelemetry::metrics::MeterProvider = &provider;
+    let meter = meter::Meter::new(dyn_provider, InstrumentationOptions::default());
     metric::MyappTaskStarted::new(&meter).add(
         1,
         [metric::MyappTaskStartedAttr::TaskId(
-            attribute::MyappTaskId::from("global"),
+            attribute::MyappTaskId::from("dyn"),
         )],
     );
 

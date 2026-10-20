@@ -462,8 +462,10 @@ rendered either, since neither has a Go API counterpart.
 ## Wiring it into a program
 
 Create one `sdklog.LoggerProvider`, `sdktrace.TracerProvider`, and
-`sdkmetric.MeterProvider` per process, register them as the OpenTelemetry
-globals, and build the generated handles from them once at startup. A
+`sdkmetric.MeterProvider` per process and build the generated handles from
+them once at startup. Pass the providers and handles down explicitly rather
+than registering them as the OpenTelemetry globals, so a test can hand in its
+own providers and run in parallel with others. A
 provider caches the logger, tracer, or meter it hands out by instrumentation
 scope, so calling `<root>logger.New`, `<root>tracer.New`, or `<root>meter.New`
 again with the same scope never creates a second SDK instance. Build each
@@ -486,23 +488,21 @@ func main() {
 		sdklog.WithProcessor(devlog.Processor{Handler: slog.NewTextHandler(os.Stderr, nil)}),
 	)
 	defer lp.Shutdown(ctx)
-	global.SetLoggerProvider(lp)
-	slog.SetDefault(otelslog.NewLogger(scope, otelslog.WithLoggerProvider(lp)))
+	slogger := otelslog.NewLogger(scope, otelslog.WithLoggerProvider(lp))
 
 	logger := semconvlogger.New(lp, scope)
 	tracer := semconvtracer.New(tracerProvider, scope)
 	meter := semconvmeter.New(meterProvider, scope)
 
-	run(ctx, logger, tracer, meter)
+	run(ctx, slogger, logger, tracer, meter)
 }
 ```
 
 `tracerProvider` and `meterProvider` are built the same way, with
-`sdktrace.NewTracerProvider` and `sdkmetric.NewMeterProvider`, and registered
-with `otel.SetTracerProvider` and `otel.SetMeterProvider`. A library that
-takes its telemetry from the ambient OpenTelemetry API, rather than from a
-handle passed to it, reaches the provider through those globals instead of
-building one of its own, so it still ties into the same pipeline.
+`sdktrace.NewTracerProvider` and `sdkmetric.NewMeterProvider`. Hand the same
+providers to instrumented libraries through their options, such as
+`otelhttp.WithTracerProvider` and `otelhttp.WithMeterProvider`, so they tie
+into the same pipeline without a global.
 
 The scope is the instrumenting package's import path, such as
 `example.com/myservice/internal/worker` above, not the service name. The
@@ -545,16 +545,16 @@ its provider exists.
 
 ### slog and typed events share one pipeline
 
-`slog.SetDefault(otelslog.NewLogger(scope, otelslog.WithLoggerProvider(lp)))`
-makes slog calls and the generated `Emit...` functions feed the same
+`otelslog.NewLogger(scope, otelslog.WithLoggerProvider(lp))` makes slog calls and the generated `Emit...` functions feed the same
 `LoggerProvider`, so a line written with `slog.InfoContext` lands beside the
 events emitted through `<root>logger.Logger`. Always use the `...Context`
 variants, `InfoContext`, `WarnContext`, and so on: `otelslog` reads the trace
 and span IDs from `ctx`, and without it a line is not linked to the span it
 happened in.
 
-Libraries take a `*slog.Logger`, or call `slog.Default()`, and never build
-their own handler, so they inherit whichever handler `main` installed.
+Libraries take the `*slog.Logger` as a parameter, and never build their own
+handler or call `slog.Default()`, so they write through the handler `main`
+passed in.
 
 Use the typed event when the registry defines the occurrence, and slog for
 everything else: debugging, startup, operational notes. Never log a fact both
@@ -611,8 +611,8 @@ func levelOf(s log.Severity) slog.Level {
 ```
 
 `Handler` must be a plain handler, such as `slog.NewTextHandler`, built
-without going through `otelslog`. Pointing it at `slog.Default()` would loop,
-since `slog.SetDefault` above made the default handler `otelslog`.
+without going through `otelslog`. Pointing it at the `otelslog` logger above
+would loop.
 
 ## Parameters
 
