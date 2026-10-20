@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/semconvmeter"
 )
 
@@ -38,10 +39,10 @@ type UpstreamDuration struct{ inst metric.Float64Histogram }
 // meter.
 func NewUpstreamDuration(meter semconvmeter.Meter) (UpstreamDuration, error) {
 	var m UpstreamDuration
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Time spent waiting on an upstream server."),
+		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries(0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10),
 	)
 	if err != nil {
@@ -53,22 +54,6 @@ func NewUpstreamDuration(meter semconvmeter.Meter) (UpstreamDuration, error) {
 // Name returns the name `edge.upstream.duration` records under.
 func (UpstreamDuration) Name() string {
 	return "edge.upstream.duration"
-}
-
-// Unit returns the unit of `edge.upstream.duration`.
-func (UpstreamDuration) Unit() string {
-	return "s"
-}
-
-// Description returns the description of `edge.upstream.duration`.
-func (UpstreamDuration) Description() string {
-	return "Time spent waiting on an upstream server."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// UpstreamDuration.
-func (m UpstreamDuration) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `edge.upstream.duration` measurement. The zero

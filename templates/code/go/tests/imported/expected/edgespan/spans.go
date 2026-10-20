@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/semconvtracer"
 )
 
@@ -59,9 +60,7 @@ func WithUpstreamRequestHTTPRequestMethodList(v []string) UpstreamRequestAttr {
 // UpstreamRequest records nothing.
 type UpstreamRequest struct{ span trace.Span }
 
-// Span returns the underlying trace.Span, or a no-op one for the zero
-// UpstreamRequest.
-func (s UpstreamRequest) Span() trace.Span {
+func (s UpstreamRequest) raw() trace.Span {
 	if s.span == nil {
 		return noop.Span{}
 	}
@@ -70,28 +69,52 @@ func (s UpstreamRequest) Span() trace.Span {
 
 // End ends the span.
 func (s UpstreamRequest) End(opts ...trace.SpanEndOption) {
-	s.Span().End(opts...)
+	s.raw().End(opts...)
 }
 
-// SetAttributes sets attributes on the span after it started.
-func (s UpstreamRequest) SetAttributes(attrs ...UpstreamRequestAttr) {
+// SpanContext returns the span context of the span.
+func (s UpstreamRequest) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s UpstreamRequest) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+func (UpstreamRequest) lateAttrs(attrs []UpstreamRequestAttr) []attribute.KeyValue {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
 		if kv := attr.upstreamRequestStartAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
 		}
 	}
-	s.Span().SetAttributes(kvs...)
+	return kvs
 }
 
-// RecordError records err as an exception event on the span.
-func (s UpstreamRequest) RecordError(err error, opts ...trace.EventOption) {
-	s.Span().RecordError(err, opts...)
+// SetAttributes sets attributes on the span after it started.
+func (s UpstreamRequest) SetAttributes(attrs ...UpstreamRequestAttr) {
+	s.raw().SetAttributes(s.lateAttrs(attrs)...)
+}
+
+// AddEvent adds an event called name to the span, with attrs.
+func (s UpstreamRequest) AddEvent(name string, attrs ...UpstreamRequestAttr) {
+	s.raw().AddEvent(name, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// AddLink links the span to sc, with attrs.
+func (s UpstreamRequest) AddLink(sc trace.SpanContext, attrs ...UpstreamRequestAttr) {
+	s.raw().AddLink(trace.Link{SpanContext: sc, Attributes: s.lateAttrs(attrs)})
+}
+
+// RecordError records err as an exception event on the span, with attrs.
+func (s UpstreamRequest) RecordError(err error, attrs ...UpstreamRequestAttr) {
+	s.raw().RecordError(err, trace.WithAttributes(s.lateAttrs(attrs)...))
 }
 
 // SetStatus sets the status of the span.
 func (s UpstreamRequest) SetStatus(code codes.Code, description string) {
-	s.Span().SetStatus(code, description)
+	s.raw().SetStatus(code, description)
 }
 
 // StartUpstreamRequest starts the `edge.upstream.request` span from tracer
@@ -111,7 +134,7 @@ func StartUpstreamRequest(ctx context.Context, tracer semconvtracer.Tracer, serv
 		}
 	}
 	name := attribute.String("server.address", serverAddress).Value.Emit() + ":" + attribute.Int("server.port", serverPort).Value.Emit()
-	ctx, span := tracer.TraceTracer().Start(
+	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,
 		trace.WithSpanKind(trace.SpanKindClient),

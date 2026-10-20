@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/myappattr"
 	"example.com/semconv/semconvtracer"
 	"example.com/semconv/workerattr"
@@ -34,9 +35,7 @@ func NewQueueDrainName(name string) QueueDrainName {
 // Deprecated: Drain queues by dispatching their tasks instead.
 type QueueDrain struct{ span trace.Span }
 
-// Span returns the underlying trace.Span, or a no-op one for the zero
-// QueueDrain.
-func (s QueueDrain) Span() trace.Span {
+func (s QueueDrain) raw() trace.Span {
 	if s.span == nil {
 		return noop.Span{}
 	}
@@ -45,17 +44,46 @@ func (s QueueDrain) Span() trace.Span {
 
 // End ends the span.
 func (s QueueDrain) End(opts ...trace.SpanEndOption) {
-	s.Span().End(opts...)
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s QueueDrain) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s QueueDrain) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+// AddEvent adds an event called name to the span.
+func (s QueueDrain) AddEvent(name string) {
+	s.raw().AddEvent(name)
+}
+
+// AddLink links the span to sc.
+func (s QueueDrain) AddLink(sc trace.SpanContext) {
+	s.raw().AddLink(trace.Link{SpanContext: sc})
 }
 
 // RecordError records err as an exception event on the span.
-func (s QueueDrain) RecordError(err error, opts ...trace.EventOption) {
-	s.Span().RecordError(err, opts...)
+func (s QueueDrain) RecordError(err error) {
+	s.raw().RecordError(err)
+}
+
+// SetName sets the name of the span. An empty QueueDrainName, including the
+// zero one, names the span `myapp.queue.drain`.
+func (s QueueDrain) SetName(name QueueDrainName) {
+	if name.value == "" {
+		name = QueueDrainName{value: "myapp.queue.drain"}
+	}
+	s.raw().SetName(name.value)
 }
 
 // SetStatus sets the status of the span.
 func (s QueueDrain) SetStatus(code codes.Code, description string) {
-	s.Span().SetStatus(code, description)
+	s.raw().SetStatus(code, description)
 }
 
 // StartQueueDrain starts the `myapp.queue.drain` span from tracer with span
@@ -71,7 +99,7 @@ func StartQueueDrain(ctx context.Context, tracer semconvtracer.Tracer, name Queu
 	if name.value == "" {
 		name = QueueDrainName{value: "myapp.queue.drain"}
 	}
-	ctx, span := tracer.TraceTracer().Start(
+	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name.value,
 		trace.WithSpanKind(trace.SpanKindConsumer),
@@ -140,9 +168,7 @@ func WithTaskDispatchTaskID(v myappattr.TaskID) TaskDispatchStartAttr {
 // TaskDispatch records nothing.
 type TaskDispatch struct{ span trace.Span }
 
-// Span returns the underlying trace.Span, or a no-op one for the zero
-// TaskDispatch.
-func (s TaskDispatch) Span() trace.Span {
+func (s TaskDispatch) raw() trace.Span {
 	if s.span == nil {
 		return noop.Span{}
 	}
@@ -151,28 +177,52 @@ func (s TaskDispatch) Span() trace.Span {
 
 // End ends the span.
 func (s TaskDispatch) End(opts ...trace.SpanEndOption) {
-	s.Span().End(opts...)
+	s.raw().End(opts...)
 }
 
-// SetAttributes sets attributes on the span after it started.
-func (s TaskDispatch) SetAttributes(attrs ...TaskDispatchAttr) {
+// SpanContext returns the span context of the span.
+func (s TaskDispatch) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s TaskDispatch) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+func (TaskDispatch) lateAttrs(attrs []TaskDispatchAttr) []attribute.KeyValue {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
 		if kv := attr.taskDispatchStartAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
 		}
 	}
-	s.Span().SetAttributes(kvs...)
+	return kvs
 }
 
-// RecordError records err as an exception event on the span.
-func (s TaskDispatch) RecordError(err error, opts ...trace.EventOption) {
-	s.Span().RecordError(err, opts...)
+// SetAttributes sets attributes on the span after it started.
+func (s TaskDispatch) SetAttributes(attrs ...TaskDispatchAttr) {
+	s.raw().SetAttributes(s.lateAttrs(attrs)...)
+}
+
+// AddEvent adds an event called name to the span, with attrs.
+func (s TaskDispatch) AddEvent(name string, attrs ...TaskDispatchAttr) {
+	s.raw().AddEvent(name, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// AddLink links the span to sc, with attrs.
+func (s TaskDispatch) AddLink(sc trace.SpanContext, attrs ...TaskDispatchAttr) {
+	s.raw().AddLink(trace.Link{SpanContext: sc, Attributes: s.lateAttrs(attrs)})
+}
+
+// RecordError records err as an exception event on the span, with attrs.
+func (s TaskDispatch) RecordError(err error, attrs ...TaskDispatchAttr) {
+	s.raw().RecordError(err, trace.WithAttributes(s.lateAttrs(attrs)...))
 }
 
 // SetStatus sets the status of the span.
 func (s TaskDispatch) SetStatus(code codes.Code, description string) {
-	s.Span().SetStatus(code, description)
+	s.raw().SetStatus(code, description)
 }
 
 // StartTaskDispatch starts the `myapp.task.dispatch` span from tracer with
@@ -198,7 +248,7 @@ func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, workerH
 		}
 	}
 	name := "dispatch " + workerHostName.KeyValue().Value.Emit() + ":" + workerHostPort.KeyValue().Value.Emit()
-	ctx, span := tracer.TraceTracer().Start(
+	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,
 		trace.WithSpanKind(trace.SpanKindClient),
@@ -251,9 +301,7 @@ func NewTaskRunName(name string) TaskRunName {
 // nothing.
 type TaskRun struct{ span trace.Span }
 
-// Span returns the underlying trace.Span, or a no-op one for the zero
-// TaskRun.
-func (s TaskRun) Span() trace.Span {
+func (s TaskRun) raw() trace.Span {
 	if s.span == nil {
 		return noop.Span{}
 	}
@@ -262,28 +310,61 @@ func (s TaskRun) Span() trace.Span {
 
 // End ends the span.
 func (s TaskRun) End(opts ...trace.SpanEndOption) {
-	s.Span().End(opts...)
+	s.raw().End(opts...)
 }
 
-// SetAttributes sets attributes on the span after it started.
-func (s TaskRun) SetAttributes(attrs ...TaskRunAttr) {
+// SpanContext returns the span context of the span.
+func (s TaskRun) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s TaskRun) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+func (TaskRun) lateAttrs(attrs []TaskRunAttr) []attribute.KeyValue {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
 		if kv := attr.taskRunStartAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
 		}
 	}
-	s.Span().SetAttributes(kvs...)
+	return kvs
 }
 
-// RecordError records err as an exception event on the span.
-func (s TaskRun) RecordError(err error, opts ...trace.EventOption) {
-	s.Span().RecordError(err, opts...)
+// SetAttributes sets attributes on the span after it started.
+func (s TaskRun) SetAttributes(attrs ...TaskRunAttr) {
+	s.raw().SetAttributes(s.lateAttrs(attrs)...)
+}
+
+// AddEvent adds an event called name to the span, with attrs.
+func (s TaskRun) AddEvent(name string, attrs ...TaskRunAttr) {
+	s.raw().AddEvent(name, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// AddLink links the span to sc, with attrs.
+func (s TaskRun) AddLink(sc trace.SpanContext, attrs ...TaskRunAttr) {
+	s.raw().AddLink(trace.Link{SpanContext: sc, Attributes: s.lateAttrs(attrs)})
+}
+
+// RecordError records err as an exception event on the span, with attrs.
+func (s TaskRun) RecordError(err error, attrs ...TaskRunAttr) {
+	s.raw().RecordError(err, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// SetName sets the name of the span. An empty TaskRunName, including the
+// zero one, names the span `myapp.task.run`.
+func (s TaskRun) SetName(name TaskRunName) {
+	if name.value == "" {
+		name = TaskRunName{value: "myapp.task.run"}
+	}
+	s.raw().SetName(name.value)
 }
 
 // SetStatus sets the status of the span.
 func (s TaskRun) SetStatus(code codes.Code, description string) {
-	s.Span().SetStatus(code, description)
+	s.raw().SetStatus(code, description)
 }
 
 // StartTaskRun starts the `myapp.task.run` span from tracer with span kind
@@ -303,7 +384,7 @@ func StartTaskRun(ctx context.Context, tracer semconvtracer.Tracer, name TaskRun
 			kvs = append(kvs, kv)
 		}
 	}
-	ctx, span := tracer.TraceTracer().Start(
+	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name.value,
 		trace.WithSpanKind(trace.SpanKindInternal),

@@ -4,9 +4,9 @@ package myapplogger
 
 import (
 	"go.opentelemetry.io/otel/log"
-	"go.opentelemetry.io/otel/log/noop"
 
 	myapp "example.com"
+	"example.com/internal/scope"
 )
 
 // Logger is a log.Logger whose instrumentation scope carries
@@ -14,20 +14,11 @@ import (
 // schema.
 //
 // The zero Logger emits log records that go nowhere.
-type Logger struct{ logger log.Logger }
+type Logger = scope.Logger
 
 // New returns the logger named name from provider, with myapp.SchemaURL set
 // on its instrumentation scope. A schema URL in opts is replaced.
 func New(provider log.LoggerProvider, name string, opts ...log.LoggerOption) Logger {
 	opts = append(opts[:len(opts):len(opts)], log.WithSchemaURL(myapp.SchemaURL))
-	return Logger{logger: provider.Logger(name, opts...)}
-}
-
-// LogLogger returns the underlying log.Logger, or a no-op one for the zero
-// Logger.
-func (l Logger) LogLogger() log.Logger {
-	if l.logger == nil {
-		return noop.Logger{}
-	}
-	return l.logger
+	return scope.NewLogger(provider.Logger(name, opts...))
 }

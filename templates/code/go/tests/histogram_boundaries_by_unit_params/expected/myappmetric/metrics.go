@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/myappattr"
 	"example.com/semconv/semconvmeter"
 )
@@ -21,10 +22,10 @@ type TaskDuration struct{ inst metric.Float64Histogram }
 // NewTaskDuration creates the `myapp.task.duration` instrument from meter.
 func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
 	var m TaskDuration
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Time a task took from start to finish."),
+		metric.WithUnit("s"),
 	)
 	if err != nil {
 		return TaskDuration{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
@@ -35,22 +36,6 @@ func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
 // Name returns the name `myapp.task.duration` records under.
 func (TaskDuration) Name() string {
 	return "myapp.task.duration"
-}
-
-// Unit returns the unit of `myapp.task.duration`.
-func (TaskDuration) Unit() string {
-	return "s"
-}
-
-// Description returns the description of `myapp.task.duration`.
-func (TaskDuration) Description() string {
-	return "Time a task took from start to finish."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// TaskDuration.
-func (m TaskDuration) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `myapp.task.duration` measurement. The zero
@@ -75,10 +60,10 @@ type TaskQueueWait struct{ inst metric.Float64Histogram }
 // meter.
 func NewTaskQueueWait(meter semconvmeter.Meter) (TaskQueueWait, error) {
 	var m TaskQueueWait
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Time a task waited in the queue, in minutes."),
+		metric.WithUnit("min"),
 		metric.WithExplicitBucketBoundaries(1, 5, 10, 30, 60),
 	)
 	if err != nil {
@@ -90,22 +75,6 @@ func NewTaskQueueWait(meter semconvmeter.Meter) (TaskQueueWait, error) {
 // Name returns the name `myapp.task.queue_wait` records under.
 func (TaskQueueWait) Name() string {
 	return "myapp.task.queue_wait"
-}
-
-// Unit returns the unit of `myapp.task.queue_wait`.
-func (TaskQueueWait) Unit() string {
-	return "min"
-}
-
-// Description returns the description of `myapp.task.queue_wait`.
-func (TaskQueueWait) Description() string {
-	return "Time a task waited in the queue, in minutes."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// TaskQueueWait.
-func (m TaskQueueWait) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `myapp.task.queue_wait` measurement. The zero

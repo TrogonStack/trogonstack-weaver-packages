@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"example.com/internal/scope"
 	"example.com/myappattr"
 	"example.com/myappmeter"
 	"example.com/upstream/errorattr"
@@ -39,10 +40,10 @@ type TaskFailed struct{ inst metric.Int64Counter }
 // NewTaskFailed creates the `myapp.task.failed` instrument from meter.
 func NewTaskFailed(meter myappmeter.Meter) (TaskFailed, error) {
 	var m TaskFailed
-	inst, err := meter.MetricMeter().Int64Counter(
+	inst, err := scope.MetricMeter(meter).Int64Counter(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of tasks that failed."),
+		metric.WithUnit("{task}"),
 	)
 	if err != nil {
 		return TaskFailed{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
@@ -53,22 +54,6 @@ func NewTaskFailed(meter myappmeter.Meter) (TaskFailed, error) {
 // Name returns the name `myapp.task.failed` records under.
 func (TaskFailed) Name() string {
 	return "myapp.task.failed"
-}
-
-// Unit returns the unit of `myapp.task.failed`.
-func (TaskFailed) Unit() string {
-	return "{task}"
-}
-
-// Description returns the description of `myapp.task.failed`.
-func (TaskFailed) Description() string {
-	return "Number of tasks that failed."
-}
-
-// Inst returns the underlying metric.Int64Counter, or nil for the zero
-// TaskFailed.
-func (m TaskFailed) Inst() metric.Int64Counter {
-	return m.inst
 }
 
 // Add records one `myapp.task.failed` measurement. The zero TaskFailed
@@ -139,10 +124,10 @@ func NewTaskFailedObservable(meter myappmeter.Meter, callback TaskFailedCallback
 	if callback == nil {
 		return TaskFailedObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
-	inst, err := meter.MetricMeter().Int64ObservableCounter(
+	inst, err := scope.MetricMeter(meter).Int64ObservableCounter(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of tasks that failed."),
+		metric.WithUnit("{task}"),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
 			return callback(ctx, TaskFailedObserver{o: o})
 		}),
@@ -156,20 +141,4 @@ func NewTaskFailedObservable(meter myappmeter.Meter, callback TaskFailedCallback
 // Name returns the name `myapp.task.failed` records under.
 func (TaskFailedObservable) Name() string {
 	return TaskFailed{}.Name()
-}
-
-// Unit returns the unit of `myapp.task.failed`.
-func (TaskFailedObservable) Unit() string {
-	return TaskFailed{}.Unit()
-}
-
-// Description returns the description of `myapp.task.failed`.
-func (TaskFailedObservable) Description() string {
-	return TaskFailed{}.Description()
-}
-
-// Inst returns the underlying metric.Int64ObservableCounter, or nil for the
-// zero TaskFailedObservable.
-func (m TaskFailedObservable) Inst() metric.Int64ObservableCounter {
-	return m.inst
 }

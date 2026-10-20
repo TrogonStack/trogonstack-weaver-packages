@@ -46,21 +46,18 @@ func TestTaskActiveRecordsRequiredAttribute(t *testing.T) {
 	if got, want := taskActive.Name(), "myapp.task.active"; got != want {
 		t.Fatalf("Name() = %q, want %q", got, want)
 	}
-	if got, want := taskActive.Unit(), "{task}"; got != want {
-		t.Fatalf("Unit() = %q, want %q", got, want)
-	}
-	if got, want := taskActive.Description(), "Number of tasks currently running."; got != want {
-		t.Fatalf("Description() = %q, want %q", got, want)
-	}
-	if taskActive.Inst() == nil {
-		t.Fatal("Inst() = nil, want a non-nil instrument")
-	}
 
 	taskActive.Add(context.Background(), 1, myappattr.TaskStateDone)
 
 	m, ok := findMetric(collect(t, reader), "myapp.task.active")
 	if !ok {
 		t.Fatal("myapp.task.active was not recorded")
+	}
+	if got, want := m.Unit, "{task}"; got != want {
+		t.Fatalf("Unit = %q, want %q", got, want)
+	}
+	if got, want := m.Description, "Number of tasks currently running."; got != want {
+		t.Fatalf("Description = %q, want %q", got, want)
 	}
 	sum, ok := m.Data.(metricdata.Sum[int64])
 	if !ok {
@@ -169,9 +166,16 @@ func TestTaskDurationDropsZeroValueOptionalAttribute(t *testing.T) {
 }
 
 func TestZeroTaskActiveRecordsNothing(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	if _, err := myappmetric.NewTaskActive(semconvmeter.New(mp, "test")); err != nil {
+		t.Fatalf("NewTaskActive() error = %v", err)
+	}
+
 	var taskActive myappmetric.TaskActive
 	taskActive.Add(context.Background(), 1, myappattr.TaskStateDone)
-	if taskActive.Inst() != nil {
-		t.Fatal("Inst() of the zero TaskActive is not nil")
+
+	if m, ok := findMetric(collect(t, reader), "myapp.task.active"); ok {
+		t.Fatalf("the zero TaskActive recorded %v, want nothing", m.Data)
 	}
 }

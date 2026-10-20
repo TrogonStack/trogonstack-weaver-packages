@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
 
+	"example.com/internal/scope"
 	"example.com/myapplogger"
 	"example.com/upstream/errorattr"
 )
@@ -71,8 +72,8 @@ func EmitTaskErrored(ctx context.Context, logger myapplogger.Logger, errorType e
 	for _, opt := range opts {
 		opt.taskErroredOption(&record)
 	}
-	if !logger.LogLogger().Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
+	if !scope.LogLogger(logger).Enabled(ctx, log.EnabledParameters{Severity: record.Severity(), EventName: record.EventName()}) {
 		return
 	}
-	logger.LogLogger().Emit(ctx, record)
+	scope.LogLogger(logger).Emit(ctx, record)
 }

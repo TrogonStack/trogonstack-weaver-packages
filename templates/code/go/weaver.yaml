@@ -171,6 +171,31 @@ templates:
     application_mode: each
     file_name: "{{ ctx.root }}logger/logger.go"
 
+  # The internal package that holds the raw Meter, Tracer, and Logger. Only the
+  # generated packages can import it, so a consumer reaches the OpenTelemetry
+  # handles through the generated instruments, span starters, and emitters alone.
+  - template: scope_doc.go.j2
+    filter: |-
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $o
+      | if (semconv_grouped_metrics($o) | map(.metrics) | add // [] | length) > 0
+           or (.registry.spans // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | length) > 0
+           or (.registry.events // [] | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | length) > 0
+        then [{}] else [] end
+    application_mode: each
+    file_name: internal/scope/doc.go
+  - template: scope_meter.go.j2
+    filter: *meter_filter
+    application_mode: each
+    file_name: internal/scope/meter.go
+  - template: scope_tracer.go.j2
+    filter: *tracer_filter
+    application_mode: each
+    file_name: internal/scope/tracer.go
+  - template: scope_logger.go.j2
+    filter: *logger_filter
+    application_mode: each
+    file_name: internal/scope/logger.go
+
   - template: namespace_doc.go.j2
     filter: |-
       def ns: split(".") as $s
@@ -513,7 +538,8 @@ templates:
                .[0].namespace as $pkg
                | (([.[] | .attributes[] | select(.imported | not)
                      | {name: (.attr_namespace + "attr"), path: (.attr_import_path // ($import_path + "/" + .attr_namespace + "attr"))}]
-                   + [{name: (root + "meter"), path: ($import_path + "/" + root + "meter")}])
+                   + [{name: (root + "meter"), path: ($import_path + "/" + root + "meter")},
+                      {name: "scope", path: ($import_path + "/internal/scope")}])
                   | unique) as $imports
                | ($imports | group_by(.name) | map(select((map(.path) | unique | length) > 1))) as $collisions
                | if ($collisions | length) > 0
@@ -627,7 +653,7 @@ templates:
           | (.optional
              | group_by(.attr_short_name | norm)
              | map(select(length > 1) | map(.key) | join(" and "))) as $optional_collisions
-          | (.required | map(select(.attr_param | norm | . as $p | ["ctx", "tracer", "name", "opts", "opt", "kvs", "span"] | any(. == $p))) | map(.key)) as $shadowing
+          | (.required | map(select(.attr_param | norm | . as $p | ["ctx", "tracer", "name", "opts", "opt", "kvs", "span", "scope"] | any(. == $p))) | map(.key)) as $shadowing
           | if ($required_collisions | length) > 0
             then error("span \(.id) has required attributes that render to the same Go parameter: \($required_collisions | join("; "))")
             elif ($optional_collisions | length) > 0
@@ -658,7 +684,8 @@ templates:
                .[0].namespace as $pkg
                | (([.[] | .attributes[] | select(.imported | not)
                      | {name: (.attr_namespace + "attr"), path: (.attr_import_path // ($import_path + "/" + .attr_namespace + "attr"))}]
-                   + [{name: (root + "tracer"), path: ($import_path + "/" + root + "tracer")}])
+                   + [{name: (root + "tracer"), path: ($import_path + "/" + root + "tracer")},
+                      {name: "scope", path: ($import_path + "/internal/scope")}])
                   | unique) as $imports
                | ($imports | group_by(.name) | map(select((map(.path) | unique | length) > 1))) as $collisions
                | if ($collisions | length) > 0
@@ -756,7 +783,7 @@ templates:
              | group_by(.attr_short_name | norm)
              | map(select(length > 1) | map(.key) | join(" and "))) as $optional_collisions
           | (.optional | map(select(.attr_short_name | norm | . as $p | ["severity", "timestamp"] | any(. == $p))) | map(.key)) as $reserved
-          | (.required | map(select(.attr_param | norm | . as $p | ["ctx", "logger", "opts", "opt", "record"] | any(. == $p))) | map(.key)) as $shadowing
+          | (.required | map(select(.attr_param | norm | . as $p | ["ctx", "logger", "opts", "opt", "record", "scope"] | any(. == $p))) | map(.key)) as $shadowing
           | if ($required_collisions | length) > 0
             then error("event \(.id) has required attributes that render to the same Go parameter: \($required_collisions | join("; "))")
             elif ($optional_collisions | length) > 0
@@ -788,7 +815,8 @@ templates:
                .[0].namespace as $pkg
                | (([.[] | .attributes[] | select(.imported | not)
                      | {name: (.attr_namespace + "attr"), path: (.attr_import_path // ($import_path + "/" + .attr_namespace + "attr"))}]
-                   + [{name: (root + "logger"), path: ($import_path + "/" + root + "logger")}])
+                   + [{name: (root + "logger"), path: ($import_path + "/" + root + "logger")},
+                      {name: "scope", path: ($import_path + "/internal/scope")}])
                   | unique) as $imports
                | ($imports | group_by(.name) | map(select((map(.path) | unique | length) > 1))) as $collisions
                | if ($collisions | length) > 0

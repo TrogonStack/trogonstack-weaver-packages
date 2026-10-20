@@ -4,9 +4,9 @@ package myappmeter
 
 import (
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 
 	myapp "example.com"
+	"example.com/internal/scope"
 )
 
 // Meter is a metric.Meter whose instrumentation scope carries
@@ -14,20 +14,11 @@ import (
 // everything it records is tied to the registry's schema.
 //
 // The zero Meter creates instruments that record nothing.
-type Meter struct{ meter metric.Meter }
+type Meter = scope.Meter
 
 // New returns the meter named name from provider, with myapp.SchemaURL set
 // on its instrumentation scope. A schema URL in opts is replaced.
 func New(provider metric.MeterProvider, name string, opts ...metric.MeterOption) Meter {
 	opts = append(opts[:len(opts):len(opts)], metric.WithSchemaURL(myapp.SchemaURL))
-	return Meter{meter: provider.Meter(name, opts...)}
-}
-
-// MetricMeter returns the underlying metric.Meter, or a no-op one for the
-// zero Meter.
-func (m Meter) MetricMeter() metric.Meter {
-	if m.meter == nil {
-		return noop.Meter{}
-	}
-	return m.meter
+	return scope.NewMeter(provider.Meter(name, opts...))
 }

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"example.com/semconv/authattr"
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/myappattr"
 	"example.com/semconv/semconvmeter"
 )
@@ -57,10 +58,10 @@ type TaskDuration struct{ inst metric.Float64Histogram }
 // NewTaskDuration creates the `myapp.task.duration` instrument from meter.
 func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
 	var m TaskDuration
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Time a task took from start to finish."),
+		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries(0, 0.005, 0.01, 0.1, 1, 10),
 	)
 	if err != nil {
@@ -72,22 +73,6 @@ func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
 // Name returns the name `worker.task.duration` records under.
 func (TaskDuration) Name() string {
 	return "myapp.task.duration"
-}
-
-// Unit returns the unit of `worker.task.duration`.
-func (TaskDuration) Unit() string {
-	return "s"
-}
-
-// Description returns the description of `worker.task.duration`.
-func (TaskDuration) Description() string {
-	return "Time a task took from start to finish."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// TaskDuration.
-func (m TaskDuration) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `worker.task.duration` measurement. The zero

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"example.com/semconv/authattr"
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/semconvmeter"
 )
 
@@ -21,10 +22,10 @@ type Attempts struct{ inst metric.Int64Counter }
 // NewAttempts creates the `auth.attempts` instrument from meter.
 func NewAttempts(meter semconvmeter.Meter) (Attempts, error) {
 	var m Attempts
-	inst, err := meter.MetricMeter().Int64Counter(
+	inst, err := scope.MetricMeter(meter).Int64Counter(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of authentication attempts."),
+		metric.WithUnit("{attempt}"),
 	)
 	if err != nil {
 		return Attempts{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
@@ -35,22 +36,6 @@ func NewAttempts(meter semconvmeter.Meter) (Attempts, error) {
 // Name returns the name `auth.attempts` records under.
 func (Attempts) Name() string {
 	return "auth.attempts"
-}
-
-// Unit returns the unit of `auth.attempts`.
-func (Attempts) Unit() string {
-	return "{attempt}"
-}
-
-// Description returns the description of `auth.attempts`.
-func (Attempts) Description() string {
-	return "Number of authentication attempts."
-}
-
-// Inst returns the underlying metric.Int64Counter, or nil for the zero
-// Attempts.
-func (m Attempts) Inst() metric.Int64Counter {
-	return m.inst
 }
 
 // Add records one `auth.attempts` measurement. The zero Attempts records
@@ -110,10 +95,10 @@ func NewAttemptsObservable(meter semconvmeter.Meter, callback AttemptsCallback) 
 	if callback == nil {
 		return AttemptsObservable{}, fmt.Errorf("create the %s instrument: the callback is nil", m.Name())
 	}
-	inst, err := meter.MetricMeter().Int64ObservableCounter(
+	inst, err := scope.MetricMeter(meter).Int64ObservableCounter(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Number of authentication attempts."),
+		metric.WithUnit("{attempt}"),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
 			return callback(ctx, AttemptsObserver{o: o})
 		}),
@@ -127,20 +112,4 @@ func NewAttemptsObservable(meter semconvmeter.Meter, callback AttemptsCallback) 
 // Name returns the name `auth.attempts` records under.
 func (AttemptsObservable) Name() string {
 	return Attempts{}.Name()
-}
-
-// Unit returns the unit of `auth.attempts`.
-func (AttemptsObservable) Unit() string {
-	return Attempts{}.Unit()
-}
-
-// Description returns the description of `auth.attempts`.
-func (AttemptsObservable) Description() string {
-	return Attempts{}.Description()
-}
-
-// Inst returns the underlying metric.Int64ObservableCounter, or nil for the
-// zero AttemptsObservable.
-func (m AttemptsObservable) Inst() metric.Int64ObservableCounter {
-	return m.inst
 }

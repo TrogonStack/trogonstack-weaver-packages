@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/myappattr"
 	"example.com/semconv/semconvmeter"
 )
@@ -21,10 +22,10 @@ type TaskDuration struct{ inst metric.Float64Histogram }
 // NewTaskDuration creates the `myapp.task.duration` instrument from meter.
 func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
 	var m TaskDuration
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Time a task took from start to finish."),
+		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries(0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10),
 	)
 	if err != nil {
@@ -36,22 +37,6 @@ func NewTaskDuration(meter semconvmeter.Meter) (TaskDuration, error) {
 // Name returns the name `myapp.task.duration` records under.
 func (TaskDuration) Name() string {
 	return "myapp.task.duration"
-}
-
-// Unit returns the unit of `myapp.task.duration`.
-func (TaskDuration) Unit() string {
-	return "s"
-}
-
-// Description returns the description of `myapp.task.duration`.
-func (TaskDuration) Description() string {
-	return "Time a task took from start to finish."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// TaskDuration.
-func (m TaskDuration) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `myapp.task.duration` measurement. The zero
@@ -75,10 +60,10 @@ type TaskLatency struct{ inst metric.Float64Histogram }
 // NewTaskLatency creates the `myapp.task.latency` instrument from meter.
 func NewTaskLatency(meter semconvmeter.Meter) (TaskLatency, error) {
 	var m TaskLatency
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Time between a task being queued and started."),
+		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries(1, 10, 100),
 	)
 	if err != nil {
@@ -90,22 +75,6 @@ func NewTaskLatency(meter semconvmeter.Meter) (TaskLatency, error) {
 // Name returns the name `myapp.task.latency` records under.
 func (TaskLatency) Name() string {
 	return "myapp.task.latency"
-}
-
-// Unit returns the unit of `myapp.task.latency`.
-func (TaskLatency) Unit() string {
-	return "s"
-}
-
-// Description returns the description of `myapp.task.latency`.
-func (TaskLatency) Description() string {
-	return "Time between a task being queued and started."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// TaskLatency.
-func (m TaskLatency) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `myapp.task.latency` measurement. The zero TaskLatency
@@ -131,10 +100,10 @@ type TaskRetryDuration struct{ inst metric.Float64Histogram }
 // meter.
 func NewTaskRetryDuration(meter semconvmeter.Meter) (TaskRetryDuration, error) {
 	var m TaskRetryDuration
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Time a task took from start to finish."),
+		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries(0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10),
 	)
 	if err != nil {
@@ -146,22 +115,6 @@ func NewTaskRetryDuration(meter semconvmeter.Meter) (TaskRetryDuration, error) {
 // Name returns the name `myapp.task.retry.duration` records under.
 func (TaskRetryDuration) Name() string {
 	return "myapp.task.duration"
-}
-
-// Unit returns the unit of `myapp.task.retry.duration`.
-func (TaskRetryDuration) Unit() string {
-	return "s"
-}
-
-// Description returns the description of `myapp.task.retry.duration`.
-func (TaskRetryDuration) Description() string {
-	return "Time a task took from start to finish."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// TaskRetryDuration.
-func (m TaskRetryDuration) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `myapp.task.retry.duration` measurement. The zero
@@ -185,10 +138,10 @@ type TaskSize struct{ inst metric.Float64Histogram }
 // NewTaskSize creates the `myapp.task.size` instrument from meter.
 func NewTaskSize(meter semconvmeter.Meter) (TaskSize, error) {
 	var m TaskSize
-	inst, err := meter.MetricMeter().Float64Histogram(
+	inst, err := scope.MetricMeter(meter).Float64Histogram(
 		m.Name(),
-		metric.WithDescription(m.Description()),
-		metric.WithUnit(m.Unit()),
+		metric.WithDescription("Size of a task\u0027s payload."),
+		metric.WithUnit("By"),
 	)
 	if err != nil {
 		return TaskSize{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
@@ -199,22 +152,6 @@ func NewTaskSize(meter semconvmeter.Meter) (TaskSize, error) {
 // Name returns the name `myapp.task.size` records under.
 func (TaskSize) Name() string {
 	return "myapp.task.size"
-}
-
-// Unit returns the unit of `myapp.task.size`.
-func (TaskSize) Unit() string {
-	return "By"
-}
-
-// Description returns the description of `myapp.task.size`.
-func (TaskSize) Description() string {
-	return "Size of a task\u0027s payload."
-}
-
-// Inst returns the underlying metric.Float64Histogram, or nil for the zero
-// TaskSize.
-func (m TaskSize) Inst() metric.Float64Histogram {
-	return m.inst
 }
 
 // Record records one `myapp.task.size` measurement. The zero TaskSize

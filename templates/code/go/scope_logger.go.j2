@@ -1,0 +1,28 @@
+{% import "header.j2" as h -%}
+{% import "names.j2" as n -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
+{{ h.header() }}
+
+package scope
+
+import (
+	"go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/log/noop"
+)
+
+{{ ["Logger is a log.Logger whose instrumentation scope carries the registry's schema URL, so every log record it emits is tied to the registry's schema.", "The zero Logger emits log records that go nowhere."] | join("\n\n") | comment }}
+type Logger struct{ logger log.Logger }
+
+{{ ["NewLogger returns a Logger that emits log records through l."] | join | comment }}
+func NewLogger(l log.Logger) Logger {
+	return Logger{logger: l}
+}
+
+{{ ["LogLogger returns the log.Logger inside l, or a no-op one for the zero Logger."] | join | comment }}
+func LogLogger(l Logger) log.Logger {
+	if l.logger == nil {
+		return noop.Logger{}
+	}
+	return l.logger
+}
+{% endfilter %}

@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 
 	"example.com/semconv/heartbeatattr"
+	"example.com/semconv/internal/scope"
 	"example.com/semconv/semconvtracer"
 )
 
@@ -56,8 +57,7 @@ func NewName(name string) Name {
 // Span is a started span of `heartbeat`. The zero Span records nothing.
 type Span struct{ span trace.Span }
 
-// Span returns the underlying trace.Span, or a no-op one for the zero Span.
-func (s Span) Span() trace.Span {
+func (s Span) raw() trace.Span {
 	if s.span == nil {
 		return noop.Span{}
 	}
@@ -66,28 +66,61 @@ func (s Span) Span() trace.Span {
 
 // End ends the span.
 func (s Span) End(opts ...trace.SpanEndOption) {
-	s.Span().End(opts...)
+	s.raw().End(opts...)
 }
 
-// SetAttributes sets attributes on the span after it started.
-func (s Span) SetAttributes(attrs ...Attr) {
+// SpanContext returns the span context of the span.
+func (s Span) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s Span) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+func (Span) lateAttrs(attrs []Attr) []attribute.KeyValue {
 	kvs := make([]attribute.KeyValue, 0, len(attrs))
 	for _, attr := range attrs {
 		if kv := attr.bareStartAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
 		}
 	}
-	s.Span().SetAttributes(kvs...)
+	return kvs
 }
 
-// RecordError records err as an exception event on the span.
-func (s Span) RecordError(err error, opts ...trace.EventOption) {
-	s.Span().RecordError(err, opts...)
+// SetAttributes sets attributes on the span after it started.
+func (s Span) SetAttributes(attrs ...Attr) {
+	s.raw().SetAttributes(s.lateAttrs(attrs)...)
+}
+
+// AddEvent adds an event called name to the span, with attrs.
+func (s Span) AddEvent(name string, attrs ...Attr) {
+	s.raw().AddEvent(name, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// AddLink links the span to sc, with attrs.
+func (s Span) AddLink(sc trace.SpanContext, attrs ...Attr) {
+	s.raw().AddLink(trace.Link{SpanContext: sc, Attributes: s.lateAttrs(attrs)})
+}
+
+// RecordError records err as an exception event on the span, with attrs.
+func (s Span) RecordError(err error, attrs ...Attr) {
+	s.raw().RecordError(err, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// SetName sets the name of the span. An empty Name, including the zero one,
+// names the span `heartbeat`.
+func (s Span) SetName(name Name) {
+	if name.value == "" {
+		name = Name{value: "heartbeat"}
+	}
+	s.raw().SetName(name.value)
 }
 
 // SetStatus sets the status of the span.
 func (s Span) SetStatus(code codes.Code, description string) {
-	s.Span().SetStatus(code, description)
+	s.raw().SetStatus(code, description)
 }
 
 // Start starts the `heartbeat` span from tracer with span kind internal.
@@ -106,7 +139,7 @@ func Start(ctx context.Context, tracer semconvtracer.Tracer, name Name, heartbea
 			kvs = append(kvs, kv)
 		}
 	}
-	ctx, span := tracer.TraceTracer().Start(
+	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name.value,
 		trace.WithSpanKind(trace.SpanKindInternal),

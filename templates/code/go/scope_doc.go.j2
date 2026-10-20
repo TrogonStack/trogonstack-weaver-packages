@@ -1,0 +1,8 @@
+{% import "header.j2" as h -%}
+{% import "names.j2" as n -%}
+{%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
+{{ h.header() }}
+
+{{ ["Package scope holds the schema-scoped Meter, Tracer, and Logger behind the generated packages, and the only way to reach the OpenTelemetry handles inside them. It is internal, so only the generated packages can import it."] | join | comment }}
+package scope
+{% endfilter %}
