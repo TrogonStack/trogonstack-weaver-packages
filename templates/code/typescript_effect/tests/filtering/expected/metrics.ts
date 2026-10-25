@@ -1,11 +1,17 @@
 // Generated from a semantic convention registry. Do not edit.
 import * as Metric from "effect/Metric";
 
+export const SampleState = {
+  Ready: "ready",
+} as const;
+
+export type SampleState = (typeof SampleState)[keyof typeof SampleState];
+
 export type SampleKeptAttributes = {
-  readonly "sample.state": "ready";
+  readonly state: SampleState;
 };
 
-export const sampleKept = Metric.counter("sample.kept", {
+const sampleKept = Metric.counter("sample.kept", {
   description: "Kept metric.",
   attributes: { unit: "{item}" },
   incremental: true,
@@ -17,7 +23,7 @@ export const recordSampleKept = (
 ) =>
   Metric.update(
     Metric.withAttributes(sampleKept, {
-      ["sample.state"]: String(attributes["sample.state"]),
+      ["sample.state"]: String(attributes.state),
     }),
     value,
   );

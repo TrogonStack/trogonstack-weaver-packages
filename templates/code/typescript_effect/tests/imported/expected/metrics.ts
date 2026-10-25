@@ -1,12 +1,19 @@
 // Generated from a semantic convention registry. Do not edit.
 import * as Metric from "effect/Metric";
 
+export const RemoteStatus = {
+  Done: "done",
+  Ready: "ready",
+} as const;
+
+export type RemoteStatus = (typeof RemoteStatus)[keyof typeof RemoteStatus];
+
 export type SampleImportedAttributes = {
-  readonly "remote.port"?: number;
-  readonly "remote.status": "done" | "ready";
+  readonly remotePort?: number;
+  readonly remoteStatus: RemoteStatus;
 };
 
-export const sampleImported = Metric.counter("sample.imported", {
+const sampleImported = Metric.counter("sample.imported", {
   description: "Synthetic metric.",
   attributes: { unit: "{item}" },
   incremental: true,
@@ -18,10 +25,10 @@ export const recordSampleImported = (
 ) =>
   Metric.update(
     Metric.withAttributes(sampleImported, {
-      ...(!Object.hasOwn(attributes, "remote.port") || attributes["remote.port"] === undefined
+      ...(!Object.hasOwn(attributes, "remotePort") || attributes.remotePort === undefined
         ? {}
-        : { ["remote.port"]: String(attributes["remote.port"]) }),
-      ["remote.status"]: String(attributes["remote.status"]),
+        : { ["remote.port"]: String(attributes.remotePort) }),
+      ["remote.status"]: String(attributes.remoteStatus),
     }),
     value,
   );

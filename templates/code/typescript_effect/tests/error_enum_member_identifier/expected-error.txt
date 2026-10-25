@@ -1,0 +1,1 @@
+has an enum member that cannot become a TypeScript identifier

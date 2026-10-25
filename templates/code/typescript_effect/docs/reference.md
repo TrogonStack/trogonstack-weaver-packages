@@ -1,8 +1,8 @@
 # Generated API and parameters
 
 The output is `metrics.ts`. Names retain their full registry namespace:
-`worker.task.duration` produces `workerTaskDuration`,
-`WorkerTaskDurationAttributes`, and `recordWorkerTaskDuration`.
+`worker.task.duration` produces `recordWorkerTaskDuration` and, when it has
+attributes, `WorkerTaskDurationAttributes`. Instruments stay private.
 Metric names and attribute keys are preserved in recorded telemetry.
 
 ## Instruments
@@ -12,7 +12,7 @@ Metric names and attribute keys are preserved in recorded telemetry.
 | `counter`                                  | `Metric.counter` with `incremental: true`  | `number`            |
 | `updowncounter`                            | `Metric.counter` with `incremental: false` | `number`            |
 | `gauge`                                    | `Metric.gauge`                             | `number`            |
-| `histogram`, unit `s`, `ms`, `us`, or `ns` | Duration-mapped `Metric.histogram`         | `Duration.Duration` |
+| `histogram`, unit `s`, `ms`, `us`, or `ns` | `Metric.histogram`                         | `Duration.Duration` |
 | Other `histogram`                          | `Metric.histogram`                         | `number`            |
 
 Time histograms convert the supplied duration into their declared unit before
@@ -28,16 +28,27 @@ representation.
 Each helper takes a value followed by a readonly attribute object. Attributes
 with `requirement_level: required` are mandatory. Other requirement levels
 produce optional properties; conditional requirements remain the caller's
-responsibility. When no attribute is required, the object defaults to empty.
+responsibility. When all attributes are optional, the object defaults to empty.
+Metrics without attributes take only the measurement argument.
 
-Scalar strings, numbers, booleans, and enum literal unions are supported.
+Attribute fields use camelCase identifiers. A matching leading metric namespace
+is removed: `worker.task.id` becomes `taskId` on a `worker` metric. Attributes
+from other namespaces retain theirs: `auth.method` becomes `authMethod`.
+Colliding field names fail generation.
+
+Scalar strings, numbers, booleans, and enums are supported. Enum attributes
+export a shared constant object and value type named after their full key:
+`worker.result` becomes `WorkerResult`, with members such as
+`WorkerResult.Success`. Callers can use those constants without spelling wire
+values. Each enum is shared across metrics using that attribute.
+
 Helpers convert supplied values to string labels and omit absent optional
 attributes. Attribute arrays are rejected. Keys `unit` and `time_unit` are
 reserved by Effect and cannot be metric dimensions.
 
-Native exported handles remain compatible with Effect combinators. Updating a
-handle directly bypasses the generated attribute contract. Use the recording
-helpers where compile-time attribute validation is needed.
+Recording functions map friendly fields to the original telemetry keys. Their
+attribute types enforce required fields and scalar or enum values. The module
+exports no raw instrument handles that bypass this contract.
 
 ## Parameters
 

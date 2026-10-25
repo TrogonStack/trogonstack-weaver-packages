@@ -3,46 +3,61 @@ import * as Metric from "effect/Metric";
 {% if ctx.metrics | selectattr("duration") | list | length > 0 %}
 import * as Duration from "effect/Duration";
 {% endif %}
-{% for metric in ctx.metrics %}
+{% for enum in ctx.enums %}
 
-export type {{ metric.type_name }}Attributes = {% if metric.attributes | length == 0 %}Readonly<Record<string, never>>;
-{% else %}{
+export const {{ enum.name }} = {
+{% for member in enum.members %}
+  {{ member.identifier }}: {{ member.value | tojson }},
+{% endfor %}
+} as const;
+
+export type {{ enum.name }} = (typeof {{ enum.name }})[keyof typeof {{ enum.name }}];
+{% endfor %}
+{% for metric in ctx.metrics %}
+{% if metric.attributes | length > 0 %}
+
+export type {{ metric.type_name }}Attributes = {
 {% for attr in metric.attributes %}
-  readonly {{ attr.key | tojson }}{% if attr.requirement_level != "required" %}?{% endif %}: {{ attr.ts_type }};
+  readonly {{ attr.field }}{% if attr.requirement_level != "required" %}?{% endif %}: {{ attr.ts_type }};
 {% endfor %}
 };
 {% endif %}
 
-export const {{ metric.identifier }} = {% if metric.duration %}Metric.mapInput({% endif %}Metric.{{ "counter" if metric.instrument == "updowncounter" else metric.instrument }}({{ metric.name | tojson }}, {
+const {{ metric.identifier }} = Metric.{{ "counter" if metric.instrument == "updowncounter" else metric.instrument }}({{ metric.name | tojson }}, {
   description: {{ metric.brief | tojson }},
   attributes: { unit: {{ metric.unit | tojson }} },
 {% if metric.instrument == "counter" or metric.instrument == "updowncounter" %}
   incremental: {{ "true" if metric.instrument == "counter" else "false" }},
 {% elif metric.instrument == "histogram" %}
-  boundaries: [...{{ metric.boundaries | tojson }}, Infinity],
+  boundaries: [{% for boundary in metric.boundaries %}{{ boundary | tojson }}, {% endfor %}Infinity],
 {% endif %}
-}){% if metric.duration %}, (value: Duration.Duration) => Duration.toMillis(value){% if metric.unit == "s" %} / 1000{% elif metric.unit == "us" %} * 1000{% elif metric.unit == "ns" %} * 1_000_000{% endif %}){% endif %};
+});
 
+{% if metric.attributes | length == 0 %}
+export const record{{ metric.type_name }} = (value: {{ "Duration.Duration" if metric.duration else "number" }}) =>
+  Metric.update({{ metric.identifier }}, {% if metric.duration %}Duration.toMillis(value){% if metric.unit == "s" %} / 1000{% elif metric.unit == "us" %} * 1000{% elif metric.unit == "ns" %} * 1_000_000{% endif %}{% else %}value{% endif %});
+{% else %}
 export const record{{ metric.type_name }} = (
   value: {{ "Duration.Duration" if metric.duration else "number" }},
-  {{ "attributes" if metric.attributes | length > 0 else "_attributes" }}: {{ metric.type_name }}Attributes{% if not metric.required %} = {}{% endif %},
+  attributes: {{ metric.type_name }}Attributes{% if not metric.required %} = {}{% endif %},
 ) =>
   Metric.update(
-{% if metric.attributes | length > 0 %}
     Metric.withAttributes({{ metric.identifier }}, {
 {% for attr in metric.attributes %}
 {% if attr.requirement_level == "required" %}
-      [{{ attr.key | tojson }}]: String(attributes[{{ attr.key | tojson }}]),
+      [{{ attr.key | tojson }}]: String(attributes.{{ attr.field }}),
 {% else %}
-      ...(!Object.hasOwn(attributes, {{ attr.key | tojson }}) || attributes[{{ attr.key | tojson }}] === undefined
+      ...(!Object.hasOwn(attributes, {{ attr.field | tojson }}) || attributes.{{ attr.field }} === undefined
         ? {}
-        : { [{{ attr.key | tojson }}]: String(attributes[{{ attr.key | tojson }}]) }),
+        : { [{{ attr.key | tojson }}]: String(attributes.{{ attr.field }}) }),
 {% endif %}
 {% endfor %}
     }),
+{% if metric.duration %}
+    Duration.toMillis(value){% if metric.unit == "s" %} / 1000{% elif metric.unit == "us" %} * 1000{% elif metric.unit == "ns" %} * 1_000_000{% endif %},
 {% else %}
-    {{ metric.identifier }},
-{% endif %}
     value,
+{% endif %}
   );
+{% endif %}
 {% endfor %}

@@ -12,74 +12,83 @@ import * as OtlpSerialization from "effect/observability/OtlpSerialization";
 
 import * as Metrics from "./metrics.ts";
 
-test("required and optional labels reach the same native Effect instrument", async () => {
+test("friendly fields and enum constants record registry keys and values", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
       yield* Metrics.recordAuthAttempts(2, {
-        "auth.method": "token",
-        "auth.success": true,
+        method: Metrics.AuthMethod.Token,
+        success: true,
       });
-      const state = yield* Metric.value(
-        Metric.withAttributes(Metrics.authAttempts, {
-          "auth.method": "token",
-          "auth.success": "true",
-        }),
-      );
-      assert.equal(state.count, 2);
-      assert.equal(state.incremental, true);
-
       yield* Metrics.recordMyappTaskStarted(3);
-      assert.equal((yield* Metric.value(Metrics.myappTaskStarted)).count, 3);
+      const snapshot = yield* Metric.snapshot;
+      const auth = snapshot.find((item) => item.id === "auth.attempts");
+      assert.ok(auth?.type === "Counter");
+      assert.equal(auth.state.count, 2);
+      assert.equal(auth.state.incremental, true);
+      assert.equal(auth.attributes?.["auth.method"], "token");
+      assert.equal(auth.attributes?.["auth.success"], "true");
+      const started = snapshot.find((item) => item.id === "myapp.task.started");
+      assert.ok(started?.type === "Counter");
+      assert.equal(started.state.count, 3);
+      assert.equal(
+        Object.hasOwn(started.attributes ?? {}, "myapp.task.id"),
+        false,
+      );
     }).pipe(Effect.provideService(Metric.MetricRegistry, new Map())),
   );
 });
 
-test("duration values and explicit histogram buckets use the registry unit", async () => {
+test("Duration histograms preserve units, buckets, and optional enum attributes", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
-      const labels = {
-        "myapp.task.id": "task-1",
-        "myapp.task.state": "done",
-      } as const;
-      yield* Metrics.recordMyappTaskDuration(Duration.millis(250), labels);
-      const state = yield* Metric.value(
-        Metric.withAttributes(Metrics.myappTaskDuration, labels),
+      yield* Metrics.recordMyappTaskDuration(Duration.millis(250), {
+        taskId: "task-1",
+        taskState: Metrics.MyappTaskState.Done,
+        authMethod: Metrics.AuthMethod.Token,
+      });
+      const point = (yield* Metric.snapshot).find(
+        (item) => item.id === "myapp.task.duration",
       );
-      assert.equal(state.count, 1);
-      assert.equal(state.sum, 0.25);
-      assert.equal(state.min, 0.25);
+      assert.ok(point?.type === "Histogram");
+      assert.equal(point.state.count, 1);
+      assert.equal(point.state.sum, 0.25);
+      assert.equal(point.state.min, 0.25);
       assert.deepEqual(
-        state.buckets.map(([boundary]) => boundary),
+        point.state.buckets.map(([boundary]) => boundary),
         [0, 0.005, 0.01, 0.1, 1, 10, Infinity],
       );
-      const snapshot = yield* Metric.snapshot;
-      const metric = snapshot.find((item) => item.id === "myapp.task.duration");
-      assert.ok(metric);
-      assert.equal(metric.attributes?.unit, "s");
+      assert.equal(point.attributes?.unit, "s");
+      assert.equal(point.attributes?.["myapp.task.id"], "task-1");
+      assert.equal(point.attributes?.["myapp.task.state"], "done");
+      assert.equal(point.attributes?.["auth.method"], "token");
     }).pipe(Effect.provideService(Metric.MetricRegistry, new Map())),
   );
 });
 
-test("up-down counters decrease, gauges replace, and size histograms stay numeric", async () => {
+test("up-down counters decrease, gauges replace, and numeric histograms stay numeric", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
-      const labels = { "myapp.task.state": "queued" } as const;
-      yield* Metrics.recordMyappTaskActive(5, labels);
-      yield* Metrics.recordMyappTaskActive(-2, labels);
-      const active = yield* Metric.value(
-        Metric.withAttributes(Metrics.myappTaskActive, labels),
-      );
-      assert.equal(active.count, 3);
-      assert.equal(active.incremental, false);
-
+      yield* Metrics.recordMyappTaskActive(5, {
+        taskState: Metrics.MyappTaskState.Queued,
+      });
+      yield* Metrics.recordMyappTaskActive(-2, {
+        taskState: Metrics.MyappTaskState.Queued,
+      });
       yield* Metrics.recordMyappQueueDepth(9);
       yield* Metrics.recordMyappQueueDepth(4);
-      assert.equal((yield* Metric.value(Metrics.myappQueueDepth)).value, 4);
-
       yield* Metrics.recordMyappTaskPayload(256);
-      const payload = yield* Metric.value(Metrics.myappTaskPayload);
-      assert.equal(payload.sum, 256);
-      assert.equal(payload.count, 1);
+      const snapshot = yield* Metric.snapshot;
+      const active = snapshot.find((item) => item.id === "myapp.task.active");
+      assert.ok(active?.type === "Counter");
+      assert.equal(active.state.count, 3);
+      assert.equal(active.state.incremental, false);
+      const depth = snapshot.find((item) => item.id === "myapp.queue.depth");
+      assert.ok(depth?.type === "Gauge");
+      assert.equal(depth.state.value, 4);
+      const payload = snapshot.find((item) => item.id === "myapp.task.payload");
+      assert.ok(payload?.type === "Histogram");
+      assert.equal(payload.state.sum, 256);
+      assert.equal(payload.state.count, 1);
     }).pipe(Effect.provideService(Metric.MetricRegistry, new Map())),
   );
 });
@@ -106,10 +115,12 @@ test("OTLP exports preserve histogram overflow, bounds, units, and monotonicity"
   await Effect.runPromise(
     Effect.gen(function* () {
       yield* Metrics.recordMyappTaskDuration(Duration.seconds(20), {
-        "myapp.task.id": "overflow-task",
+        taskId: "overflow-task",
       });
       yield* Metrics.recordMyappTaskStarted(2);
-      yield* Metrics.recordMyappTaskActive(-1, { "myapp.task.state": "done" });
+      yield* Metrics.recordMyappTaskActive(-1, {
+        taskState: Metrics.MyappTaskState.Done,
+      });
       yield* (yield* OtlpExporter.Flusher).flush;
     }).pipe(
       Effect.provide(layer),
@@ -142,32 +153,39 @@ test("OTLP exports preserve histogram overflow, bounds, units, and monotonicity"
   );
 });
 
+test("public exports provide typed recorders and enum constants, without raw instruments", () => {
+  assert.equal("authAttempts" in Metrics, false);
+  assert.equal("myappTaskDuration" in Metrics, false);
+  assert.deepEqual(Metrics.AuthMethod, {
+    Password: "password",
+    Token: "token",
+  });
+});
+
 function invalidConsumers() {
-  // @ts-expect-error Required attributes cannot be omitted.
+  // @ts-expect-error Required fields cannot be omitted.
   Metrics.recordAuthAttempts(1);
   Metrics.recordAuthAttempts(1, {
     // @ts-expect-error Enum values must come from the registry.
-    "auth.method": "unknown",
-    "auth.success": true,
+    method: "unknown",
+    success: true,
   });
   Metrics.recordAuthAttempts(1, {
-    "auth.method": "token",
-    // @ts-expect-error Attribute scalar types are preserved before label serialization.
-    "auth.success": "true",
+    method: Metrics.AuthMethod.Token,
+    // @ts-expect-error Label scalar types are checked before serialization.
+    success: "true",
   });
-  // @ts-expect-error Unrelated attributes are not accepted by typed recording helpers.
-  Metrics.recordMyappTaskStarted(1, { "auth.success": true });
+  // @ts-expect-error Unrelated fields are rejected.
+  Metrics.recordMyappTaskStarted(1, { success: true });
+  // @ts-expect-error Callers use generated fields rather than telemetry key strings.
+  Metrics.recordMyappTaskStarted(1, { "myapp.task.id": "task-1" });
   // @ts-expect-error Duration histograms require an Effect Duration.
-  Metrics.recordMyappTaskDuration(0.25, { "myapp.task.id": "task-1" });
+  Metrics.recordMyappTaskDuration(0.25, { taskId: "task-1" });
   // @ts-expect-error Numeric histograms do not accept a Duration.
   Metrics.recordMyappTaskPayload(Duration.seconds(1));
-  // @ts-expect-error Metrics with no dimensions reject arbitrary attributes.
+  // @ts-expect-error Metrics without attributes have no attribute argument.
   Metrics.recordMyappQueueDepth(1, { arbitrary: "label" });
+  // @ts-expect-error Raw instruments cannot bypass the generated contract.
+  Metrics.authAttempts;
 }
 void invalidConsumers;
-
-const nativeTimer: Metric.Metric<Duration.Duration, unknown> =
-  Metrics.myappTaskDuration;
-const nativeCounter: Metric.Metric<number, unknown> = Metrics.authAttempts;
-void nativeTimer;
-void nativeCounter;

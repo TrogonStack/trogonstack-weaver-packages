@@ -2,31 +2,29 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as Effect from "effect/Effect";
 import * as Metric from "effect/Metric";
-
 import * as Metrics from "./metrics.ts";
 
-test("resolved dependency attributes retain enum types and serialize numeric labels", async () => {
+test("dependency enums and friendly fields retain exact wire keys", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
       yield* Metrics.recordSampleImported(1, {
-        "remote.status": "ready",
-        "remote.port": 443,
+        remoteStatus: Metrics.RemoteStatus.Ready,
+        remotePort: 443,
       });
-      const state = yield* Metric.value(
-        Metric.withAttributes(Metrics.sampleImported, {
-          "remote.status": "ready",
-          "remote.port": "443",
-        }),
+      const point = (yield* Metric.snapshot).find(
+        (item) => item.id === "sample.imported",
       );
-      assert.equal(state.count, 1);
+      assert.ok(point?.type === "Counter");
+      assert.equal(point.state.count, 1);
+      assert.equal(point.attributes?.["remote.status"], "ready");
+      assert.equal(point.attributes?.["remote.port"], "443");
     }).pipe(Effect.provideService(Metric.MetricRegistry, new Map())),
   );
 });
-
 function invalidConsumers() {
   Metrics.recordSampleImported(1, {
-    // @ts-expect-error Dependency enum members remain constrained.
-    "remote.status": "unknown",
+    // @ts-expect-error Imported enum members remain constrained.
+    remoteStatus: "unknown",
   });
 }
 void invalidConsumers;

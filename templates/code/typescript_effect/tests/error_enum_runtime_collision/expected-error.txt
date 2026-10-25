@@ -1,0 +1,1 @@
+metrics render to colliding TypeScript identifiers

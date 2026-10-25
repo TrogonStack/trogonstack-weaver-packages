@@ -3,7 +3,6 @@ import { test } from "node:test";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Metric from "effect/Metric";
-
 import * as Metrics from "./metrics.ts";
 
 test("time histograms convert Duration into their declared unit", async () => {
@@ -14,19 +13,19 @@ test("time histograms convert Duration into their declared unit", async () => {
       yield* Metrics.recordSampleDurationMs(duration);
       yield* Metrics.recordSampleDurationUs(duration);
       yield* Metrics.recordSampleDurationNs(duration);
-      assert.equal((yield* Metric.value(Metrics.sampleDurationS)).sum, 0.125);
-      assert.equal((yield* Metric.value(Metrics.sampleDurationMs)).sum, 125);
-      assert.equal(
-        (yield* Metric.value(Metrics.sampleDurationUs)).sum,
-        125_000,
-      );
-      assert.equal(
-        (yield* Metric.value(Metrics.sampleDurationNs)).sum,
-        125_000_000,
-      );
-
       yield* Metrics.recordSampleSize(512);
-      assert.equal((yield* Metric.value(Metrics.sampleSize)).sum, 512);
+      const snapshot = yield* Metric.snapshot;
+      for (const [name, sum] of [
+        ["sample.duration.s", 0.125],
+        ["sample.duration.ms", 125],
+        ["sample.duration.us", 125_000],
+        ["sample.duration.ns", 125_000_000],
+        ["sample.size", 512],
+      ] as const) {
+        const point = snapshot.find((item) => item.id === name);
+        assert.ok(point?.type === "Histogram");
+        assert.equal(point.state.sum, sum);
+      }
     }).pipe(Effect.provideService(Metric.MetricRegistry, new Map())),
   );
 });
