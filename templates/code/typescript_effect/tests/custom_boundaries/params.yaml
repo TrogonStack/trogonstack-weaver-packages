@@ -1,0 +1,10 @@
+params:
+  histogram_boundaries:
+  - 1
+  - 2
+  - 4
+  histogram_boundaries_by_unit:
+    s:
+    - 0.1
+    - 0.5
+    - 1

@@ -1,0 +1,1 @@
+requires strictly increasing histogram boundaries

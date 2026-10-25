@@ -1,0 +1,17 @@
+file_format: definition/2
+metrics:
+- name: sample.total
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  attributes:
+  - ref: sample.tags
+  requirement_level: recommended
+attributes:
+- key: sample.tags
+  type: string[]
+  stability: stable
+  brief: Synthetic tags.
+  examples:
+  - - one

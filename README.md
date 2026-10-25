@@ -32,6 +32,7 @@ does and the params it accepts.
 
 - [Go code generation](templates/code/go/README.md)
 - [Rust code generation](templates/code/rust/README.md)
+- [Effect TypeScript metrics](templates/code/typescript_effect/README.md)
 
 ## Using a package
 

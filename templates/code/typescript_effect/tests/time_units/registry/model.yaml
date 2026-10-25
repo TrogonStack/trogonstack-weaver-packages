@@ -1,0 +1,32 @@
+file_format: definition/2
+metrics:
+- name: sample.duration.s
+  instrument: histogram
+  unit: s
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+- name: sample.duration.ms
+  instrument: histogram
+  unit: ms
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+- name: sample.duration.us
+  instrument: histogram
+  unit: us
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+- name: sample.duration.ns
+  instrument: histogram
+  unit: ns
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+- name: sample.size
+  instrument: histogram
+  unit: By
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended

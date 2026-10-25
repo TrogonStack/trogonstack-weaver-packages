@@ -1,0 +1,48 @@
+// Generated from a semantic convention registry. Do not edit.
+import * as Metric from "effect/Metric";
+{% if ctx.metrics | selectattr("duration") | list | length > 0 %}
+import * as Duration from "effect/Duration";
+{% endif %}
+{% for metric in ctx.metrics %}
+
+export type {{ metric.type_name }}Attributes = {% if metric.attributes | length == 0 %}Readonly<Record<string, never>>;
+{% else %}{
+{% for attr in metric.attributes %}
+  readonly {{ attr.key | tojson }}{% if attr.requirement_level != "required" %}?{% endif %}: {{ attr.ts_type }};
+{% endfor %}
+};
+{% endif %}
+
+export const {{ metric.identifier }} = {% if metric.duration %}Metric.mapInput({% endif %}Metric.{{ "counter" if metric.instrument == "updowncounter" else metric.instrument }}({{ metric.name | tojson }}, {
+  description: {{ metric.brief | tojson }},
+  attributes: { unit: {{ metric.unit | tojson }} },
+{% if metric.instrument == "counter" or metric.instrument == "updowncounter" %}
+  incremental: {{ "true" if metric.instrument == "counter" else "false" }},
+{% elif metric.instrument == "histogram" %}
+  boundaries: [...{{ metric.boundaries | tojson }}, Infinity],
+{% endif %}
+}){% if metric.duration %}, (value: Duration.Duration) => Duration.toMillis(value){% if metric.unit == "s" %} / 1000{% elif metric.unit == "us" %} * 1000{% elif metric.unit == "ns" %} * 1_000_000{% endif %}){% endif %};
+
+export const record{{ metric.type_name }} = (
+  value: {{ "Duration.Duration" if metric.duration else "number" }},
+  {{ "attributes" if metric.attributes | length > 0 else "_attributes" }}: {{ metric.type_name }}Attributes{% if not metric.required %} = {}{% endif %},
+) =>
+  Metric.update(
+{% if metric.attributes | length > 0 %}
+    Metric.withAttributes({{ metric.identifier }}, {
+{% for attr in metric.attributes %}
+{% if attr.requirement_level == "required" %}
+      [{{ attr.key | tojson }}]: String(attributes[{{ attr.key | tojson }}]),
+{% else %}
+      ...(!Object.hasOwn(attributes, {{ attr.key | tojson }}) || attributes[{{ attr.key | tojson }}] === undefined
+        ? {}
+        : { [{{ attr.key | tojson }}]: String(attributes[{{ attr.key | tojson }}]) }),
+{% endif %}
+{% endfor %}
+    }),
+{% else %}
+    {{ metric.identifier }},
+{% endif %}
+    value,
+  );
+{% endfor %}

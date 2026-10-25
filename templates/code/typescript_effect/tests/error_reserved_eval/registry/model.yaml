@@ -1,0 +1,8 @@
+file_format: definition/2
+metrics:
+- name: eval
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended

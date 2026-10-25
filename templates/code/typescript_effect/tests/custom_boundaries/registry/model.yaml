@@ -1,0 +1,14 @@
+file_format: definition/2
+metrics:
+- name: sample.size
+  instrument: histogram
+  unit: By
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+- name: sample.duration
+  instrument: histogram
+  unit: s
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended

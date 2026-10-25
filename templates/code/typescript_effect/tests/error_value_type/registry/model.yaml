@@ -1,0 +1,11 @@
+file_format: definition/2
+metrics:
+- name: sample.total
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  annotations:
+    code_generation:
+      metric_value_type: bigint
+  requirement_level: recommended

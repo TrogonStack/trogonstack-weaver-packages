@@ -1,0 +1,14 @@
+file_format: definition/2
+metrics:
+- name: sample.count
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+- name: record.sample.count
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
