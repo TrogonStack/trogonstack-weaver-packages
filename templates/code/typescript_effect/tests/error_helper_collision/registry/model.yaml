@@ -6,7 +6,7 @@ metrics:
   stability: stable
   brief: Synthetic metric.
   requirement_level: recommended
-- name: record.sample.count
+- name: update.sample.count
   instrument: counter
   unit: '{item}'
   stability: stable

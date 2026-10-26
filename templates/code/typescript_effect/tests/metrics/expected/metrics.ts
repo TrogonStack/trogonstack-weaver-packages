@@ -27,7 +27,7 @@ const authAttempts = Metric.counter("auth.attempts", {
   incremental: true,
 });
 
-export function recordAuthAttempts(
+export function updateAuthAttempts(
   value: number,
   attributes: AuthAttemptsAttributes,
 ) {
@@ -45,7 +45,7 @@ const myappQueueDepth = Metric.gauge("myapp.queue.depth", {
   attributes: { unit: "{task}" },
 });
 
-export function recordMyappQueueDepth(value: number) {
+export function updateMyappQueueDepth(value: number) {
   return Metric.update(myappQueueDepth, value);
 }
 
@@ -59,7 +59,7 @@ const myappTaskActive = Metric.counter("myapp.task.active", {
   incremental: false,
 });
 
-export function recordMyappTaskActive(
+export function updateMyappTaskActive(
   value: number,
   attributes: MyappTaskActiveAttributes,
 ) {
@@ -83,7 +83,7 @@ const myappTaskDuration = Metric.histogram("myapp.task.duration", {
   boundaries: [0, 0.005, 0.01, 0.1, 1, 10, Infinity],
 });
 
-export function recordMyappTaskDuration(
+export function updateMyappTaskDuration(
   value: Duration.Duration,
   attributes: MyappTaskDurationAttributes,
 ) {
@@ -107,7 +107,7 @@ const myappTaskFloatActive = Metric.counter("myapp.task.float.active", {
   incremental: false,
 });
 
-export function recordMyappTaskFloatActive(value: number) {
+export function updateMyappTaskFloatActive(value: number) {
   return Metric.update(myappTaskFloatActive, value);
 }
 
@@ -116,7 +116,7 @@ const myappTaskFloatDepth = Metric.gauge("myapp.task.float.depth", {
   attributes: { unit: "{task}" },
 });
 
-export function recordMyappTaskFloatDepth(value: number) {
+export function updateMyappTaskFloatDepth(value: number) {
   return Metric.update(myappTaskFloatDepth, value);
 }
 
@@ -126,7 +126,7 @@ const myappTaskFloatStarted = Metric.counter("myapp.task.float.started", {
   incremental: true,
 });
 
-export function recordMyappTaskFloatStarted(value: number) {
+export function updateMyappTaskFloatStarted(value: number) {
   return Metric.update(myappTaskFloatStarted, value);
 }
 
@@ -136,7 +136,7 @@ const myappTaskPayload = Metric.histogram("myapp.task.payload", {
   boundaries: [128, 256, 1024, Infinity],
 });
 
-export function recordMyappTaskPayload(value: number) {
+export function updateMyappTaskPayload(value: number) {
   return Metric.update(myappTaskPayload, value);
 }
 
@@ -150,7 +150,7 @@ const myappTaskStarted = Metric.counter("myapp.task.started", {
   incremental: true,
 });
 
-export function recordMyappTaskStarted(
+export function updateMyappTaskStarted(
   value: number,
   attributes: MyappTaskStartedAttributes = {},
 ) {

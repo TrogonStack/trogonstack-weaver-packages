@@ -9,11 +9,11 @@ application-specific metric names or business rules. Export endpoints,
 resources, collection schedules, operation outcomes, and transaction-sensitive
 recording remain application responsibilities.
 
-Time histogram recorders convert an Effect duration into the registry's unit
+Time histogram update functions convert an Effect duration into the registry's unit
 before updating a numeric histogram. This
 avoids assuming that every duration uses Effect timers' millisecond buckets.
 
-Each metric exposes a thin recording function with friendly attribute fields.
+Each metric exposes a thin update function with friendly attribute fields.
 The function owns telemetry keys and conversion to Effect's string labels;
 generated enum constants own the registry's enum values. Private instruments
 keep the typed function as the module's recording boundary.

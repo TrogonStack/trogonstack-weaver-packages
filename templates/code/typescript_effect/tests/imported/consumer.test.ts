@@ -7,7 +7,7 @@ import * as Metrics from "./metrics.ts";
 test("dependency enums and friendly fields retain exact wire keys", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
-      yield* Metrics.recordSampleImported(1, {
+      yield* Metrics.updateSampleImported(1, {
         remoteStatus: Metrics.RemoteStatus.Ready,
         remotePort: 443,
       });
@@ -22,7 +22,7 @@ test("dependency enums and friendly fields retain exact wire keys", async () => 
   );
 });
 function invalidConsumers() {
-  Metrics.recordSampleImported(1, {
+  Metrics.updateSampleImported(1, {
     // @ts-expect-error Imported enum members remain constrained.
     remoteStatus: "unknown",
   });

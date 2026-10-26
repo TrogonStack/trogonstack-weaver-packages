@@ -57,10 +57,10 @@ Call the generated helper inside your Effect program:
 ```ts
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
-import { recordWorkerTaskDuration, WorkerResult } from "./semconv/metrics.ts";
+import { updateWorkerTaskDuration, WorkerResult } from "./semconv/metrics.ts";
 
 const program = Effect.gen(function* () {
-  yield* recordWorkerTaskDuration(Duration.millis(250), {
+  yield* updateWorkerTaskDuration(Duration.millis(250), {
     result: WorkerResult.Success,
   });
 });

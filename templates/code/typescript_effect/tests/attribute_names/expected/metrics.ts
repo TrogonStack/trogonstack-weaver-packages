@@ -39,7 +39,7 @@ const sampleRecorded = Metric.counter("sample.recorded", {
   incremental: true,
 });
 
-export function recordSampleRecorded(
+export function updateSampleRecorded(
   value: number,
   attributes: SampleRecordedAttributes,
 ) {

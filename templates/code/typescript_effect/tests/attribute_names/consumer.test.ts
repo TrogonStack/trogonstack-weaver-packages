@@ -8,7 +8,7 @@ import * as Metrics from "./metrics.ts";
 test("friendly identifiers preserve enum wire values and namespaced attribute keys", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
-      yield* Metrics.recordSampleRecorded(1, {
+      yield* Metrics.updateSampleRecorded(1, {
         taskId: "synthetic-task",
         remoteTaskState: "ready",
         class: "synthetic-class",

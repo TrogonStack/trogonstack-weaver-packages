@@ -19,7 +19,7 @@ const sampleImported = Metric.counter("sample.imported", {
   incremental: true,
 });
 
-export function recordSampleImported(
+export function updateSampleImported(
   value: number,
   attributes: SampleImportedAttributes,
 ) {

@@ -17,7 +17,7 @@ const sampleKept = Metric.counter("sample.kept", {
   incremental: true,
 });
 
-export function recordSampleKept(
+export function updateSampleKept(
   value: number,
   attributes: SampleKeptAttributes,
 ) {

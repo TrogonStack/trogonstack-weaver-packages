@@ -34,11 +34,11 @@ const {{ metric.identifier }} = Metric.{{ "counter" if metric.instrument == "upd
 });
 
 {% if metric.attributes | length == 0 %}
-export function record{{ metric.type_name }}(value: {{ "Duration.Duration" if metric.duration else "number" }}) {
+export function update{{ metric.type_name }}(value: {{ "Duration.Duration" if metric.duration else "number" }}) {
   return Metric.update({{ metric.identifier }}, {% if metric.duration %}Duration.toMillis(value){% if metric.unit == "s" %} / 1000{% elif metric.unit == "us" %} * 1000{% elif metric.unit == "ns" %} * 1_000_000{% endif %}{% else %}value{% endif %});
 }
 {% else %}
-export function record{{ metric.type_name }}(
+export function update{{ metric.type_name }}(
   value: {{ "Duration.Duration" if metric.duration else "number" }},
   attributes: {{ metric.type_name }}Attributes{% if not metric.required %} = {}{% endif %},
 ) {

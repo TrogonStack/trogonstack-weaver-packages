@@ -8,8 +8,8 @@ import * as Metrics from "./metrics.ts";
 test("unit-specific boundaries override fallback boundaries", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
-      yield* Metrics.recordSampleDuration(Duration.seconds(2));
-      yield* Metrics.recordSampleSize(5);
+      yield* Metrics.updateSampleDuration(Duration.seconds(2));
+      yield* Metrics.updateSampleSize(5);
       const snapshot = yield* Metric.snapshot;
       const duration = snapshot.find((item) => item.id === "sample.duration");
       const size = snapshot.find((item) => item.id === "sample.size");

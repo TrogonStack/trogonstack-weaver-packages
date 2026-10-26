@@ -9,7 +9,7 @@ test("friendly fields preserve unusual wire keys without inherited optional labe
     Effect.gen(function* () {
       const attributes = { proto: "synthetic", constructor: undefined };
       Reflect.deleteProperty(attributes, "constructor");
-      yield* Metrics.recordSamplePrototype(1, attributes);
+      yield* Metrics.updateSamplePrototype(1, attributes);
       const point = (yield* Metric.snapshot).find(
         (item) => item.id === "sample.prototype",
       );

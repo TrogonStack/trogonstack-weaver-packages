@@ -12,7 +12,7 @@ const samplePrototype = Metric.counter("sample.prototype", {
   incremental: true,
 });
 
-export function recordSamplePrototype(
+export function updateSamplePrototype(
   value: number,
   attributes: SamplePrototypeAttributes,
 ) {

@@ -15,11 +15,11 @@ import * as Metrics from "./metrics.ts";
 test("friendly fields and enum constants record registry keys and values", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
-      yield* Metrics.recordAuthAttempts(2, {
+      yield* Metrics.updateAuthAttempts(2, {
         method: Metrics.AuthMethod.Token,
         success: true,
       });
-      yield* Metrics.recordMyappTaskStarted(3);
+      yield* Metrics.updateMyappTaskStarted(3);
       const snapshot = yield* Metric.snapshot;
       const auth = snapshot.find((item) => item.id === "auth.attempts");
       assert.ok(auth?.type === "Counter");
@@ -41,7 +41,7 @@ test("friendly fields and enum constants record registry keys and values", async
 test("Duration histograms preserve units, buckets, and optional enum attributes", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
-      yield* Metrics.recordMyappTaskDuration(Duration.millis(250), {
+      yield* Metrics.updateMyappTaskDuration(Duration.millis(250), {
         taskId: "task-1",
         taskState: Metrics.MyappTaskState.Done,
         authMethod: Metrics.AuthMethod.Token,
@@ -68,15 +68,15 @@ test("Duration histograms preserve units, buckets, and optional enum attributes"
 test("up-down counters decrease, gauges replace, and numeric histograms stay numeric", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
-      yield* Metrics.recordMyappTaskActive(5, {
+      yield* Metrics.updateMyappTaskActive(5, {
         taskState: Metrics.MyappTaskState.Queued,
       });
-      yield* Metrics.recordMyappTaskActive(-2, {
+      yield* Metrics.updateMyappTaskActive(-2, {
         taskState: Metrics.MyappTaskState.Queued,
       });
-      yield* Metrics.recordMyappQueueDepth(9);
-      yield* Metrics.recordMyappQueueDepth(4);
-      yield* Metrics.recordMyappTaskPayload(256);
+      yield* Metrics.updateMyappQueueDepth(9);
+      yield* Metrics.updateMyappQueueDepth(4);
+      yield* Metrics.updateMyappTaskPayload(256);
       const snapshot = yield* Metric.snapshot;
       const active = snapshot.find((item) => item.id === "myapp.task.active");
       assert.ok(active?.type === "Counter");
@@ -114,11 +114,11 @@ test("OTLP exports preserve histogram overflow, bounds, units, and monotonicity"
   );
   await Effect.runPromise(
     Effect.gen(function* () {
-      yield* Metrics.recordMyappTaskDuration(Duration.seconds(20), {
+      yield* Metrics.updateMyappTaskDuration(Duration.seconds(20), {
         taskId: "overflow-task",
       });
-      yield* Metrics.recordMyappTaskStarted(2);
-      yield* Metrics.recordMyappTaskActive(-1, {
+      yield* Metrics.updateMyappTaskStarted(2);
+      yield* Metrics.updateMyappTaskActive(-1, {
         taskState: Metrics.MyappTaskState.Done,
       });
       yield* (yield* OtlpExporter.Flusher).flush;
@@ -164,27 +164,27 @@ test("public exports provide typed recorders and enum constants, without raw ins
 
 function invalidConsumers() {
   // @ts-expect-error Required fields cannot be omitted.
-  Metrics.recordAuthAttempts(1);
-  Metrics.recordAuthAttempts(1, {
+  Metrics.updateAuthAttempts(1);
+  Metrics.updateAuthAttempts(1, {
     // @ts-expect-error Enum values must come from the registry.
     method: "unknown",
     success: true,
   });
-  Metrics.recordAuthAttempts(1, {
+  Metrics.updateAuthAttempts(1, {
     method: Metrics.AuthMethod.Token,
     // @ts-expect-error Label scalar types are checked before serialization.
     success: "true",
   });
   // @ts-expect-error Unrelated fields are rejected.
-  Metrics.recordMyappTaskStarted(1, { success: true });
+  Metrics.updateMyappTaskStarted(1, { success: true });
   // @ts-expect-error Callers use generated fields rather than telemetry key strings.
-  Metrics.recordMyappTaskStarted(1, { "myapp.task.id": "task-1" });
+  Metrics.updateMyappTaskStarted(1, { "myapp.task.id": "task-1" });
   // @ts-expect-error Duration histograms require an Effect Duration.
-  Metrics.recordMyappTaskDuration(0.25, { taskId: "task-1" });
+  Metrics.updateMyappTaskDuration(0.25, { taskId: "task-1" });
   // @ts-expect-error Numeric histograms do not accept a Duration.
-  Metrics.recordMyappTaskPayload(Duration.seconds(1));
+  Metrics.updateMyappTaskPayload(Duration.seconds(1));
   // @ts-expect-error Metrics without attributes have no attribute argument.
-  Metrics.recordMyappQueueDepth(1, { arbitrary: "label" });
+  Metrics.updateMyappQueueDepth(1, { arbitrary: "label" });
   // @ts-expect-error Raw instruments cannot bypass the generated contract.
   Metrics.authAttempts;
 }

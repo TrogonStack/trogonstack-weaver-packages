@@ -9,11 +9,11 @@ test("time histograms convert Duration into their declared unit", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
       const duration = Duration.millis(125);
-      yield* Metrics.recordSampleDurationS(duration);
-      yield* Metrics.recordSampleDurationMs(duration);
-      yield* Metrics.recordSampleDurationUs(duration);
-      yield* Metrics.recordSampleDurationNs(duration);
-      yield* Metrics.recordSampleSize(512);
+      yield* Metrics.updateSampleDurationS(duration);
+      yield* Metrics.updateSampleDurationMs(duration);
+      yield* Metrics.updateSampleDurationUs(duration);
+      yield* Metrics.updateSampleDurationNs(duration);
+      yield* Metrics.updateSampleSize(512);
       const snapshot = yield* Metric.snapshot;
       for (const [name, sum] of [
         ["sample.duration.s", 0.125],

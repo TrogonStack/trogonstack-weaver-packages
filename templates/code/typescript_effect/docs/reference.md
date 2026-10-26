@@ -1,7 +1,7 @@
 # Generated API and parameters
 
 The output is `metrics.ts`. Names retain their full registry namespace:
-`worker.task.duration` produces `recordWorkerTaskDuration` and, when it has
+`worker.task.duration` produces `updateWorkerTaskDuration` and, when it has
 attributes, `WorkerTaskDurationAttributes`. Instruments stay private.
 Metric names and attribute keys are preserved in recorded telemetry.
 
@@ -46,7 +46,7 @@ Helpers convert supplied values to string labels and omit absent optional
 attributes. Attribute arrays are rejected. Keys `unit` and `time_unit` are
 reserved by Effect and cannot be metric dimensions.
 
-Recording functions map friendly fields to the original telemetry keys. Their
+Update functions map friendly fields to the original telemetry keys. Their
 attribute types enforce required fields and scalar or enum values. The module
 exports no raw instrument handles that bypass this contract.
 
