@@ -1,0 +1,47 @@
+file_format: definition/2
+metrics:
+- name: sample.duration.s
+  instrument: histogram
+  unit: s
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+- name: sample.duration.ms
+  instrument: histogram
+  unit: ms
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+- name: sample.duration.us
+  instrument: histogram
+  unit: us
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+- name: sample.duration.ns
+  instrument: histogram
+  unit: ns
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+- name: sample.duration.ns.tagged
+  instrument: histogram
+  unit: ns
+  stability: stable
+  brief: Synthetic attributed duration.
+  requirement_level: recommended
+  attributes:
+  - ref: sample.run
+    requirement_level: required
+- name: sample.size
+  instrument: histogram
+  unit: By
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+attributes:
+- key: sample.run
+  type: string
+  stability: stable
+  brief: Synthetic run label.
+  examples: [sample]

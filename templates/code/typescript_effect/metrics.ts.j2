@@ -1,0 +1,92 @@
+// Generated from a semantic convention registry. Do not edit.
+import * as Metric from "effect/Metric";
+{% if ctx.metrics | selectattr("duration") | list | length > 0 %}
+import * as Duration from "effect/Duration";
+{% endif %}
+{% for enum in ctx.enums %}
+
+export const {{ enum.name }} = {
+{% for member in enum.members %}
+  {{ member.identifier }}: {{ member.value | tojson }},
+{% endfor %}
+} as const;
+
+export type {{ enum.name }} = (typeof {{ enum.name }})[keyof typeof {{ enum.name }}];
+{% endfor %}
+{% for metric in ctx.metrics %}
+{% if metric.attributes | length > 0 %}
+
+export type {{ metric.type_name }}Attributes = {
+{% for attr in metric.attributes %}
+  readonly {{ attr.field }}{% if attr.requirement_level != "required" %}?{% endif %}: {{ attr.ts_type }};
+{% endfor %}
+};
+{% endif %}
+
+{% set indent = "  " if metric.duration else "" %}
+const {{ metric.identifier }} = {{ "Metric.mapInput(\n  " if metric.duration else "" }}Metric.{{ "counter" if metric.instrument == "updowncounter" else metric.instrument }}({{ metric.name | tojson }}, {
+{{ indent }}  description: {{ metric.brief | tojson }},
+{{ indent }}  attributes: { unit: {{ metric.unit | tojson }} },
+{% if metric.instrument == "counter" or metric.instrument == "updowncounter" %}
+{{ indent }}  incremental: {{ "true" if metric.instrument == "counter" else "false" }},
+{% elif metric.instrument == "histogram" %}
+{{ indent }}  boundaries: [{% for boundary in metric.boundaries %}{{ boundary | tojson }}, {% endfor %}Infinity],
+{% endif %}
+{{ "  })," if metric.duration else "});" }}
+{% if metric.duration %}
+{% if metric.unit in ["us", "ns"] %}
+  function (value: Duration.Duration) {
+    const measurement =
+      value.value._tag === "Nanos"
+        ? Number(value.value.nanos){{ " / 1000" if metric.unit == "us" else "" }}
+        : Duration.toMillis(value) * {{ "1000" if metric.unit == "us" else "1_000_000" }};
+    return measurement;
+  },
+{% else %}
+  Duration.{{ "toSeconds" if metric.unit == "s" else "toMillis" }},
+{% endif %}
+);
+{% endif %}
+
+{% if metric.attributes | length == 0 %}
+export function update{{ metric.type_name }}(value: {{ "Duration.Duration" if metric.duration else "number" }}) {
+  return Metric.update({{ metric.identifier }}, value);
+}
+{% else %}
+export function update{{ metric.type_name }}(
+  value: {{ "Duration.Duration" if metric.duration else "number" }},
+  attributes: {{ metric.type_name }}Attributes{% if not metric.required %} = {}{% endif %},
+) {
+{% if metric.optional %}
+  const labels: Record<string, string> = {% if metric.required %}{
+{% for attr in metric.attributes %}
+{% if attr.requirement_level == "required" %}
+    {{ attr.key | tojson }}: {% if attr.string_value %}attributes.{{ attr.field }}{% else %}String(attributes.{{ attr.field }}){% endif %},
+{% endif %}
+{% endfor %}
+  };
+{% else %}{};
+{% endif %}
+{% for attr in metric.attributes %}
+{% if attr.requirement_level != "required" %}
+  if (attributes.{{ attr.field }} !== undefined) {
+    labels[{{ attr.key | tojson }}] = {% if attr.string_value %}attributes.{{ attr.field }}{% else %}String(attributes.{{ attr.field }}){% endif %};
+  }
+{% endif %}
+{% endfor %}
+{% endif %}
+  return Metric.update(
+{% if metric.optional %}
+    Metric.withAttributes({{ metric.identifier }}, labels),
+{% else %}
+    Metric.withAttributes({{ metric.identifier }}, {
+{% for attr in metric.attributes %}
+      {{ attr.key | tojson }}: {% if attr.string_value %}attributes.{{ attr.field }}{% else %}String(attributes.{{ attr.field }}){% endif %},
+{% endfor %}
+    }),
+{% endif %}
+    value,
+  );
+}
+{% endif %}
+{% endfor %}

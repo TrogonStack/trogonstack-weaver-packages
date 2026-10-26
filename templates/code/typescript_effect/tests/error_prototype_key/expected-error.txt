@@ -1,0 +1,1 @@
+attribute __proto__ is not supported

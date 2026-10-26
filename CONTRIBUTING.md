@@ -60,6 +60,13 @@ temporary crates and runs formatting, consumer tests, and Clippy. Put consumer
 tests in a case's `test.rs`, importing the generated crate as
 `generated_semconv`.
 
+For the Effect TypeScript package, `mise run weaver:test:typescript_effect`
+type-checks every expected module and runs each case's `consumer.test.ts`
+against the pinned Effect dependency. Consumers import `./metrics.ts` and may
+use `@ts-expect-error` assertions to verify rejected API calls. Dependencies
+are locked in `buildscripts/typescript_effect/` and installed in a disposable
+directory outside the checkout.
+
 Keep test registries synthetic. Use neutral namespaces such as `myapp` and
 `auth` rather than conventions from a real system.
 

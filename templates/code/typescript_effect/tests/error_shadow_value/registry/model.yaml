@@ -1,0 +1,8 @@
+file_format: definition/2
+metrics:
+  - name: value
+    instrument: counter
+    unit: "{item}"
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic counter.

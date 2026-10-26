@@ -1,0 +1,12 @@
+file_format: definition/2
+metrics:
+- name: sample.total
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+metric_refinements:
+- id: sample.total
+  ref: sample.total
+  brief: Changed same-name refinement.

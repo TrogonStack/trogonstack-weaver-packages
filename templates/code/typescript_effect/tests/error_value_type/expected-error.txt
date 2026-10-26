@@ -1,0 +1,1 @@
+requires metric_value_type int or double

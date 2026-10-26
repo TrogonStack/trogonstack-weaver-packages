@@ -1,0 +1,21 @@
+file_format: definition/2
+attributes:
+- key: Record
+  type:
+    members:
+    - id: ready
+      value: a
+      stability: stable
+      brief: Synthetic value.
+  stability: stable
+  brief: Synthetic label.
+metrics:
+- name: sample.recorded
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  requirement_level: recommended
+  brief: Synthetic metric.
+  attributes:
+  - ref: Record
+    requirement_level: required

@@ -1,0 +1,17 @@
+file_format: definition/2
+attributes:
+  - key: sample.kind
+    type: string
+    stability: stable
+    brief: Synthetic kind.
+    examples: [worker]
+metrics:
+  - name: labels
+    instrument: counter
+    unit: "{item}"
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic counter.
+    attributes:
+      - ref: sample.kind
+        requirement_level: recommended

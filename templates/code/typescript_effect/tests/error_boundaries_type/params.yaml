@@ -1,0 +1,4 @@
+params:
+  histogram_boundaries:
+  - 1
+  - bad

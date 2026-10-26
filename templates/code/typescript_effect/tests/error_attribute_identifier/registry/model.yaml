@@ -1,0 +1,18 @@
+file_format: definition/2
+attributes:
+- key: sample.bad-key
+  type: string
+  stability: stable
+  brief: Synthetic label.
+  examples:
+  - value
+metrics:
+- name: sample.recorded
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  requirement_level: recommended
+  brief: Synthetic metric.
+  attributes:
+  - ref: sample.bad-key
+    requirement_level: required

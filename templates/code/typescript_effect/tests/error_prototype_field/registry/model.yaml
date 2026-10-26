@@ -1,0 +1,16 @@
+file_format: definition/2
+attributes:
+  - key: sample.constructor
+    type: string
+    stability: stable
+    brief: Synthetic inherited field collision.
+    examples: [sample]
+metrics:
+  - name: sample.recorded
+    instrument: counter
+    unit: "{item}"
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic metric.
+    attributes:
+      - ref: sample.constructor

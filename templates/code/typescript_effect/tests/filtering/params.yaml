@@ -1,0 +1,3 @@
+params:
+  stable_only: true
+  exclude_deprecated: true
