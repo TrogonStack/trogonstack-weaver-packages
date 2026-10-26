@@ -23,13 +23,14 @@ export function updateSampleImported(
   value: number,
   attributes: SampleImportedAttributes,
 ) {
+  const labels: Record<string, string> = {
+    "remote.status": attributes.remoteStatus,
+  };
+  if (attributes.remotePort !== undefined) {
+    labels["remote.port"] = String(attributes.remotePort);
+  }
   return Metric.update(
-    Metric.withAttributes(sampleImported, {
-      ...(!Object.hasOwn(attributes, "remotePort") || attributes.remotePort === undefined
-        ? {}
-        : { ["remote.port"]: String(attributes.remotePort) }),
-      ["remote.status"]: String(attributes.remoteStatus),
-    }),
+    Metric.withAttributes(sampleImported, labels),
     value,
   );
 }

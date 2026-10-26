@@ -23,7 +23,7 @@ export function updateSampleKept(
 ) {
   return Metric.update(
     Metric.withAttributes(sampleKept, {
-      ["sample.state"]: String(attributes.state),
+      "sample.state": attributes.state,
     }),
     value,
   );

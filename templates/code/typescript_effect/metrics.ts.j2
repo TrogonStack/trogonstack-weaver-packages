@@ -42,18 +42,34 @@ export function update{{ metric.type_name }}(
   value: {{ "Duration.Duration" if metric.duration else "number" }},
   attributes: {{ metric.type_name }}Attributes{% if not metric.required %} = {}{% endif %},
 ) {
-  return Metric.update(
-    Metric.withAttributes({{ metric.identifier }}, {
+{% if metric.optional %}
+  const labels: Record<string, string> = {% if metric.required %}{
 {% for attr in metric.attributes %}
 {% if attr.requirement_level == "required" %}
-      [{{ attr.key | tojson }}]: String(attributes.{{ attr.field }}),
-{% else %}
-      ...(!Object.hasOwn(attributes, {{ attr.field | tojson }}) || attributes.{{ attr.field }} === undefined
-        ? {}
-        : { [{{ attr.key | tojson }}]: String(attributes.{{ attr.field }}) }),
+    {{ "[" if attr.key == "__proto__" else "" }}{{ attr.key | tojson }}{{ "]" if attr.key == "__proto__" else "" }}: {% if attr.string_value %}attributes.{{ attr.field }}{% else %}String(attributes.{{ attr.field }}){% endif %},
 {% endif %}
 {% endfor %}
+  };
+{% else %}{};
+{% endif %}
+{% for attr in metric.attributes %}
+{% if attr.requirement_level != "required" %}
+  if (attributes.{{ attr.field }} !== undefined) {
+    labels[{{ attr.key | tojson }}] = {% if attr.string_value %}attributes.{{ attr.field }}{% else %}String(attributes.{{ attr.field }}){% endif %};
+  }
+{% endif %}
+{% endfor %}
+{% endif %}
+  return Metric.update(
+{% if metric.optional %}
+    Metric.withAttributes({{ metric.identifier }}, labels),
+{% else %}
+    Metric.withAttributes({{ metric.identifier }}, {
+{% for attr in metric.attributes %}
+      {{ "[" if attr.key == "__proto__" else "" }}{{ attr.key | tojson }}{{ "]" if attr.key == "__proto__" else "" }}: {% if attr.string_value %}attributes.{{ attr.field }}{% else %}String(attributes.{{ attr.field }}){% endif %},
+{% endfor %}
     }),
+{% endif %}
 {% if metric.duration %}
     Duration.toMillis(value){% if metric.unit == "s" %} / 1000{% elif metric.unit == "us" %} * 1000{% elif metric.unit == "ns" %} * 1_000_000{% endif %},
 {% else %}

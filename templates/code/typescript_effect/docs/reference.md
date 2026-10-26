@@ -34,7 +34,8 @@ Metrics without attributes take only the measurement argument.
 Attribute fields use camelCase identifiers. A matching leading metric namespace
 is removed: `worker.task.id` becomes `taskId` on a `worker` metric. Attributes
 from other namespaces retain theirs: `auth.method` becomes `authMethod`.
-Colliding field names fail generation.
+Colliding field names and fields that shadow JavaScript object-prototype members
+fail generation.
 
 Scalar strings, numbers, booleans, and enums are supported. Enum attributes
 export a shared constant object and value type named after their full key:
@@ -42,9 +43,11 @@ export a shared constant object and value type named after their full key:
 `WorkerResult.Success`. Callers can use those constants without spelling wire
 values. Each enum is shared across metrics using that attribute.
 
-Helpers convert supplied values to string labels and omit absent optional
-attributes. Attribute arrays are rejected. Keys `unit` and `time_unit` are
+Helpers pass string values through directly, convert numeric and boolean values
+to string labels, and omit undefined optional attributes. Attribute arrays are
+rejected. Keys `unit` and `time_unit` are
 reserved by Effect and cannot be metric dimensions.
+Optional attributes with the wire key `__proto__` are rejected during generation.
 
 Update functions map friendly fields to the original telemetry keys. Their
 attribute types enforce required fields and scalar or enum values. The module

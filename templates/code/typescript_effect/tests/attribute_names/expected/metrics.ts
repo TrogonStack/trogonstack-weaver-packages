@@ -45,13 +45,13 @@ export function updateSampleRecorded(
 ) {
   return Metric.update(
     Metric.withAttributes(sampleRecorded, {
-      ["remote.task.state"]: String(attributes.remoteTaskState),
-      ["sample.class"]: String(attributes.class),
-      ["sample.enabled"]: String(attributes.enabled),
-      ["sample.numeric_code"]: String(attributes.numericCode),
-      ["sample.other_name"]: String(attributes.otherName),
-      ["sample.quote_state"]: String(attributes.quoteState),
-      ["sample.task.id"]: String(attributes.taskId),
+      "remote.task.state": attributes.remoteTaskState,
+      "sample.class": attributes.class,
+      "sample.enabled": String(attributes.enabled),
+      "sample.numeric_code": String(attributes.numericCode),
+      "sample.other_name": attributes.otherName,
+      "sample.quote_state": attributes.quoteState,
+      "sample.task.id": attributes.taskId,
     }),
     value,
   );

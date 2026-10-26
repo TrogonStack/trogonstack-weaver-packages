@@ -75,12 +75,18 @@ templates:
               | . + {ts_type: attr_type($opts), field: (.key | field_name($namespace))}
               | if (.field | test("^[A-Za-z][A-Za-z0-9]*$") | not)
                 then error("attribute \($key) cannot become a TypeScript field") else . end
-              | if (.type | type) == "object" then . + {enum: enum_definition($opts)} else . end))
+              | if (.field as $field | ["constructor", "toString", "toLocaleString", "valueOf", "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "__proto__", "__defineGetter__", "__defineSetter__", "__lookupGetter__", "__lookupSetter__"] | index($field)) != null
+                then error("attribute \($key) becomes an Object.prototype field") else . end
+              | if (.type | type) == "object" then . + {enum: enum_definition($opts)} else . end
+              | if .key == "__proto__" and .requirement_level != "required"
+                then error("optional attribute __proto__ is not supported by the Effect template") else . end
+              | .string_value = (.type == "string" or (.enum != null and (.enum.members | all(.value | type == "string"))))))
           | if (.attributes | group_by(.field) | any(length > 1))
             then error("metric \($name) has colliding attribute field identifiers") else . end
           | if (.attributes | any(.key == "unit" or .key == "time_unit"))
             then error("metric \($name) uses a reserved Effect unit attribute") else . end
           | .required = (.attributes | any(.requirement_level == "required"))
+          | .optional = (.attributes | any(.requirement_level != "required"))
           | .duration = (.instrument == "histogram" and (.unit as $u | ["s", "ms", "us", "ns"] | index($u)) != null)
           | if .annotations.aggregation != null then
               .annotations.aggregation as $a
@@ -101,7 +107,7 @@ templates:
           | map(if (unique | length) > 1 then error("attribute \(.[0].key) has inconsistent enum definitions") else .[0] end)) as $enums
       | ([.[] | .name as $name | ([.identifier, "update" + .type_name] + (if (.attributes | length) > 0 then [.type_name + "Attributes"] else [] end))[] | {symbol: ., name: $name}]
           + [$enums[] | {symbol: .name, name: .key}]
-          + (["Metric", "Duration", "Object", "String", "Infinity"] | map({symbol: ., name: "reserved runtime symbol"}))
+          + (["Metric", "Duration", "Object", "String", "Infinity", "Record"] | map({symbol: ., name: "reserved runtime symbol"}))
          | group_by(.symbol) | map(select(length > 1))) as $collisions
       | if ($collisions | length) > 0 then error("metrics render to colliding TypeScript identifiers: \($collisions | map(map(.name) | join(" and ")) | join("; "))") else . end
       | {metrics: $metrics, enums: ($enums | sort_by(.name))}

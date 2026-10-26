@@ -33,8 +33,8 @@ export function updateAuthAttempts(
 ) {
   return Metric.update(
     Metric.withAttributes(authAttempts, {
-      ["auth.method"]: String(attributes.method),
-      ["auth.success"]: String(attributes.success),
+      "auth.method": attributes.method,
+      "auth.success": String(attributes.success),
     }),
     value,
   );
@@ -65,7 +65,7 @@ export function updateMyappTaskActive(
 ) {
   return Metric.update(
     Metric.withAttributes(myappTaskActive, {
-      ["myapp.task.state"]: String(attributes.taskState),
+      "myapp.task.state": attributes.taskState,
     }),
     value,
   );
@@ -87,16 +87,17 @@ export function updateMyappTaskDuration(
   value: Duration.Duration,
   attributes: MyappTaskDurationAttributes,
 ) {
+  const labels: Record<string, string> = {
+    "myapp.task.id": attributes.taskId,
+  };
+  if (attributes.authMethod !== undefined) {
+    labels["auth.method"] = attributes.authMethod;
+  }
+  if (attributes.taskState !== undefined) {
+    labels["myapp.task.state"] = attributes.taskState;
+  }
   return Metric.update(
-    Metric.withAttributes(myappTaskDuration, {
-      ...(!Object.hasOwn(attributes, "authMethod") || attributes.authMethod === undefined
-        ? {}
-        : { ["auth.method"]: String(attributes.authMethod) }),
-      ["myapp.task.id"]: String(attributes.taskId),
-      ...(!Object.hasOwn(attributes, "taskState") || attributes.taskState === undefined
-        ? {}
-        : { ["myapp.task.state"]: String(attributes.taskState) }),
-    }),
+    Metric.withAttributes(myappTaskDuration, labels),
     Duration.toMillis(value) / 1000,
   );
 }
@@ -154,12 +155,12 @@ export function updateMyappTaskStarted(
   value: number,
   attributes: MyappTaskStartedAttributes = {},
 ) {
+  const labels: Record<string, string> = {};
+  if (attributes.taskId !== undefined) {
+    labels["myapp.task.id"] = attributes.taskId;
+  }
   return Metric.update(
-    Metric.withAttributes(myappTaskStarted, {
-      ...(!Object.hasOwn(attributes, "taskId") || attributes.taskId === undefined
-        ? {}
-        : { ["myapp.task.id"]: String(attributes.taskId) }),
-    }),
+    Metric.withAttributes(myappTaskStarted, labels),
     value,
   );
 }

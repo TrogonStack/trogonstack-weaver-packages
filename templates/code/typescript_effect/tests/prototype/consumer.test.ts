@@ -4,19 +4,16 @@ import * as Effect from "effect/Effect";
 import * as Metric from "effect/Metric";
 import * as Metrics from "./metrics.ts";
 
-test("friendly fields preserve unusual wire keys without inherited optional labels", async () => {
+test("friendly fields preserve literal telemetry keys", async () => {
   await Effect.runPromise(
     Effect.gen(function* () {
-      const attributes = { proto: "synthetic", constructor: undefined };
-      Reflect.deleteProperty(attributes, "constructor");
-      yield* Metrics.updateSamplePrototype(1, attributes);
+      yield* Metrics.updateSamplePrototype(1, { proto: "synthetic" });
       const point = (yield* Metric.snapshot).find(
         (item) => item.id === "sample.prototype",
       );
       assert.ok(point?.type === "Counter");
       assert.equal(point.state.count, 1);
       assert.equal(point.attributes?.["__proto__"], "synthetic");
-      assert.equal(Object.hasOwn(point.attributes ?? {}, "constructor"), false);
     }).pipe(Effect.provideService(Metric.MetricRegistry, new Map())),
   );
 });
