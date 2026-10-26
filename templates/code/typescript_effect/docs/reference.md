@@ -15,8 +15,8 @@ Metric names and attribute keys are preserved in recorded telemetry.
 | `histogram`, unit `s`, `ms`, `us`, or `ns` | `Metric.histogram`                         | `Duration.Duration` |
 | Other `histogram`                          | `Metric.histogram`                         | `number`            |
 
-Time histograms convert the supplied duration into their declared unit before
-aggregation. Boundaries are expressed in that same unit. Units are carried in
+Time histograms use `Metric.mapInput` to convert the supplied duration into their
+declared unit before aggregation. Boundaries are expressed in that same unit. Units are carried in
 Effect's `unit` attribute for its OTLP exporter.
 Nanosecond-backed durations convert directly into the target unit, avoiding
 an intermediate millisecond rounding step. Recorded values still have

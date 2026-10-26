@@ -77,11 +77,14 @@ export type MyappTaskDurationAttributes = {
   readonly taskState?: MyappTaskState;
 };
 
-const myappTaskDuration = Metric.histogram("myapp.task.duration", {
-  description: "Time a task took from start to finish.",
-  attributes: { unit: "s" },
-  boundaries: [0, 0.005, 0.01, 0.1, 1, 10, Infinity],
-});
+const myappTaskDuration = Metric.mapInput(
+  Metric.histogram("myapp.task.duration", {
+    description: "Time a task took from start to finish.",
+    attributes: { unit: "s" },
+    boundaries: [0, 0.005, 0.01, 0.1, 1, 10, Infinity],
+  }),
+  Duration.toSeconds,
+);
 
 export function updateMyappTaskDuration(
   value: Duration.Duration,
@@ -98,7 +101,7 @@ export function updateMyappTaskDuration(
   }
   return Metric.update(
     Metric.withAttributes(myappTaskDuration, labels),
-    Duration.toSeconds(value),
+    value,
   );
 }
 

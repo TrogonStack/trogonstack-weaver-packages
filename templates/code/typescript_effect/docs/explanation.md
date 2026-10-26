@@ -9,9 +9,10 @@ application-specific metric names or business rules. Export endpoints,
 resources, collection schedules, operation outcomes, and transaction-sensitive
 recording remain application responsibilities.
 
-Time histogram update functions convert an Effect duration into the registry's unit
-before updating a numeric histogram. This
-avoids assuming that every duration uses Effect timers' millisecond buckets.
+Time histograms use `Metric.mapInput` to convert an Effect duration into the
+registry's unit before aggregation. Update functions pass the duration directly
+to the instrument. This avoids assuming that every duration uses Effect timers'
+millisecond buckets.
 
 Each metric exposes a thin update function with friendly attribute fields.
 The function owns telemetry keys and conversion to Effect's string labels;

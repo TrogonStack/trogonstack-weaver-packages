@@ -23,27 +23,34 @@ export type {{ metric.type_name }}Attributes = {
 };
 {% endif %}
 
-const {{ metric.identifier }} = Metric.{{ "counter" if metric.instrument == "updowncounter" else metric.instrument }}({{ metric.name | tojson }}, {
-  description: {{ metric.brief | tojson }},
-  attributes: { unit: {{ metric.unit | tojson }} },
+{% set indent = "  " if metric.duration else "" %}
+const {{ metric.identifier }} = {{ "Metric.mapInput(\n  " if metric.duration else "" }}Metric.{{ "counter" if metric.instrument == "updowncounter" else metric.instrument }}({{ metric.name | tojson }}, {
+{{ indent }}  description: {{ metric.brief | tojson }},
+{{ indent }}  attributes: { unit: {{ metric.unit | tojson }} },
 {% if metric.instrument == "counter" or metric.instrument == "updowncounter" %}
-  incremental: {{ "true" if metric.instrument == "counter" else "false" }},
+{{ indent }}  incremental: {{ "true" if metric.instrument == "counter" else "false" }},
 {% elif metric.instrument == "histogram" %}
-  boundaries: [{% for boundary in metric.boundaries %}{{ boundary | tojson }}, {% endfor %}Infinity],
+{{ indent }}  boundaries: [{% for boundary in metric.boundaries %}{{ boundary | tojson }}, {% endfor %}Infinity],
 {% endif %}
-});
+{{ "  })," if metric.duration else "});" }}
+{% if metric.duration %}
+{% if metric.unit in ["us", "ns"] %}
+  function (value: Duration.Duration) {
+    const measurement =
+      value.value._tag === "Nanos"
+        ? Number(value.value.nanos){{ " / 1000" if metric.unit == "us" else "" }}
+        : Duration.toMillis(value) * {{ "1000" if metric.unit == "us" else "1_000_000" }};
+    return measurement;
+  },
+{% else %}
+  Duration.{{ "toSeconds" if metric.unit == "s" else "toMillis" }},
+{% endif %}
+);
+{% endif %}
 
 {% if metric.attributes | length == 0 %}
 export function update{{ metric.type_name }}(value: {{ "Duration.Duration" if metric.duration else "number" }}) {
-{% if metric.duration and metric.unit in ["us", "ns"] %}
-  const measurement =
-    value.value._tag === "Nanos"
-      ? Number(value.value.nanos){{ " / 1000" if metric.unit == "us" else "" }}
-      : Duration.toMillis(value) * {{ "1000" if metric.unit == "us" else "1_000_000" }};
-  return Metric.update({{ metric.identifier }}, measurement);
-{% else %}
-  return Metric.update({{ metric.identifier }}, {% if metric.duration %}{% if metric.unit == "s" %}Duration.toSeconds(value){% else %}Duration.toMillis(value){% endif %}{% else %}value{% endif %});
-{% endif %}
+  return Metric.update({{ metric.identifier }}, value);
 }
 {% else %}
 export function update{{ metric.type_name }}(
@@ -68,12 +75,6 @@ export function update{{ metric.type_name }}(
 {% endif %}
 {% endfor %}
 {% endif %}
-{% if metric.duration and metric.unit in ["us", "ns"] %}
-  const measurement =
-    value.value._tag === "Nanos"
-      ? Number(value.value.nanos){{ " / 1000" if metric.unit == "us" else "" }}
-      : Duration.toMillis(value) * {{ "1000" if metric.unit == "us" else "1_000_000" }};
-{% endif %}
   return Metric.update(
 {% if metric.optional %}
     Metric.withAttributes({{ metric.identifier }}, labels),
@@ -84,11 +85,7 @@ export function update{{ metric.type_name }}(
 {% endfor %}
     }),
 {% endif %}
-{% if metric.duration %}
-{{ "    " }}{% if metric.unit == "s" %}Duration.toSeconds(value){% elif metric.unit in ["us", "ns"] %}measurement{% else %}Duration.toMillis(value){% endif %},
-{% else %}
     value,
-{% endif %}
   );
 }
 {% endif %}
