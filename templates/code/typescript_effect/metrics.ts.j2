@@ -46,7 +46,7 @@ export function update{{ metric.type_name }}(
   const labels: Record<string, string> = {% if metric.required %}{
 {% for attr in metric.attributes %}
 {% if attr.requirement_level == "required" %}
-    {{ "[" if attr.key == "__proto__" else "" }}{{ attr.key | tojson }}{{ "]" if attr.key == "__proto__" else "" }}: {% if attr.string_value %}attributes.{{ attr.field }}{% else %}String(attributes.{{ attr.field }}){% endif %},
+    {{ attr.key | tojson }}: {% if attr.string_value %}attributes.{{ attr.field }}{% else %}String(attributes.{{ attr.field }}){% endif %},
 {% endif %}
 {% endfor %}
   };
@@ -66,7 +66,7 @@ export function update{{ metric.type_name }}(
 {% else %}
     Metric.withAttributes({{ metric.identifier }}, {
 {% for attr in metric.attributes %}
-      {{ "[" if attr.key == "__proto__" else "" }}{{ attr.key | tojson }}{{ "]" if attr.key == "__proto__" else "" }}: {% if attr.string_value %}attributes.{{ attr.field }}{% else %}String(attributes.{{ attr.field }}){% endif %},
+      {{ attr.key | tojson }}: {% if attr.string_value %}attributes.{{ attr.field }}{% else %}String(attributes.{{ attr.field }}){% endif %},
 {% endfor %}
     }),
 {% endif %}

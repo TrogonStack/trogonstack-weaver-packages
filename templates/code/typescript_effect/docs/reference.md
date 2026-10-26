@@ -47,7 +47,7 @@ Helpers pass string values through directly, convert numeric and boolean values
 to string labels, and omit undefined optional attributes. Attribute arrays are
 rejected. Keys `unit` and `time_unit` are
 reserved by Effect and cannot be metric dimensions.
-Optional attributes with the wire key `__proto__` are rejected during generation.
+Attributes with the wire key `__proto__` are rejected during generation.
 
 Update functions map friendly fields to the original telemetry keys. Their
 attribute types enforce required fields and scalar or enum values. The module

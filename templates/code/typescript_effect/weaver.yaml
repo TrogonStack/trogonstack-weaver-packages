@@ -78,8 +78,8 @@ templates:
               | if (.field as $field | ["constructor", "toString", "toLocaleString", "valueOf", "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "__proto__", "__defineGetter__", "__defineSetter__", "__lookupGetter__", "__lookupSetter__"] | index($field)) != null
                 then error("attribute \($key) becomes an Object.prototype field") else . end
               | if (.type | type) == "object" then . + {enum: enum_definition($opts)} else . end
-              | if .key == "__proto__" and .requirement_level != "required"
-                then error("optional attribute __proto__ is not supported by the Effect template") else . end
+              | if .key == "__proto__"
+                then error("attribute __proto__ is not supported by the Effect template") else . end
               | .string_value = (.type == "string" or (.enum != null and (.enum.members | all(.value | type == "string"))))))
           | if (.attributes | group_by(.field) | any(length > 1))
             then error("metric \($name) has colliding attribute field identifiers") else . end

@@ -1,1 +1,1 @@
-optional attribute __proto__ is not supported
+attribute __proto__ is not supported
