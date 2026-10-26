@@ -12,11 +12,11 @@ const samplePrototype = Metric.counter("sample.prototype", {
   incremental: true,
 });
 
-export const recordSamplePrototype = (
+export function recordSamplePrototype(
   value: number,
   attributes: SamplePrototypeAttributes,
-) =>
-  Metric.update(
+) {
+  return Metric.update(
     Metric.withAttributes(samplePrototype, {
       ["__proto__"]: String(attributes.proto),
       ...(!Object.hasOwn(attributes, "constructor") || attributes.constructor === undefined
@@ -25,3 +25,4 @@ export const recordSamplePrototype = (
     }),
     value,
   );
+}

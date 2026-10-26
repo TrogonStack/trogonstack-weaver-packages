@@ -19,11 +19,11 @@ const sampleImported = Metric.counter("sample.imported", {
   incremental: true,
 });
 
-export const recordSampleImported = (
+export function recordSampleImported(
   value: number,
   attributes: SampleImportedAttributes,
-) =>
-  Metric.update(
+) {
+  return Metric.update(
     Metric.withAttributes(sampleImported, {
       ...(!Object.hasOwn(attributes, "remotePort") || attributes.remotePort === undefined
         ? {}
@@ -32,3 +32,4 @@ export const recordSampleImported = (
     }),
     value,
   );
+}

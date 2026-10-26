@@ -39,11 +39,11 @@ const sampleRecorded = Metric.counter("sample.recorded", {
   incremental: true,
 });
 
-export const recordSampleRecorded = (
+export function recordSampleRecorded(
   value: number,
   attributes: SampleRecordedAttributes,
-) =>
-  Metric.update(
+) {
+  return Metric.update(
     Metric.withAttributes(sampleRecorded, {
       ["remote.task.state"]: String(attributes.remoteTaskState),
       ["sample.class"]: String(attributes.class),
@@ -55,3 +55,4 @@ export const recordSampleRecorded = (
     }),
     value,
   );
+}
