@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.6...v0.1.7) (2026-10-26)
+
+
+### Features
+
+* Keep Effect metrics aligned with semantic conventions ([#55](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/55)) ([7d8a200](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/7d8a200829b65862ac6f76f7eda1a5ee730dcc18))
+
 ## [0.1.6](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.5...v0.1.6) (2026-10-20)
 
 
