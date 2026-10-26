@@ -24,9 +24,24 @@ metrics:
   stability: stable
   brief: Synthetic metric.
   requirement_level: recommended
+- name: sample.duration.ns.tagged
+  instrument: histogram
+  unit: ns
+  stability: stable
+  brief: Synthetic attributed duration.
+  requirement_level: recommended
+  attributes:
+  - ref: sample.run
+    requirement_level: required
 - name: sample.size
   instrument: histogram
   unit: By
   stability: stable
   brief: Synthetic metric.
   requirement_level: recommended
+attributes:
+- key: sample.run
+  type: string
+  stability: stable
+  brief: Synthetic run label.
+  examples: [sample]

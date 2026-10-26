@@ -98,7 +98,7 @@ export function updateMyappTaskDuration(
   }
   return Metric.update(
     Metric.withAttributes(myappTaskDuration, labels),
-    Duration.toMillis(value) / 1000,
+    Duration.toSeconds(value),
   );
 }
 

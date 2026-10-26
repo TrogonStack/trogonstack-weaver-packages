@@ -19,7 +19,29 @@ const sampleDurationNs = Metric.histogram("sample.duration.ns", {
 });
 
 export function updateSampleDurationNs(value: Duration.Duration) {
-  return Metric.update(sampleDurationNs, Duration.toMillis(value) * 1_000_000);
+  return Metric.update(sampleDurationNs, value.value._tag === "Nanos" ? Number(value.value.nanos) : Duration.toMillis(value) * 1_000_000);
+}
+
+export type SampleDurationNsTaggedAttributes = {
+  readonly run: string;
+};
+
+const sampleDurationNsTagged = Metric.histogram("sample.duration.ns.tagged", {
+  description: "Synthetic attributed duration.",
+  attributes: { unit: "ns" },
+  boundaries: [5000000, 10000000, 25000000, 50000000, 75000000, 100000000, 250000000, 500000000, 750000000, 1000000000, 2500000000, 5000000000, 7500000000, 10000000000, Infinity],
+});
+
+export function updateSampleDurationNsTagged(
+  value: Duration.Duration,
+  attributes: SampleDurationNsTaggedAttributes,
+) {
+  return Metric.update(
+    Metric.withAttributes(sampleDurationNsTagged, {
+      "sample.run": attributes.run,
+    }),
+    value.value._tag === "Nanos" ? Number(value.value.nanos) : Duration.toMillis(value) * 1_000_000,
+  );
 }
 
 const sampleDurationS = Metric.histogram("sample.duration.s", {
@@ -29,7 +51,7 @@ const sampleDurationS = Metric.histogram("sample.duration.s", {
 });
 
 export function updateSampleDurationS(value: Duration.Duration) {
-  return Metric.update(sampleDurationS, Duration.toMillis(value) / 1000);
+  return Metric.update(sampleDurationS, Duration.toSeconds(value));
 }
 
 const sampleDurationUs = Metric.histogram("sample.duration.us", {
@@ -39,7 +61,7 @@ const sampleDurationUs = Metric.histogram("sample.duration.us", {
 });
 
 export function updateSampleDurationUs(value: Duration.Duration) {
-  return Metric.update(sampleDurationUs, Duration.toMillis(value) * 1000);
+  return Metric.update(sampleDurationUs, value.value._tag === "Nanos" ? Number(value.value.nanos) / 1000 : Duration.toMillis(value) * 1000);
 }
 
 const sampleSize = Metric.histogram("sample.size", {

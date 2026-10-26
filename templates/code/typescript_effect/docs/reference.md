@@ -18,6 +18,9 @@ Metric names and attribute keys are preserved in recorded telemetry.
 Time histograms convert the supplied duration into their declared unit before
 aggregation. Boundaries are expressed in that same unit. Units are carried in
 Effect's `unit` attribute for its OTLP exporter.
+Nanosecond-backed durations convert directly into the target unit, avoiding
+an intermediate millisecond rounding step. Recorded values still have
+JavaScript `number` precision.
 
 `code_generation.metric_value_type` may be `int` or `double`; both use JavaScript
 `number`. The template does not enforce integer values or exact 64-bit integer
@@ -69,4 +72,6 @@ The generated instrument appends an infinite boundary for overflow observations.
 
 Unsupported instruments, attribute types, metric refinements, identifier
 collisions, and filtering that removes a required attribute fail generation.
+Instrument identifiers `value`, `attributes`, and `labels` are reserved by
+the generated helpers and fail generation.
 Other signal kinds do not produce code in this metrics-only package.

@@ -1,0 +1,21 @@
+file_format: definition/2
+attributes:
+  - key: number
+    type:
+      members:
+        - id: one
+          value: 1
+          stability: stable
+          brief: Synthetic value.
+    stability: stable
+    brief: Synthetic numeric enum.
+metrics:
+  - name: sample.duration
+    instrument: histogram
+    unit: ns
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic duration.
+    attributes:
+      - ref: number
+        requirement_level: required

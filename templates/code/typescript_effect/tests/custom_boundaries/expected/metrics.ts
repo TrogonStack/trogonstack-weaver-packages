@@ -9,7 +9,7 @@ const sampleDuration = Metric.histogram("sample.duration", {
 });
 
 export function updateSampleDuration(value: Duration.Duration) {
-  return Metric.update(sampleDuration, Duration.toMillis(value) / 1000);
+  return Metric.update(sampleDuration, Duration.toSeconds(value));
 }
 
 const sampleSize = Metric.histogram("sample.size", {
