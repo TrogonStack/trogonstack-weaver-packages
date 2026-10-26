@@ -3,11 +3,7 @@ set -euo pipefail
 
 ROOT="$(pwd)"
 PACKAGE_DIR="${ROOT}/templates/code/typescript_effect"
-scratch_root="${TMPDIR:-/tmp}"
-if [[ -d /Volumes/TrashCan ]]; then
-  scratch_root=/Volumes/TrashCan
-fi
-WORK_DIR="$(mktemp -d "${scratch_root%/}/weaver-effect.XXXXXX")"
+WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/weaver-effect.XXXXXX")"
 trap 'rm -rf "${WORK_DIR}"' EXIT
 
 cp "${ROOT}/buildscripts/typescript_effect/"* "${WORK_DIR}/"
