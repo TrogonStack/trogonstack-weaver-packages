@@ -72,6 +72,6 @@ The generated instrument appends an infinite boundary for overflow observations.
 
 Unsupported instruments, attribute types, metric refinements, identifier
 collisions, and filtering that removes a required attribute fail generation.
-Instrument identifiers `value`, `attributes`, and `labels` are reserved by
+Instrument identifiers `value`, `attributes`, `labels`, and `measurement` are reserved by
 the generated helpers and fail generation.
 Other signal kinds do not produce code in this metrics-only package.

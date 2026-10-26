@@ -19,7 +19,11 @@ const sampleDurationNs = Metric.histogram("sample.duration.ns", {
 });
 
 export function updateSampleDurationNs(value: Duration.Duration) {
-  return Metric.update(sampleDurationNs, value.value._tag === "Nanos" ? Number(value.value.nanos) : Duration.toMillis(value) * 1_000_000);
+  const measurement =
+    value.value._tag === "Nanos"
+      ? Number(value.value.nanos)
+      : Duration.toMillis(value) * 1_000_000;
+  return Metric.update(sampleDurationNs, measurement);
 }
 
 export type SampleDurationNsTaggedAttributes = {
@@ -36,11 +40,15 @@ export function updateSampleDurationNsTagged(
   value: Duration.Duration,
   attributes: SampleDurationNsTaggedAttributes,
 ) {
+  const measurement =
+    value.value._tag === "Nanos"
+      ? Number(value.value.nanos)
+      : Duration.toMillis(value) * 1_000_000;
   return Metric.update(
     Metric.withAttributes(sampleDurationNsTagged, {
       "sample.run": attributes.run,
     }),
-    value.value._tag === "Nanos" ? Number(value.value.nanos) : Duration.toMillis(value) * 1_000_000,
+    measurement,
   );
 }
 
@@ -61,7 +69,11 @@ const sampleDurationUs = Metric.histogram("sample.duration.us", {
 });
 
 export function updateSampleDurationUs(value: Duration.Duration) {
-  return Metric.update(sampleDurationUs, value.value._tag === "Nanos" ? Number(value.value.nanos) / 1000 : Duration.toMillis(value) * 1000);
+  const measurement =
+    value.value._tag === "Nanos"
+      ? Number(value.value.nanos) / 1000
+      : Duration.toMillis(value) * 1000;
+  return Metric.update(sampleDurationUs, measurement);
 }
 
 const sampleSize = Metric.histogram("sample.size", {

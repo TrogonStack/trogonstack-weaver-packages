@@ -107,7 +107,7 @@ templates:
           | map(if (unique | length) > 1 then error("attribute \(.[0].key) has inconsistent enum definitions") else .[0] end)) as $enums
       | ([.[] | .name as $name | ([.identifier, "update" + .type_name] + (if (.attributes | length) > 0 then [.type_name + "Attributes"] else [] end))[] | {symbol: ., name: $name}]
           + [$enums[] | {symbol: .name, name: .key}]
-          + (["Metric", "Duration", "Object", "String", "Number", "Infinity", "Record", "value", "attributes", "labels"] | map({symbol: ., name: "reserved runtime symbol"}))
+          + (["Metric", "Duration", "Object", "String", "Number", "Infinity", "Record", "value", "attributes", "labels", "measurement"] | map({symbol: ., name: "reserved runtime symbol"}))
          | group_by(.symbol) | map(select(length > 1))) as $collisions
       | if ($collisions | length) > 0 then error("metrics render to colliding TypeScript identifiers: \($collisions | map(map(.name) | join(" and ")) | join("; "))") else . end
       | {metrics: $metrics, enums: ($enums | sort_by(.name))}

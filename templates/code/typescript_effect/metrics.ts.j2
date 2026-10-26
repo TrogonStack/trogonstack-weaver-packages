@@ -35,7 +35,15 @@ const {{ metric.identifier }} = Metric.{{ "counter" if metric.instrument == "upd
 
 {% if metric.attributes | length == 0 %}
 export function update{{ metric.type_name }}(value: {{ "Duration.Duration" if metric.duration else "number" }}) {
-  return Metric.update({{ metric.identifier }}, {% if metric.duration %}{% if metric.unit == "s" %}Duration.toSeconds(value){% elif metric.unit == "us" %}value.value._tag === "Nanos" ? Number(value.value.nanos) / 1000 : Duration.toMillis(value) * 1000{% elif metric.unit == "ns" %}value.value._tag === "Nanos" ? Number(value.value.nanos) : Duration.toMillis(value) * 1_000_000{% else %}Duration.toMillis(value){% endif %}{% else %}value{% endif %});
+{% if metric.duration and metric.unit in ["us", "ns"] %}
+  const measurement =
+    value.value._tag === "Nanos"
+      ? Number(value.value.nanos){{ " / 1000" if metric.unit == "us" else "" }}
+      : Duration.toMillis(value) * {{ "1000" if metric.unit == "us" else "1_000_000" }};
+  return Metric.update({{ metric.identifier }}, measurement);
+{% else %}
+  return Metric.update({{ metric.identifier }}, {% if metric.duration %}{% if metric.unit == "s" %}Duration.toSeconds(value){% else %}Duration.toMillis(value){% endif %}{% else %}value{% endif %});
+{% endif %}
 }
 {% else %}
 export function update{{ metric.type_name }}(
@@ -60,6 +68,12 @@ export function update{{ metric.type_name }}(
 {% endif %}
 {% endfor %}
 {% endif %}
+{% if metric.duration and metric.unit in ["us", "ns"] %}
+  const measurement =
+    value.value._tag === "Nanos"
+      ? Number(value.value.nanos){{ " / 1000" if metric.unit == "us" else "" }}
+      : Duration.toMillis(value) * {{ "1000" if metric.unit == "us" else "1_000_000" }};
+{% endif %}
   return Metric.update(
 {% if metric.optional %}
     Metric.withAttributes({{ metric.identifier }}, labels),
@@ -71,7 +85,7 @@ export function update{{ metric.type_name }}(
     }),
 {% endif %}
 {% if metric.duration %}
-{{ "    " }}{% if metric.unit == "s" %}Duration.toSeconds(value){% elif metric.unit == "us" %}value.value._tag === "Nanos" ? Number(value.value.nanos) / 1000 : Duration.toMillis(value) * 1000{% elif metric.unit == "ns" %}value.value._tag === "Nanos" ? Number(value.value.nanos) : Duration.toMillis(value) * 1_000_000{% else %}Duration.toMillis(value){% endif %},
+{{ "    " }}{% if metric.unit == "s" %}Duration.toSeconds(value){% elif metric.unit in ["us", "ns"] %}measurement{% else %}Duration.toMillis(value){% endif %},
 {% else %}
     value,
 {% endif %}
