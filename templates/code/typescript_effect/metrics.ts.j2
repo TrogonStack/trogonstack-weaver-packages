@@ -39,7 +39,7 @@ export type {{ enum.name }} = (typeof {{ enum.name }})[keyof typeof {{ enum.name
 
 export type {{ metric.type_name }}Attributes = {
 {% for attr in metric.attributes %}
-  readonly {{ attr.field }}{% if attr.requirement_level != "required" %}?{% endif %}: {{ attr.ts_type }};
+  readonly {{ attr.field }}{% if attr.requirement_level != "required" %}?{% endif %}: {{ attr.ts_type }}{% if attr.requirement_level != "required" %} | undefined{% endif %};
 {% endfor %}
 };
 {% endif %}
@@ -126,7 +126,7 @@ export function track{{ metric.type_name }}(
           update{{ metric.type_name }}(
             Duration.nanos(end - start),
 {% if metric.error_type %}
-            Exit.isSuccess(exit) ? attributes : { ...attributes, {{ metric.error_type_field }}: errorTypeOf(exit.cause) },
+            { ...attributes, {{ metric.error_type_field }}: Exit.isSuccess(exit) ? undefined : errorTypeOf(exit.cause) },
 {% elif metric.attributes | length > 0 %}
             attributes,
 {% endif %}

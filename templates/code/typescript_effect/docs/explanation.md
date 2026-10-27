@@ -22,10 +22,11 @@ Neither generation nor these types enforce label cardinality; the consuming
 registry and application must choose bounded dimensions.
 
 Tracking wrappers derive `error.type` from the Effect exit because the exit is
-the only place that knows how the work ended. The error's `_tag` is a bounded,
-stable class name in idiomatic Effect code, which matches the attribute's
-intent in OpenTelemetry semantic conventions. Defects and untagged failures fall
-back to `_OTHER` so arbitrary values never become labels. Applications whose
+the only place that knows how the work ended. The error's `_tag` matches the
+attribute's intent in OpenTelemetry semantic conventions when it is a stable
+class name. The wrapper records every string `_tag` as is, so keeping those tags
+bounded is the application's responsibility, like any other dimension. Defects
+and untagged failures fall back to `_OTHER`. Applications whose
 notion of failure differs from the exit, such as a process that succeeds with
 a non-zero status, keep timing themselves with the update helper.
 

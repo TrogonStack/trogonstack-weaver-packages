@@ -19,7 +19,7 @@ function errorTypeOf(cause: Cause.Cause<unknown>): string {
 }
 
 export type MyappJobDurationAttributes = {
-  readonly errorType?: string;
+  readonly errorType?: string | undefined;
   readonly jobName: string;
 };
 
@@ -57,7 +57,7 @@ export function trackMyappJobDuration(
         Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
           updateMyappJobDuration(
             Duration.nanos(end - start),
-            Exit.isSuccess(exit) ? attributes : { ...attributes, errorType: errorTypeOf(exit.cause) },
+            { ...attributes, errorType: Exit.isSuccess(exit) ? undefined : errorTypeOf(exit.cause) },
           ),
         ),
       ),

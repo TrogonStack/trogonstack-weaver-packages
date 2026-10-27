@@ -1,0 +1,28 @@
+file_format: definition/2
+attributes:
+- key: Omit
+  type:
+    members:
+    - id: ready
+      value: a
+      brief: Synthetic value.
+      stability: stable
+  stability: stable
+  brief: Synthetic label.
+- key: error.type
+  type: string
+  stability: stable
+  brief: Synthetic error class.
+  examples: [Timeout]
+metrics:
+- name: sample.duration
+  instrument: histogram
+  unit: s
+  stability: stable
+  brief: Synthetic duration.
+  requirement_level: recommended
+  attributes:
+  - ref: Omit
+    requirement_level: required
+  - ref: error.type
+    requirement_level: recommended

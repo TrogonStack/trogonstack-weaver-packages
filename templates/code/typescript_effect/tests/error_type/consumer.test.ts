@@ -68,6 +68,19 @@ for (const [name, effect, errorType] of [
     ));
 }
 
+test("track drops a caller-supplied error.type on success", () =>
+  run(
+    Effect.gen(function* () {
+      const attributes: Metrics.MyappJobDurationAttributes = {
+        jobName: "sync",
+        errorType: "stale",
+      };
+      yield* Effect.void.pipe(Metrics.trackMyappJobDuration(attributes));
+      const [point] = yield* recorded("myapp.job.duration");
+      assert.equal(point?.attributes?.["error.type"], undefined);
+    }),
+  ));
+
 test("track leaves a required error.type to the caller", () =>
   run(
     Effect.gen(function* () {

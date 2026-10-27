@@ -9,7 +9,7 @@ export const RemoteStatus = {
 export type RemoteStatus = (typeof RemoteStatus)[keyof typeof RemoteStatus];
 
 export type SampleImportedAttributes = {
-  readonly remotePort?: number;
+  readonly remotePort?: number | undefined;
   readonly remoteStatus: RemoteStatus;
 };
 

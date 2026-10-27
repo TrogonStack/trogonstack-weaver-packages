@@ -111,7 +111,7 @@ templates:
           + [$enums[] | {symbol: .name, name: .key}]
           + (["Metric", "Duration", "Object", "String", "Number", "Infinity", "Record", "value", "attributes", "labels"]
              + (if any($metrics[]; .duration) then ["Effect", "Clock"] else [] end)
-             + (if any($metrics[]; .error_type) then ["Cause", "Exit", "Option", "errorTypeOf"] else [] end)
+             + (if any($metrics[]; .error_type) then ["Cause", "Exit", "Omit", "Option", "errorTypeOf"] else [] end)
              | map({symbol: ., name: "reserved runtime symbol"}))
          | group_by(.symbol) | map(select(length > 1))) as $collisions
       | if ($collisions | length) > 0 then error("metrics render to colliding TypeScript identifiers: \($collisions | map(map(.name) | join(" and ")) | join("; "))") else . end

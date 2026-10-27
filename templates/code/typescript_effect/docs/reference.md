@@ -97,5 +97,5 @@ collisions, and filtering that removes a required attribute fail generation.
 Instrument identifiers `value`, `attributes`, `labels`, and `measurement` are reserved by
 the generated helpers and fail generation. When time histograms exist, `Effect` and
 `Clock` are reserved for imports; when a wrapper fills `error.type`, `Cause`, `Exit`,
-`Option`, and `errorTypeOf` are reserved too.
+`Omit`, `Option`, and `errorTypeOf` are reserved too.
 Other signal kinds do not produce code in this metrics-only package.

@@ -74,9 +74,9 @@ export function updateMyappTaskActive(
 }
 
 export type MyappTaskDurationAttributes = {
-  readonly authMethod?: AuthMethod;
+  readonly authMethod?: AuthMethod | undefined;
   readonly taskId: string;
-  readonly taskState?: MyappTaskState;
+  readonly taskState?: MyappTaskState | undefined;
 };
 
 const myappTaskDuration = Metric.mapInput(
@@ -163,7 +163,7 @@ export function updateMyappTaskPayload(value: number) {
 }
 
 export type MyappTaskStartedAttributes = {
-  readonly taskId?: string;
+  readonly taskId?: string | undefined;
 };
 
 const myappTaskStarted = Metric.counter("myapp.task.started", {
