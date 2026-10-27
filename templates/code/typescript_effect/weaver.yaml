@@ -88,6 +88,8 @@ templates:
           | .required = (.attributes | any(.requirement_level == "required"))
           | .optional = (.attributes | any(.requirement_level != "required"))
           | .duration = (.instrument == "histogram" and (.unit as $u | ["s", "ms", "us", "ns"] | index($u)) != null)
+          | .error_type = (.duration and (.attributes | any(.key == "error.type" and .requirement_level != "required" and .ts_type == "string")))
+          | .error_type_field = (first(.attributes[] | select(.key == "error.type") | .field) // null)
           | if .annotations.aggregation != null then
               .annotations.aggregation as $a
               | if .instrument != "histogram" or ($a | type) != "object"
@@ -105,9 +107,12 @@ templates:
       | . as $metrics
       | ([.[] | .attributes[] | select(.enum != null) | .enum] | group_by(.key)
           | map(if (unique | length) > 1 then error("attribute \(.[0].key) has inconsistent enum definitions") else .[0] end)) as $enums
-      | ([.[] | .name as $name | ([.identifier, "update" + .type_name] + (if (.attributes | length) > 0 then [.type_name + "Attributes"] else [] end))[] | {symbol: ., name: $name}]
+      | ([.[] | .name as $name | ([.identifier, "update" + .type_name] + (if (.attributes | length) > 0 then [.type_name + "Attributes"] else [] end) + (if .duration then ["track" + .type_name] else [] end))[] | {symbol: ., name: $name}]
           + [$enums[] | {symbol: .name, name: .key}]
-          + (["Metric", "Duration", "Object", "String", "Number", "Infinity", "Record", "value", "attributes", "labels"] | map({symbol: ., name: "reserved runtime symbol"}))
+          + (["Metric", "Duration", "Object", "String", "Number", "Infinity", "Record", "value", "attributes", "labels"]
+             + (if any($metrics[]; .duration) then ["Effect", "Clock"] else [] end)
+             + (if any($metrics[]; .error_type) then ["Cause", "Exit", "Option", "errorTypeOf"] else [] end)
+             | map({symbol: ., name: "reserved runtime symbol"}))
          | group_by(.symbol) | map(select(length > 1))) as $collisions
       | if ($collisions | length) > 0 then error("metrics render to colliding TypeScript identifiers: \($collisions | map(map(.name) | join(" and ")) | join("; "))") else . end
       | {metrics: $metrics, enums: ($enums | sort_by(.name))}

@@ -1,7 +1,28 @@
 // Generated from a semantic convention registry. Do not edit.
 import * as Metric from "effect/Metric";
 {% if ctx.metrics | selectattr("duration") | list | length > 0 %}
+{% set error_types = ctx.metrics | selectattr("error_type") | list | length > 0 %}
+{% if error_types %}
+import * as Cause from "effect/Cause";
+{% endif %}
+import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+{% if error_types %}
+import * as Exit from "effect/Exit";
+import * as Option from "effect/Option";
+
+function errorTypeOf(cause: Cause.Cause<unknown>): string {
+  const error = Cause.findErrorOption(cause);
+  if (Option.isNone(error)) {
+    return Cause.hasInterruptsOnly(cause) ? "interrupted" : "_OTHER";
+  }
+  const failure = error.value;
+  return typeof failure === "object" && failure !== null && "_tag" in failure && typeof failure._tag === "string"
+    ? failure._tag
+    : "_OTHER";
+}
+{% endif %}
 {% endif %}
 {% for enum in ctx.enums %}
 
@@ -87,6 +108,32 @@ export function update{{ metric.type_name }}(
 {% endif %}
     value,
   );
+}
+{% endif %}
+{% if metric.duration %}
+
+{% if metric.attributes | length == 0 %}
+export function track{{ metric.type_name }}() {
+{% else %}
+export function track{{ metric.type_name }}(
+  attributes: {% if metric.error_type %}Omit<{{ metric.type_name }}Attributes, {{ metric.error_type_field | tojson }}>{% else %}{{ metric.type_name }}Attributes{% endif %}{% if not metric.required %} = {}{% endif %},
+) {
+{% endif %}
+  return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
+      Effect.onExit(effect, ({{ "exit" if metric.error_type else "" }}) =>
+        Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
+          update{{ metric.type_name }}(
+            Duration.nanos(end - start),
+{% if metric.error_type %}
+            Exit.isSuccess(exit) ? attributes : { ...attributes, {{ metric.error_type_field }}: errorTypeOf(exit.cause) },
+{% elif metric.attributes | length > 0 %}
+            attributes,
+{% endif %}
+          ),
+        ),
+      ),
+    );
 }
 {% endif %}
 {% endfor %}

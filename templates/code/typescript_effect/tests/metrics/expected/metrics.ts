@@ -1,6 +1,8 @@
 // Generated from a semantic convention registry. Do not edit.
 import * as Metric from "effect/Metric";
+import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
 
 export const AuthMethod = {
   Password: "password",
@@ -103,6 +105,22 @@ export function updateMyappTaskDuration(
     Metric.withAttributes(myappTaskDuration, labels),
     value,
   );
+}
+
+export function trackMyappTaskDuration(
+  attributes: MyappTaskDurationAttributes,
+) {
+  return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
+      Effect.onExit(effect, () =>
+        Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
+          updateMyappTaskDuration(
+            Duration.nanos(end - start),
+            attributes,
+          ),
+        ),
+      ),
+    );
 }
 
 const myappTaskFloatActive = Metric.counter("myapp.task.float.active", {

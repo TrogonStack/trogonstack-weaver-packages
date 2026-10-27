@@ -2,7 +2,8 @@
 
 The output is `metrics.ts`. Names retain their full registry namespace:
 `worker.task.duration` produces `updateWorkerTaskDuration` and, when it has
-attributes, `WorkerTaskDurationAttributes`. Instruments stay private.
+attributes, `WorkerTaskDurationAttributes`. Time histograms also produce
+`trackWorkerTaskDuration`. Instruments stay private.
 Metric names and attribute keys are preserved in recorded telemetry.
 
 ## Instruments
@@ -25,6 +26,27 @@ JavaScript `number` precision.
 `code_generation.metric_value_type` may be `int` or `double`; both use JavaScript
 `number`. The template does not enforce integer values or exact 64-bit integer
 representation.
+
+## Tracking wrappers
+
+Each time histogram also exports `track<Metric>`. It takes the metric's
+attributes and returns a function from `Effect<A, E, R>` to the same type,
+so it fits in `pipe`. The wrapper reads `Clock.monotonicTimeNanos` before the
+effect starts and again when it exits, then records the difference through
+the update helper. It records on success, failure, and interruption.
+
+When the metric references `error.type` as an optional string attribute, the
+wrapper removes that field from its parameter and fills it from the exit:
+
+| Exit                                  | `error.type`  |
+| ------------------------------------- | ------------- |
+| Success                               | Not recorded  |
+| Failure with an error carrying `_tag` | The `_tag`    |
+| Other failure or defect               | `_OTHER`      |
+| Interruption only                     | `interrupted` |
+
+A required or non-string `error.type` is passed by the caller like any other
+attribute.
 
 ## Attributes
 
@@ -73,5 +95,7 @@ The generated instrument appends an infinite boundary for overflow observations.
 Unsupported instruments, attribute types, metric refinements, identifier
 collisions, and filtering that removes a required attribute fail generation.
 Instrument identifiers `value`, `attributes`, `labels`, and `measurement` are reserved by
-the generated helpers and fail generation.
+the generated helpers and fail generation. When time histograms exist, `Effect` and
+`Clock` are reserved for imports; when a wrapper fills `error.type`, `Cause`, `Exit`,
+`Option`, and `errorTypeOf` are reserved too.
 Other signal kinds do not produce code in this metrics-only package.

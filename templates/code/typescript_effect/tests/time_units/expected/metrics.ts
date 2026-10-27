@@ -1,6 +1,8 @@
 // Generated from a semantic convention registry. Do not edit.
 import * as Metric from "effect/Metric";
+import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
 
 const sampleDurationMs = Metric.mapInput(
   Metric.histogram("sample.duration.ms", {
@@ -13,6 +15,19 @@ const sampleDurationMs = Metric.mapInput(
 
 export function updateSampleDurationMs(value: Duration.Duration) {
   return Metric.update(sampleDurationMs, value);
+}
+
+export function trackSampleDurationMs() {
+  return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
+      Effect.onExit(effect, () =>
+        Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
+          updateSampleDurationMs(
+            Duration.nanos(end - start),
+          ),
+        ),
+      ),
+    );
 }
 
 const sampleDurationNs = Metric.mapInput(
@@ -32,6 +47,19 @@ const sampleDurationNs = Metric.mapInput(
 
 export function updateSampleDurationNs(value: Duration.Duration) {
   return Metric.update(sampleDurationNs, value);
+}
+
+export function trackSampleDurationNs() {
+  return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
+      Effect.onExit(effect, () =>
+        Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
+          updateSampleDurationNs(
+            Duration.nanos(end - start),
+          ),
+        ),
+      ),
+    );
 }
 
 export type SampleDurationNsTaggedAttributes = {
@@ -65,6 +93,22 @@ export function updateSampleDurationNsTagged(
   );
 }
 
+export function trackSampleDurationNsTagged(
+  attributes: SampleDurationNsTaggedAttributes,
+) {
+  return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
+      Effect.onExit(effect, () =>
+        Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
+          updateSampleDurationNsTagged(
+            Duration.nanos(end - start),
+            attributes,
+          ),
+        ),
+      ),
+    );
+}
+
 const sampleDurationS = Metric.mapInput(
   Metric.histogram("sample.duration.s", {
     description: "Synthetic metric.",
@@ -76,6 +120,19 @@ const sampleDurationS = Metric.mapInput(
 
 export function updateSampleDurationS(value: Duration.Duration) {
   return Metric.update(sampleDurationS, value);
+}
+
+export function trackSampleDurationS() {
+  return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
+      Effect.onExit(effect, () =>
+        Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
+          updateSampleDurationS(
+            Duration.nanos(end - start),
+          ),
+        ),
+      ),
+    );
 }
 
 const sampleDurationUs = Metric.mapInput(
@@ -95,6 +152,19 @@ const sampleDurationUs = Metric.mapInput(
 
 export function updateSampleDurationUs(value: Duration.Duration) {
   return Metric.update(sampleDurationUs, value);
+}
+
+export function trackSampleDurationUs() {
+  return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
+      Effect.onExit(effect, () =>
+        Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
+          updateSampleDurationUs(
+            Duration.nanos(end - start),
+          ),
+        ),
+      ),
+    );
 }
 
 const sampleSize = Metric.histogram("sample.size", {
