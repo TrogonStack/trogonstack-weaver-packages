@@ -126,7 +126,14 @@ export function track{{ metric.type_name }}(
           update{{ metric.type_name }}(
             Duration.nanos(end - start),
 {% if metric.error_type %}
-            { ...attributes, {{ metric.error_type_field }}: Exit.isSuccess(exit) ? undefined : errorTypeOf(exit.cause) },
+            {
+{% for attr in metric.attributes %}
+{% if attr.field != metric.error_type_field %}
+              {{ attr.field }}: attributes.{{ attr.field }},
+{% endif %}
+{% endfor %}
+              {{ metric.error_type_field }}: Exit.isSuccess(exit) ? undefined : errorTypeOf(exit.cause),
+            },
 {% elif metric.attributes | length > 0 %}
             attributes,
 {% endif %}

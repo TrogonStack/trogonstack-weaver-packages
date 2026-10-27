@@ -57,7 +57,10 @@ export function trackMyappJobDuration(
         Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
           updateMyappJobDuration(
             Duration.nanos(end - start),
-            { ...attributes, errorType: Exit.isSuccess(exit) ? undefined : errorTypeOf(exit.cause) },
+            {
+              jobName: attributes.jobName,
+              errorType: Exit.isSuccess(exit) ? undefined : errorTypeOf(exit.cause),
+            },
           ),
         ),
       ),

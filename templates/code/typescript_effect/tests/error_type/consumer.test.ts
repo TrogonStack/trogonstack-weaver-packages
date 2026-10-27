@@ -81,6 +81,20 @@ test("track drops a caller-supplied error.type on success", () =>
     }),
   ));
 
+test("track reads attributes exposed through getters", () =>
+  run(
+    Effect.gen(function* () {
+      class Job {
+        get jobName() {
+          return "sync";
+        }
+      }
+      yield* Effect.void.pipe(Metrics.trackMyappJobDuration(new Job()));
+      const [point] = yield* recorded("myapp.job.duration");
+      assert.equal(point?.attributes?.["myapp.job.name"], "sync");
+    }),
+  ));
+
 test("track leaves a required error.type to the caller", () =>
   run(
     Effect.gen(function* () {
