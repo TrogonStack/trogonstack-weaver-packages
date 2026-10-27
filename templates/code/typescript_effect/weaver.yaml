@@ -107,7 +107,7 @@ templates:
       | . as $metrics
       | ([.[] | .attributes[] | select(.enum != null) | .enum] | group_by(.key)
           | map(if (unique | length) > 1 then error("attribute \(.[0].key) has inconsistent enum definitions") else .[0] end)) as $enums
-      | ([.[] | .name as $name | ([.identifier, "update" + .type_name] + (if (.attributes | length) > 0 then [.type_name + "Attributes"] else [] end) + (if .duration then ["track" + .type_name] else [] end))[] | {symbol: ., name: $name}]
+      | ([.[] | .name as $name | ([.identifier, "update" + .type_name] + (if (.attributes | length) > 0 then [.type_name + "Attributes"] else [] end) + (if .duration then ["trackDuration" + .type_name] else [] end))[] | {symbol: ., name: $name}]
           + [$enums[] | {symbol: .name, name: .key}]
           + (["Metric", "Duration", "Object", "String", "Number", "Infinity", "Record", "value", "attributes", "labels"]
              + (if any($metrics[]; .duration) then ["Effect", "Clock"] else [] end)

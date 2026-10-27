@@ -23,7 +23,7 @@ export function updateMeasurement(value: Duration.Duration) {
   return Metric.update(measurement, value);
 }
 
-export function trackMeasurement() {
+export function trackDurationMeasurement() {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
       Effect.onExit(effect, () =>

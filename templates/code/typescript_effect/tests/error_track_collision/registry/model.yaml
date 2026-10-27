@@ -6,7 +6,7 @@ metrics:
   stability: stable
   brief: Synthetic duration.
   requirement_level: recommended
-- name: track.sample.duration
+- name: track.duration.sample.duration
   instrument: counter
   unit: '{item}'
   stability: stable

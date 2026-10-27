@@ -93,9 +93,9 @@ metrics:
 ```
 
 ```ts
-import { trackWorkerTaskDuration } from "./semconv/metrics.ts";
+import { trackDurationWorkerTaskDuration } from "./semconv/metrics.ts";
 
-const tracked = runTask.pipe(trackWorkerTaskDuration());
+const tracked = runTask.pipe(trackDurationWorkerTaskDuration());
 ```
 
 A successful run records no `error.type`. A run that fails with a tagged error,

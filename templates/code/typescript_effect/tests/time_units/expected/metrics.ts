@@ -17,7 +17,7 @@ export function updateSampleDurationMs(value: Duration.Duration) {
   return Metric.update(sampleDurationMs, value);
 }
 
-export function trackSampleDurationMs() {
+export function trackDurationSampleDurationMs() {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
       Effect.onExit(effect, () =>
@@ -49,7 +49,7 @@ export function updateSampleDurationNs(value: Duration.Duration) {
   return Metric.update(sampleDurationNs, value);
 }
 
-export function trackSampleDurationNs() {
+export function trackDurationSampleDurationNs() {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
       Effect.onExit(effect, () =>
@@ -93,7 +93,7 @@ export function updateSampleDurationNsTagged(
   );
 }
 
-export function trackSampleDurationNsTagged(
+export function trackDurationSampleDurationNsTagged(
   attributes: SampleDurationNsTaggedAttributes,
 ) {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
@@ -122,7 +122,7 @@ export function updateSampleDurationS(value: Duration.Duration) {
   return Metric.update(sampleDurationS, value);
 }
 
-export function trackSampleDurationS() {
+export function trackDurationSampleDurationS() {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
       Effect.onExit(effect, () =>
@@ -154,7 +154,7 @@ export function updateSampleDurationUs(value: Duration.Duration) {
   return Metric.update(sampleDurationUs, value);
 }
 
-export function trackSampleDurationUs() {
+export function trackDurationSampleDurationUs() {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
       Effect.onExit(effect, () =>

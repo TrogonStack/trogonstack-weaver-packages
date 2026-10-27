@@ -107,7 +107,7 @@ export function updateMyappTaskDuration(
   );
 }
 
-export function trackMyappTaskDuration(
+export function trackDurationMyappTaskDuration(
   attributes: MyappTaskDurationAttributes,
 ) {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>

@@ -17,7 +17,7 @@ export function updateSampleDuration(value: Duration.Duration) {
   return Metric.update(sampleDuration, value);
 }
 
-export function trackSampleDuration() {
+export function trackDurationSampleDuration() {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
       Effect.onExit(effect, () =>

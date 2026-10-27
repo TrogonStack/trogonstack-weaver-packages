@@ -3,7 +3,7 @@
 The output is `metrics.ts`. Names retain their full registry namespace:
 `worker.task.duration` produces `updateWorkerTaskDuration` and, when it has
 attributes, `WorkerTaskDurationAttributes`. Time histograms also produce
-`trackWorkerTaskDuration`. Instruments stay private.
+`trackDurationWorkerTaskDuration`. Instruments stay private.
 Metric names and attribute keys are preserved in recorded telemetry.
 
 ## Instruments
@@ -29,7 +29,8 @@ representation.
 
 ## Tracking wrappers
 
-Each time histogram also exports `track<Metric>`. It takes the metric's
+Each time histogram also exports `trackDuration<Metric>`, named after
+Effect's `Effect.trackDuration`. It takes the metric's
 attributes and returns a function from `Effect<A, E, R>` to the same type,
 so it fits in `pipe`. The wrapper reads `Clock.monotonicTimeNanos` before the
 effect starts and again when it exits, then records the difference through

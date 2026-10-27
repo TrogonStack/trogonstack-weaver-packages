@@ -48,7 +48,7 @@ export function updateMyappJobDuration(
   );
 }
 
-export function trackMyappJobDuration(
+export function trackDurationMyappJobDuration(
   attributes: Omit<MyappJobDurationAttributes, "errorType">,
 ) {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
@@ -92,7 +92,7 @@ export function updateMyappJobRequiredErrorDuration(
   );
 }
 
-export function trackMyappJobRequiredErrorDuration(
+export function trackDurationMyappJobRequiredErrorDuration(
   attributes: MyappJobRequiredErrorDurationAttributes,
 ) {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
@@ -121,7 +121,7 @@ export function updateMyappJobUntaggedDuration(value: Duration.Duration) {
   return Metric.update(myappJobUntaggedDuration, value);
 }
 
-export function trackMyappJobUntaggedDuration() {
+export function trackDurationMyappJobUntaggedDuration() {
   return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
       Effect.onExit(effect, () =>

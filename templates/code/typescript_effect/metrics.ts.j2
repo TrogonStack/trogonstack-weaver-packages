@@ -113,9 +113,9 @@ export function update{{ metric.type_name }}(
 {% if metric.duration %}
 
 {% if metric.attributes | length == 0 %}
-export function track{{ metric.type_name }}() {
+export function trackDuration{{ metric.type_name }}() {
 {% else %}
-export function track{{ metric.type_name }}(
+export function trackDuration{{ metric.type_name }}(
   attributes: {% if metric.error_type %}Omit<{{ metric.type_name }}Attributes, {{ metric.error_type_field | tojson }}>{% else %}{{ metric.type_name }}Attributes{% endif %}{% if not metric.required %} = {}{% endif %},
 ) {
 {% endif %}

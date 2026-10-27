@@ -27,11 +27,11 @@ function run(effect: Effect.Effect<void>) {
   );
 }
 
-test("track records the elapsed time and omits error.type on success", () =>
+test("trackDuration records the elapsed time and omits error.type on success", () =>
   run(
     Effect.gen(function* () {
       const fiber = yield* Effect.sleep("2 seconds").pipe(
-        Metrics.trackMyappJobDuration({ jobName: "sync" }),
+        Metrics.trackDurationMyappJobDuration({ jobName: "sync" }),
         Effect.forkChild,
       );
       yield* TestClock.adjust("2 seconds");
@@ -51,12 +51,12 @@ for (const [name, effect, errorType] of [
   ["a defect", Effect.die(new Error("boom")), "_OTHER"],
   ["an interruption", Effect.interrupt, "interrupted"],
 ] as const) {
-  test(`track fills error.type from ${name}`, () =>
+  test(`trackDuration fills error.type from ${name}`, () =>
     run(
       Effect.gen(function* () {
         yield* Effect.exit(
           (effect as Effect.Effect<never, unknown>).pipe(
-            Metrics.trackMyappJobDuration({ jobName: "sync" }),
+            Metrics.trackDurationMyappJobDuration({ jobName: "sync" }),
           ),
         );
         const [point, ...rest] = yield* recorded("myapp.job.duration");
@@ -68,20 +68,20 @@ for (const [name, effect, errorType] of [
     ));
 }
 
-test("track drops a caller-supplied error.type on success", () =>
+test("trackDuration drops a caller-supplied error.type on success", () =>
   run(
     Effect.gen(function* () {
       const attributes: Metrics.MyappJobDurationAttributes = {
         jobName: "sync",
         errorType: "stale",
       };
-      yield* Effect.void.pipe(Metrics.trackMyappJobDuration(attributes));
+      yield* Effect.void.pipe(Metrics.trackDurationMyappJobDuration(attributes));
       const [point] = yield* recorded("myapp.job.duration");
       assert.equal(point?.attributes?.["error.type"], undefined);
     }),
   ));
 
-test("track reads attributes exposed through getters", () =>
+test("trackDuration reads attributes exposed through getters", () =>
   run(
     Effect.gen(function* () {
       class Job {
@@ -89,18 +89,18 @@ test("track reads attributes exposed through getters", () =>
           return "sync";
         }
       }
-      yield* Effect.void.pipe(Metrics.trackMyappJobDuration(new Job()));
+      yield* Effect.void.pipe(Metrics.trackDurationMyappJobDuration(new Job()));
       const [point] = yield* recorded("myapp.job.duration");
       assert.equal(point?.attributes?.["myapp.job.name"], "sync");
     }),
   ));
 
-test("track leaves a required error.type to the caller", () =>
+test("trackDuration leaves a required error.type to the caller", () =>
   run(
     Effect.gen(function* () {
       yield* Effect.exit(
         Effect.fail(new Timeout()).pipe(
-          Metrics.trackMyappJobRequiredErrorDuration({ errorType: "custom" }),
+          Metrics.trackDurationMyappJobRequiredErrorDuration({ errorType: "custom" }),
         ),
       );
       const [point] = yield* recorded("myapp.job.required_error.duration");
@@ -108,11 +108,11 @@ test("track leaves a required error.type to the caller", () =>
     }),
   ));
 
-test("track works for metrics without attributes", () =>
+test("trackDuration works for metrics without attributes", () =>
   run(
     Effect.gen(function* () {
       const value = yield* Effect.succeed(42).pipe(
-        Metrics.trackMyappJobUntaggedDuration(),
+        Metrics.trackDurationMyappJobUntaggedDuration(),
       );
       assert.equal(value, 42);
       const [point] = yield* recorded("myapp.job.untagged.duration");
@@ -122,8 +122,8 @@ test("track works for metrics without attributes", () =>
 
 function invalidConsumers() {
   // @ts-expect-error error.type is filled from the exit.
-  Metrics.trackMyappJobDuration({ jobName: "sync", errorType: "Timeout" });
+  Metrics.trackDurationMyappJobDuration({ jobName: "sync", errorType: "Timeout" });
   // @ts-expect-error Required attributes stay required.
-  Metrics.trackMyappJobDuration({});
+  Metrics.trackDurationMyappJobDuration({});
 }
 void invalidConsumers;
