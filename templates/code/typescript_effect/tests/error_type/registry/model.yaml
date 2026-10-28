@@ -1,0 +1,40 @@
+file_format: definition/2
+attributes:
+- key: error.type
+  type: string
+  stability: stable
+  brief: Synthetic error class.
+  examples: [Timeout]
+- key: myapp.job.name
+  type: string
+  stability: stable
+  brief: Synthetic job name.
+  examples: [sync]
+metrics:
+- name: myapp.job.duration
+  instrument: histogram
+  unit: s
+  stability: stable
+  brief: Synthetic job duration.
+  requirement_level: recommended
+  attributes:
+  - ref: myapp.job.name
+    requirement_level: required
+  - ref: error.type
+    requirement_level:
+      conditionally_required: If the job failed.
+- name: myapp.job.required_error.duration
+  instrument: histogram
+  unit: ms
+  stability: stable
+  brief: Synthetic duration whose error type the caller always sets.
+  requirement_level: recommended
+  attributes:
+  - ref: error.type
+    requirement_level: required
+- name: myapp.job.untagged.duration
+  instrument: histogram
+  unit: ms
+  stability: stable
+  brief: Synthetic duration without attributes.
+  requirement_level: recommended

@@ -1,0 +1,21 @@
+file_format: definition/2
+attributes:
+- key: Clock
+  type:
+    members:
+    - id: ready
+      value: a
+      brief: Synthetic value.
+      stability: stable
+  stability: stable
+  brief: Synthetic label.
+metrics:
+- name: sample.duration
+  instrument: histogram
+  unit: s
+  stability: stable
+  brief: Synthetic duration.
+  requirement_level: recommended
+  attributes:
+  - ref: Clock
+    requirement_level: required

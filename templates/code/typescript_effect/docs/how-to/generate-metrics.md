@@ -69,6 +69,38 @@ const program = Effect.gen(function* () {
 This records `0.25` in the seconds histogram. Run the program with your
 application's existing Effect runtime and OTLP metrics layer.
 
+To time an effect instead of passing a measured duration, use the tracking
+wrapper. Reference `error.type` as conditionally required so failures carry
+their error class:
+
+```yaml
+attributes:
+  - key: error.type
+    type: string
+    brief: The class of error the task failed with.
+    stability: stable
+metrics:
+  - name: worker.task.duration
+    brief: Time spent running a task.
+    instrument: histogram
+    unit: s
+    stability: stable
+    requirement_level: recommended
+    attributes:
+      - ref: error.type
+        requirement_level:
+          conditionally_required: If the task failed.
+```
+
+```ts
+import { trackDurationWorkerTaskDuration } from "./semconv/metrics.ts";
+
+const tracked = runTask.pipe(trackDurationWorkerTaskDuration());
+```
+
+A successful run records no `error.type`. A run that fails with a tagged error,
+such as one built with `Data.TaggedError("Timeout")`, records `Timeout`.
+
 Keep application code outside the generated directory. Weaver does not remove
 stale generated files; clear that directory before regenerating after changing
 the output layout.

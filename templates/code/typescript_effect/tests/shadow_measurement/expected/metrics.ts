@@ -1,6 +1,8 @@
 // Generated from a semantic convention registry. Do not edit.
 import * as Metric from "effect/Metric";
+import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
 
 const measurement = Metric.mapInput(
   Metric.histogram("measurement", {
@@ -19,4 +21,17 @@ const measurement = Metric.mapInput(
 
 export function updateMeasurement(value: Duration.Duration) {
   return Metric.update(measurement, value);
+}
+
+export function trackDurationMeasurement() {
+  return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
+      Effect.onExit(effect, () =>
+        Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
+          updateMeasurement(
+            Duration.nanos(end - start),
+          ),
+        ),
+      ),
+    );
 }

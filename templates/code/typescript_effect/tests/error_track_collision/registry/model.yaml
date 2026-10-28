@@ -1,0 +1,14 @@
+file_format: definition/2
+metrics:
+- name: sample.duration
+  instrument: histogram
+  unit: s
+  stability: stable
+  brief: Synthetic duration.
+  requirement_level: recommended
+- name: track.duration.sample.duration
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic counter whose identifier matches a track helper.
+  requirement_level: recommended

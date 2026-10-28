@@ -1,6 +1,8 @@
 // Generated from a semantic convention registry. Do not edit.
 import * as Metric from "effect/Metric";
+import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
 
 export const AuthMethod = {
   Password: "password",
@@ -72,9 +74,9 @@ export function updateMyappTaskActive(
 }
 
 export type MyappTaskDurationAttributes = {
-  readonly authMethod?: AuthMethod;
+  readonly authMethod?: AuthMethod | undefined;
   readonly taskId: string;
-  readonly taskState?: MyappTaskState;
+  readonly taskState?: MyappTaskState | undefined;
 };
 
 const myappTaskDuration = Metric.mapInput(
@@ -103,6 +105,22 @@ export function updateMyappTaskDuration(
     Metric.withAttributes(myappTaskDuration, labels),
     value,
   );
+}
+
+export function trackDurationMyappTaskDuration(
+  attributes: MyappTaskDurationAttributes,
+) {
+  return <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.flatMap(Clock.monotonicTimeNanos, (start) =>
+      Effect.onExit(effect, () =>
+        Effect.flatMap(Clock.monotonicTimeNanos, (end) =>
+          updateMyappTaskDuration(
+            Duration.nanos(end - start),
+            attributes,
+          ),
+        ),
+      ),
+    );
 }
 
 const myappTaskFloatActive = Metric.counter("myapp.task.float.active", {
@@ -145,7 +163,7 @@ export function updateMyappTaskPayload(value: number) {
 }
 
 export type MyappTaskStartedAttributes = {
-  readonly taskId?: string;
+  readonly taskId?: string | undefined;
 };
 
 const myappTaskStarted = Metric.counter("myapp.task.started", {
