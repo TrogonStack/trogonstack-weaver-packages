@@ -1,0 +1,16 @@
+file_format: definition/2
+metrics:
+- name: sample.size
+  instrument: histogram
+  unit: By
+  stability: stable
+  brief: Synthetic metric.
+  annotations:
+    aggregation:
+      method: explicithistogram
+      parameters:
+        boundaries:
+        - 1
+        - 2
+        extra: true
+  requirement_level: recommended

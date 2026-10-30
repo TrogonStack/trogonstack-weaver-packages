@@ -1,0 +1,7 @@
+file_format: definition/2
+attributes:
+- key: object
+  type: string
+  stability: stable
+  brief: Synthetic label.
+  examples: [a]

@@ -1,0 +1,1 @@
+failed: "metric sample.size must set histogram_boundaries_by_unit for unit By to a non-empty list of numbers"

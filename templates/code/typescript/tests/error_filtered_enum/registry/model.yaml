@@ -1,0 +1,21 @@
+file_format: definition/2
+metrics:
+- name: sample.total
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  attributes:
+  - ref: sample.state
+    requirement_level: required
+  requirement_level: recommended
+attributes:
+- key: sample.state
+  type:
+    members:
+    - id: old
+      value: old
+      stability: development
+      brief: Old state.
+  stability: stable
+  brief: Synthetic state.

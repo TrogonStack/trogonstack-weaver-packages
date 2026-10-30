@@ -1,0 +1,1 @@
+failed: "metric sample.size must list annotations.aggregation.parameters.boundaries in strictly increasing order"

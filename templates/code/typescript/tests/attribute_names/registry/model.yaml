@@ -1,0 +1,93 @@
+file_format: definition/2
+attributes:
+- key: sample.task.id
+  type: string
+  stability: stable
+  brief: Synthetic label.
+  examples:
+  - value
+- key: sample.other_name
+  type: string
+  stability: stable
+  brief: Synthetic label.
+  examples:
+  - value
+- key: remote.task.state
+  type: string
+  stability: stable
+  brief: Synthetic label.
+  examples:
+  - value
+- key: sample.class
+  type: string
+  stability: stable
+  brief: Synthetic label.
+  examples:
+  - value
+- key: sample.quote_state
+  type:
+    members:
+    - id: double_quote
+      value: a"b
+      stability: stable
+      brief: Synthetic value.
+    - id: backslash
+      value: a\b
+      stability: stable
+      brief: Synthetic value.
+    - id: newline
+      value: 'a
+
+        b'
+      stability: stable
+      brief: Synthetic value.
+  stability: stable
+  brief: Synthetic label.
+- key: sample.numeric_code
+  type:
+    members:
+    - id: one
+      value: 1
+      stability: stable
+      brief: Synthetic value.
+    - id: two
+      value: 2
+      stability: stable
+      brief: Synthetic value.
+  stability: stable
+  brief: Synthetic label.
+- key: sample.enabled
+  type:
+    members:
+    - id: 'yes'
+      value: true
+      stability: stable
+      brief: Synthetic value.
+    - id: 'no'
+      value: false
+      stability: stable
+      brief: Synthetic value.
+  stability: stable
+  brief: Synthetic label.
+metrics:
+- name: sample.recorded
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  requirement_level: recommended
+  brief: Synthetic metric.
+  attributes:
+  - ref: sample.task.id
+    requirement_level: required
+  - ref: sample.other_name
+    requirement_level: required
+  - ref: remote.task.state
+    requirement_level: required
+  - ref: sample.class
+    requirement_level: required
+  - ref: sample.quote_state
+    requirement_level: required
+  - ref: sample.numeric_code
+    requirement_level: required
+  - ref: sample.enabled
+    requirement_level: required

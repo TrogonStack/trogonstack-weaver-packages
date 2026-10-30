@@ -1,0 +1,1 @@
+failed: "metric sample.total references attribute sample.headers of type template[string], which the TypeScript template does not render"

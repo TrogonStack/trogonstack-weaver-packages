@@ -1,0 +1,55 @@
+file_format: definition/2
+attributes:
+  - key: sample.state
+    type:
+      members:
+        - id: ready
+          value: ready
+          stability: stable
+          brief: Ready.
+        - id: pending
+          value: pending
+          stability: development
+          brief: Pending.
+    stability: stable
+    brief: State.
+  - key: sample.optional
+    type: string
+    stability: development
+    brief: Optional label.
+    examples: [sample]
+metrics:
+  - name: sample.kept
+    instrument: counter
+    unit: "{item}"
+    stability: stable
+    requirement_level: recommended
+    brief: Kept metric.
+    attributes:
+      - ref: sample.state
+        requirement_level: required
+      - ref: sample.optional
+  - name: sample.unstable
+    instrument: gauge
+    unit: "{item}"
+    stability: development
+    requirement_level: recommended
+    brief: Unstable metric.
+  - name: sample.deprecated
+    instrument: gauge
+    unit: "{item}"
+    stability: stable
+    requirement_level: recommended
+    brief: Deprecated metric.
+    deprecated:
+      reason: obsoleted
+      note: No longer recorded.
+  - name: sample.excluded
+    instrument: gauge
+    unit: "{item}"
+    stability: stable
+    requirement_level: recommended
+    brief: Excluded metric.
+    annotations:
+      code_generation:
+        exclude: true

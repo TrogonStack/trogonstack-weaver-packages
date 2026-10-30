@@ -60,6 +60,14 @@ temporary crates and runs formatting, consumer tests, and Clippy. Put consumer
 tests in a case's `test.rs`, importing the generated crate as
 `generated_semconv`.
 
+For the TypeScript package, `mise run weaver:test:typescript` type-checks every
+expected module and runs each case's `consumer.test.ts` against the pinned
+OpenTelemetry JavaScript API and SDK. Consumers import `./metrics.ts`, may use
+`@ts-expect-error` assertions to verify rejected API calls, and read recorded
+metrics through `createRecorder` in `buildscripts/typescript/support.ts`.
+Dependencies are locked in `buildscripts/typescript/` and installed in a
+disposable directory outside the checkout.
+
 For the Effect TypeScript package, `mise run weaver:test:typescript_effect`
 type-checks every expected module and runs each case's `consumer.test.ts`
 against the pinned Effect dependency. Consumers import `./metrics.ts` and may

@@ -1,0 +1,11 @@
+file_format: definition/2
+metrics:
+- name: sample.size
+  instrument: histogram
+  unit: By
+  stability: stable
+  brief: Synthetic metric.
+  annotations:
+    aggregation:
+      method: base2exponentialhistogram
+  requirement_level: recommended
