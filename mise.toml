@@ -3,5 +3,7 @@
 go = "1.27.1"
 jq = "1.8.1"
 node = "24.21.0"
+python = "3.12.14"
+uv = "0.13.4"
 rust = { version = "1.99.0", profile = "minimal", components = ["rustfmt", "clippy"] }
 "npm:prettier" = "3.9.9"

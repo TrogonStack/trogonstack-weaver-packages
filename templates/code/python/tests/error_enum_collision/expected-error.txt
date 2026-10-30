@@ -1,0 +1,1 @@
+attribute demo.state has enum members that render to the same Python identifier: foo_bar and foo.bar

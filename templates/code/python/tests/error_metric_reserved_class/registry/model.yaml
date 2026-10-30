@@ -1,0 +1,11 @@
+file_format: definition/2
+metrics:
+  - name: meter
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Synthetic metric.
+    annotations:
+      code_generation:
+        metric_value_type: int

@@ -1,0 +1,10 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.queue_wait
+    instrument: histogram
+    unit: min
+    stability: stable
+    brief: Time a task waited in the queue, in minutes.
+    annotations:
+      code_generation:
+        metric_value_type: double

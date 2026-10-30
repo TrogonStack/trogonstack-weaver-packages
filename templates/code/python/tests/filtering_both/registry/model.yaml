@@ -1,0 +1,120 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+  - key: myapp.task.priority
+    type: int
+    stability: development
+    brief: Priority the scheduler gave the task.
+  - key: myapp.task.owner
+    type: string
+    stability: stable
+    brief: Owner of the task.
+    deprecated:
+      reason: renamed
+      renamed_to: myapp.task.assignee
+  - key: myapp.task.assignee
+    type: string
+    stability: stable
+    brief: Person the task is assigned to.
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The task is waiting to run.
+        - id: running
+          value: running
+          stability: development
+          brief: The task is running.
+        - id: paused
+          value: paused
+          stability: stable
+          brief: The task was paused.
+          deprecated:
+            reason: obsoleted
+            note: Paused tasks are reported as queued.
+    stability: stable
+    brief: Current state of the task.
+metrics:
+  - name: myapp.task.started
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks started.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+      - ref: myapp.task.priority
+        requirement_level: recommended
+      - ref: myapp.task.owner
+        requirement_level: recommended
+      - ref: myapp.task.assignee
+        requirement_level: recommended
+      - ref: myapp.task.state
+        requirement_level: recommended
+  - name: myapp.task.queued
+    requirement_level: recommended
+    instrument: updowncounter
+    unit: "{task}"
+    stability: development
+    brief: Number of tasks waiting to run.
+    annotations:
+      code_generation:
+        metric_value_type: int
+  - name: myapp.task.retired
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks retired.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    deprecated:
+      reason: renamed
+      renamed_to: myapp.task.started
+  - name: myapp.task.duration
+    requirement_level: recommended
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Time a task took from start to finish.
+    annotations:
+      code_generation:
+        metric_value_type: double
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+metric_refinements:
+  - id: myapp.task.retry.duration
+    ref: myapp.task.duration
+    stability: stable
+    brief: Time a retried task took from start to finish.
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+  - id: myapp.task.preview.duration
+    ref: myapp.task.duration
+    stability: development
+    brief: Time a preview task took from start to finish.
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+  - id: myapp.task.legacy.duration
+    ref: myapp.task.duration
+    stability: stable
+    brief: Time a legacy task took from start to finish.
+    deprecated:
+      reason: obsoleted
+      note: Legacy tasks no longer exist.
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required

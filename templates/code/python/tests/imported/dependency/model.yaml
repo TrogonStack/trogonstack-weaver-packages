@@ -1,0 +1,30 @@
+file_format: definition/2
+attributes:
+  - key: error.type
+    type:
+      members:
+        - id: timeout
+          value: timeout
+          stability: stable
+          brief: The operation timed out.
+        - id: other
+          value: _OTHER
+          stability: stable
+          brief: Any other error.
+    stability: stable
+    brief: Describes a class of error.
+  - key: server.address
+    type: string
+    stability: stable
+    brief: Server domain name or IP address.
+    examples: ["example.com"]
+  - key: server.port
+    type: int
+    stability: stable
+    brief: Server port number.
+    examples: [443]
+  - key: http.request.method_list
+    type: string[]
+    stability: stable
+    brief: Methods attempted, in order.
+    examples: [["GET", "POST"]]

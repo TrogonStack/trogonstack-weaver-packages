@@ -1,0 +1,15 @@
+file_format: definition/2
+attributes:
+  - key: demo.state
+    stability: stable
+    brief: Synthetic attribute.
+    type:
+      members:
+        - id: first
+          value: a
+          stability: stable
+          brief: First.
+        - id: second
+          value: a
+          stability: stable
+          brief: Second.

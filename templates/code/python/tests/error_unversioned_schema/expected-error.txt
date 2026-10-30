@@ -1,0 +1,1 @@
+the registry schema_url must name a schema version

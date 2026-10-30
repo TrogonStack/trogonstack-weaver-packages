@@ -40,6 +40,7 @@ jobs:
       - run: mise run weaver:test:go
       - run: mise run weaver:test:rust
       - run: mise run weaver:test:typescript_effect
+      - run: mise run weaver:test:python
 
   markdown:
     name: Markdown

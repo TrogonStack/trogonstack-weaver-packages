@@ -1,0 +1,1 @@
+attribute demo.bad-name is not a supported Python attribute name

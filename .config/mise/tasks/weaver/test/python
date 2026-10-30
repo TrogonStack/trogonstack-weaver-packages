@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Type-check, lint, and run consumer tests against generated Python"
+set -euo pipefail
+exec ./buildscripts/check_python_output.sh

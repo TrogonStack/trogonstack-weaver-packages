@@ -1,0 +1,8 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.started
+    brief: A task count.
+    stability: stable
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"

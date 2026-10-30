@@ -1,0 +1,1 @@
+attribute myapp.anything has an unsupported Python value type

@@ -1,0 +1,44 @@
+file_format: definition/2
+attributes:
+  - key: demo.text
+    type: string
+    stability: stable
+    brief: 'Says "hello" and \\ it''s a backslash.'
+    note: |-
+      Contains a triple quote """ and a backslash at the end \
+      on two lines, with trailing spaces   
+      and a tab	here.
+  - key: demo.mode
+    type:
+      members:
+        - id: quoted
+          value: "it's \"quoted\""
+          stability: stable
+          brief: Mixes both quote characters.
+        - id: path
+          value: 'C:\temp\new'
+          stability: stable
+          brief: Holds backslashes.
+        - id: unicode
+          value: "caf\u00e9 \u2603"
+          stability: stable
+          brief: Holds non-ASCII characters.
+    stability: stable
+    brief: Mode with awkward values.
+metrics:
+  - name: demo.work
+    requirement_level: recommended
+    instrument: counter
+    unit: '{"unit"}'
+    stability: stable
+    brief: 'Counts "quoted" work with a \\ backslash.'
+    note: Ends with a backslash \\
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: demo.text
+        requirement_level:
+          conditionally_required: 'When it''s set, as in "demo.mode" \\'
+      - ref: demo.mode
+        requirement_level: recommended
