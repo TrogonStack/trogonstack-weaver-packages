@@ -42,14 +42,14 @@ function toMyappTaskStartedAttributes(attributes: MyappTaskStartedAttributes): a
  * Number of tasks started.
  */
 export class MyappTaskStarted {
-  static get NAME(): "myapp.task.started" {
+  static getName(): "myapp.task.started" {
     return "myapp.task.started";
   }
 
-  private readonly instrument: api.Counter;
+  readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createCounter("myapp.task.started", {
+    this.#instrument = meter.createCounter("myapp.task.started", {
       description: "Number of tasks started.",
       unit: "{task}",
       valueType: api.ValueType.INT,
@@ -57,43 +57,39 @@ export class MyappTaskStarted {
   }
 
   add(value: number, attributes: MyappTaskStartedAttributes): void {
-    this.instrument.add(value, toMyappTaskStartedAttributes(attributes));
+    this.#instrument.add(value, toMyappTaskStartedAttributes(attributes));
   }
 }
 
-export type MyappTaskStartedObserver = {
-  observe(value: number, attributes: MyappTaskStartedAttributes): void;
-};
+export type MyappTaskStartedObserve = (value: number, attributes: MyappTaskStartedAttributes) => void;
 
-export type MyappTaskStartedCallback = (observer: MyappTaskStartedObserver) => void | Promise<void>;
+export type MyappTaskStartedCallback = (observe: MyappTaskStartedObserve) => void | Promise<void>;
 
 /**
  * Observes myapp.task.started when the SDK collects.
  */
 export class MyappTaskStartedObservable {
-  static get NAME(): "myapp.task.started" {
+  static getName(): "myapp.task.started" {
     return "myapp.task.started";
   }
 
-  private readonly instrument: api.ObservableCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskStartedCallback) {
-    this.instrument = meter.createObservableCounter("myapp.task.started", {
+    this.#instrument = meter.createObservableCounter("myapp.task.started", {
       description: "Number of tasks started.",
       unit: "{task}",
       valueType: api.ValueType.INT,
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value, attributes) => {
-          result.observe(value, toMyappTaskStartedAttributes(attributes));
-        },
+    this.#callback = (result) =>
+      callback((value, attributes) => {
+        result.observe(value, toMyappTaskStartedAttributes(attributes));
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }

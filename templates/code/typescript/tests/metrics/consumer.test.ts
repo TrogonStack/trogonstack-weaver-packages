@@ -12,7 +12,7 @@ test("instruments carry the registry name, unit, description, scope and schema U
   new Metrics.MyappTaskDuration(meter).record(1.5, { taskId: "task_0001" });
 
   const metric = await recorder.metric("myapp.task.duration");
-  assert.equal(Metrics.MyappTaskDuration.NAME, "myapp.task.duration");
+  assert.equal(Metrics.MyappTaskDuration.getName(), "myapp.task.duration");
   assert.equal(metric.descriptor.unit, "s");
   assert.equal(metric.descriptor.description, "Time a task took from start to finish.");
   assert.equal(metric.descriptor.valueType, 1);
@@ -85,21 +85,21 @@ test("an up-down counter and a gauge record their values", async () => {
 test("an observable instrument reports when the SDK collects and stops on request", async () => {
   const recorder = createRecorder();
   const meter = Metrics.getMeter(recorder.meterProvider);
-  const observable = new Metrics.MyappTaskActiveObservable(meter, (observer) => {
-    observer.observe(4, { taskState: MyappTaskState.Done });
+  const observable = new Metrics.MyappTaskActiveObservable(meter, (observe) => {
+    observe(4, { taskState: MyappTaskState.Done });
   });
   const first = await recorder.metric("myapp.task.active");
   assert.equal(first.dataPoints[0]?.value, 4);
   assert.deepEqual(first.dataPoints[0]?.attributes, { "myapp.task.state": "done" });
 
-  const depth = new Metrics.MyappQueueDepthObservable(meter, async (observer) => {
+  const depth = new Metrics.MyappQueueDepthObservable(meter, async (observe) => {
     await Promise.resolve();
-    observer.observe(7);
+    observe(7);
   });
   assert.equal((await recorder.metric("myapp.queue.depth")).dataPoints[0]?.value, 7);
   observable.stop();
   depth.stop();
-  assert.equal(Metrics.MyappTaskActiveObservable.NAME, Metrics.MyappTaskActive.NAME);
+  assert.equal(Metrics.MyappTaskActiveObservable.getName(), Metrics.MyappTaskActive.getName());
 });
 
 test("a meter without a provider is harmless until a global provider is set", async () => {
@@ -115,9 +115,9 @@ test("a meter without a provider is harmless until a global provider is set", as
   metrics.disable();
 });
 
-test("NAME is the name the metric records under", () => {
-  assert.equal(Metrics.AuthAttempts.NAME, "auth.attempts");
-  assert.equal(Metrics.AuthAttemptsObservable.NAME, "auth.attempts");
+test("getName() returns the name the metric records under", () => {
+  assert.equal(Metrics.AuthAttempts.getName(), "auth.attempts");
+  assert.equal(Metrics.AuthAttemptsObservable.getName(), "auth.attempts");
 });
 
 function invalidConsumers() {
@@ -141,7 +141,8 @@ function invalidConsumers() {
   new Metrics.MyappTaskDurationObservable(meter, () => {});
   // @ts-expect-error A meter without the registry scope is rejected.
   new Metrics.AuthAttempts(metrics.getMeter("other"));
-  // @ts-expect-error The metric name cannot be reassigned.
-  Metrics.AuthAttempts.NAME = "other";
+  // @ts-expect-error The name is the literal registry name.
+  const other: "other" = Metrics.AuthAttempts.getName();
+  void other;
 }
 void invalidConsumers;

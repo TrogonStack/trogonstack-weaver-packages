@@ -73,14 +73,14 @@ function to{{ type }}Attributes(attributes: {{ type }}Attributes): api.Attribute
 {% endif %}
 
 {{ m.doc(metric.brief, metric.note, "Opt-in: record it only when the user asks for it." if metric.requirement_level == "opt_in" else none, metric.deprecation, 0) }}export class {{ type }} {
-  static get NAME(): {{ metric.instrument_name | tojson }} {
+  static getName(): {{ metric.instrument_name | tojson }} {
     return {{ metric.instrument_name | tojson }};
   }
 
-  private readonly instrument: api.{{ kind }};
+  readonly #instrument: api.{{ kind }};
 
   constructor(meter: Meter) {
-    this.instrument = meter.create{{ kind }}({{ metric.instrument_name | tojson }}, {
+    this.#instrument = meter.create{{ kind }}({{ metric.instrument_name | tojson }}, {
       description: {{ (metric.description or "") | trim | tojson }},
       unit: {{ metric.unit | tojson }},
 {% if metric.value_type %}
@@ -93,44 +93,40 @@ function to{{ type }}Attributes(attributes: {{ type }}Attributes): api.Attribute
   }
 
   {{ method }}(value: number{{ parameters }}): void {
-    this.instrument.{{ method }}(value{{ arguments }});
+    this.#instrument.{{ method }}(value{{ arguments }});
   }
 }
 {% if metric.instrument != "histogram" %}
 
-export type {{ type }}Observer = {
-  observe(value: number{{ ", attributes" ~ ("?" if optional_only) ~ ": " ~ type ~ "Attributes" if has_attributes }}): void;
-};
+export type {{ type }}Observe = (value: number{{ ", attributes" ~ ("?" if optional_only) ~ ": " ~ type ~ "Attributes" if has_attributes }}) => void;
 
-export type {{ type }}Callback = (observer: {{ type }}Observer) => void | Promise<void>;
+export type {{ type }}Callback = (observe: {{ type }}Observe) => void | Promise<void>;
 
 {{ m.doc("Observes " ~ metric.instrument_name ~ " when the SDK collects.", none, none, metric.deprecation, 0) }}export class {{ type }}Observable {
-  static get NAME(): {{ metric.instrument_name | tojson }} {
+  static getName(): {{ metric.instrument_name | tojson }} {
     return {{ metric.instrument_name | tojson }};
   }
 
-  private readonly instrument: api.Observable{{ kind }};
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.Observable{{ kind }};
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: {{ type }}Callback) {
-    this.instrument = meter.createObservable{{ kind }}({{ metric.instrument_name | tojson }}, {
+    this.#instrument = meter.createObservable{{ kind }}({{ metric.instrument_name | tojson }}, {
       description: {{ (metric.description or "") | trim | tojson }},
       unit: {{ metric.unit | tojson }},
 {% if metric.value_type %}
       valueType: api.ValueType.{{ metric.value_type | upper }},
 {% endif %}
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value{{ ", attributes" if has_attributes }}) => {
-          result.observe(value{{ ", to" ~ type ~ "Attributes(attributes" ~ (" ?? {}" if optional_only) ~ ")" if has_attributes }});
-        },
+    this.#callback = (result) =>
+      callback((value{{ ", attributes" if has_attributes }}) => {
+        result.observe(value{{ ", to" ~ type ~ "Attributes(attributes" ~ (" ?? {}" if optional_only) ~ ")" if has_attributes }});
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 {% endif %}

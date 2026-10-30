@@ -219,7 +219,7 @@ templates:
       | map(
           ([.[] | .name as $metric | .type_name as $type | .instrument as $kind
             | ([$type] + (if (.attributes | length) > 0 then [$type + "Attributes"] else [] end)
-               + (if $kind == "histogram" then [] else [$type + "Observable", $type + "Observer", $type + "Callback"] end))[]
+               + (if $kind == "histogram" then [] else [$type + "Observable", $type + "Observe", $type + "Callback"] end))[]
             | {identifier: ., name: $metric}]
            + [["Meter", "WeakMap", "Promise"][] | {identifier: ., name: "the reserved name \(.)"}]
            | group_by(.identifier)

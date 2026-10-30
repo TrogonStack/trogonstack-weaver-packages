@@ -46,56 +46,52 @@ function toSampleImportedAttributes(attributes: SampleImportedAttributes): api.A
  * Synthetic metric.
  */
 export class SampleImported {
-  static get NAME(): "sample.imported" {
+  static getName(): "sample.imported" {
     return "sample.imported";
   }
 
-  private readonly instrument: api.Counter;
+  readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createCounter("sample.imported", {
+    this.#instrument = meter.createCounter("sample.imported", {
       description: "Synthetic metric.",
       unit: "{item}",
     });
   }
 
   add(value: number, attributes: SampleImportedAttributes): void {
-    this.instrument.add(value, toSampleImportedAttributes(attributes));
+    this.#instrument.add(value, toSampleImportedAttributes(attributes));
   }
 }
 
-export type SampleImportedObserver = {
-  observe(value: number, attributes: SampleImportedAttributes): void;
-};
+export type SampleImportedObserve = (value: number, attributes: SampleImportedAttributes) => void;
 
-export type SampleImportedCallback = (observer: SampleImportedObserver) => void | Promise<void>;
+export type SampleImportedCallback = (observe: SampleImportedObserve) => void | Promise<void>;
 
 /**
  * Observes sample.imported when the SDK collects.
  */
 export class SampleImportedObservable {
-  static get NAME(): "sample.imported" {
+  static getName(): "sample.imported" {
     return "sample.imported";
   }
 
-  private readonly instrument: api.ObservableCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleImportedCallback) {
-    this.instrument = meter.createObservableCounter("sample.imported", {
+    this.#instrument = meter.createObservableCounter("sample.imported", {
       description: "Synthetic metric.",
       unit: "{item}",
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value, attributes) => {
-          result.observe(value, toSampleImportedAttributes(attributes));
-        },
+    this.#callback = (result) =>
+      callback((value, attributes) => {
+        result.observe(value, toSampleImportedAttributes(attributes));
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }

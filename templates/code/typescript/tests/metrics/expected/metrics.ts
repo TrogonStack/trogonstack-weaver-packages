@@ -44,14 +44,14 @@ function toAuthAttemptsAttributes(attributes: AuthAttemptsAttributes): api.Attri
  * Number of authentication attempts.
  */
 export class AuthAttempts {
-  static get NAME(): "auth.attempts" {
+  static getName(): "auth.attempts" {
     return "auth.attempts";
   }
 
-  private readonly instrument: api.Counter;
+  readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createCounter("auth.attempts", {
+    this.#instrument = meter.createCounter("auth.attempts", {
       description: "Number of authentication attempts.",
       unit: "{attempt}",
       valueType: api.ValueType.INT,
@@ -59,44 +59,40 @@ export class AuthAttempts {
   }
 
   add(value: number, attributes: AuthAttemptsAttributes): void {
-    this.instrument.add(value, toAuthAttemptsAttributes(attributes));
+    this.#instrument.add(value, toAuthAttemptsAttributes(attributes));
   }
 }
 
-export type AuthAttemptsObserver = {
-  observe(value: number, attributes: AuthAttemptsAttributes): void;
-};
+export type AuthAttemptsObserve = (value: number, attributes: AuthAttemptsAttributes) => void;
 
-export type AuthAttemptsCallback = (observer: AuthAttemptsObserver) => void | Promise<void>;
+export type AuthAttemptsCallback = (observe: AuthAttemptsObserve) => void | Promise<void>;
 
 /**
  * Observes auth.attempts when the SDK collects.
  */
 export class AuthAttemptsObservable {
-  static get NAME(): "auth.attempts" {
+  static getName(): "auth.attempts" {
     return "auth.attempts";
   }
 
-  private readonly instrument: api.ObservableCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: AuthAttemptsCallback) {
-    this.instrument = meter.createObservableCounter("auth.attempts", {
+    this.#instrument = meter.createObservableCounter("auth.attempts", {
       description: "Number of authentication attempts.",
       unit: "{attempt}",
       valueType: api.ValueType.INT,
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value, attributes) => {
-          result.observe(value, toAuthAttemptsAttributes(attributes));
-        },
+    this.#callback = (result) =>
+      callback((value, attributes) => {
+        result.observe(value, toAuthAttemptsAttributes(attributes));
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 
@@ -106,14 +102,14 @@ export class AuthAttemptsObservable {
  * @deprecated Replaced by `myapp.task.active`.
  */
 export class MyappQueueDepth {
-  static get NAME(): "myapp.queue.depth" {
+  static getName(): "myapp.queue.depth" {
     return "myapp.queue.depth";
   }
 
-  private readonly instrument: api.Gauge;
+  readonly #instrument: api.Gauge;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createGauge("myapp.queue.depth", {
+    this.#instrument = meter.createGauge("myapp.queue.depth", {
       description: "Number of tasks waiting in the queue.",
       unit: "{task}",
       valueType: api.ValueType.INT,
@@ -121,15 +117,13 @@ export class MyappQueueDepth {
   }
 
   record(value: number): void {
-    this.instrument.record(value);
+    this.#instrument.record(value);
   }
 }
 
-export type MyappQueueDepthObserver = {
-  observe(value: number): void;
-};
+export type MyappQueueDepthObserve = (value: number) => void;
 
-export type MyappQueueDepthCallback = (observer: MyappQueueDepthObserver) => void | Promise<void>;
+export type MyappQueueDepthCallback = (observe: MyappQueueDepthObserve) => void | Promise<void>;
 
 /**
  * Observes myapp.queue.depth when the SDK collects.
@@ -137,30 +131,28 @@ export type MyappQueueDepthCallback = (observer: MyappQueueDepthObserver) => voi
  * @deprecated Replaced by `myapp.task.active`.
  */
 export class MyappQueueDepthObservable {
-  static get NAME(): "myapp.queue.depth" {
+  static getName(): "myapp.queue.depth" {
     return "myapp.queue.depth";
   }
 
-  private readonly instrument: api.ObservableGauge;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableGauge;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappQueueDepthCallback) {
-    this.instrument = meter.createObservableGauge("myapp.queue.depth", {
+    this.#instrument = meter.createObservableGauge("myapp.queue.depth", {
       description: "Number of tasks waiting in the queue.",
       unit: "{task}",
       valueType: api.ValueType.INT,
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value) => {
-          result.observe(value);
-        },
+    this.#callback = (result) =>
+      callback((value) => {
+        result.observe(value);
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 
@@ -181,14 +173,14 @@ function toMyappTaskActiveAttributes(attributes: MyappTaskActiveAttributes): api
  * Number of tasks currently running.
  */
 export class MyappTaskActive {
-  static get NAME(): "myapp.task.active" {
+  static getName(): "myapp.task.active" {
     return "myapp.task.active";
   }
 
-  private readonly instrument: api.UpDownCounter;
+  readonly #instrument: api.UpDownCounter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createUpDownCounter("myapp.task.active", {
+    this.#instrument = meter.createUpDownCounter("myapp.task.active", {
       description: "Number of tasks currently running.",
       unit: "{task}",
       valueType: api.ValueType.INT,
@@ -196,44 +188,40 @@ export class MyappTaskActive {
   }
 
   add(value: number, attributes: MyappTaskActiveAttributes): void {
-    this.instrument.add(value, toMyappTaskActiveAttributes(attributes));
+    this.#instrument.add(value, toMyappTaskActiveAttributes(attributes));
   }
 }
 
-export type MyappTaskActiveObserver = {
-  observe(value: number, attributes: MyappTaskActiveAttributes): void;
-};
+export type MyappTaskActiveObserve = (value: number, attributes: MyappTaskActiveAttributes) => void;
 
-export type MyappTaskActiveCallback = (observer: MyappTaskActiveObserver) => void | Promise<void>;
+export type MyappTaskActiveCallback = (observe: MyappTaskActiveObserve) => void | Promise<void>;
 
 /**
  * Observes myapp.task.active when the SDK collects.
  */
 export class MyappTaskActiveObservable {
-  static get NAME(): "myapp.task.active" {
+  static getName(): "myapp.task.active" {
     return "myapp.task.active";
   }
 
-  private readonly instrument: api.ObservableUpDownCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableUpDownCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskActiveCallback) {
-    this.instrument = meter.createObservableUpDownCounter("myapp.task.active", {
+    this.#instrument = meter.createObservableUpDownCounter("myapp.task.active", {
       description: "Number of tasks currently running.",
       unit: "{task}",
       valueType: api.ValueType.INT,
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value, attributes) => {
-          result.observe(value, toMyappTaskActiveAttributes(attributes));
-        },
+    this.#callback = (result) =>
+      callback((value, attributes) => {
+        result.observe(value, toMyappTaskActiveAttributes(attributes));
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 
@@ -275,14 +263,14 @@ function toMyappTaskDurationAttributes(attributes: MyappTaskDurationAttributes):
  * Measured by the worker that ran the task.
  */
 export class MyappTaskDuration {
-  static get NAME(): "myapp.task.duration" {
+  static getName(): "myapp.task.duration" {
     return "myapp.task.duration";
   }
 
-  private readonly instrument: api.Histogram;
+  readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createHistogram("myapp.task.duration", {
+    this.#instrument = meter.createHistogram("myapp.task.duration", {
       description: "Time a task took from start to finish.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -291,7 +279,7 @@ export class MyappTaskDuration {
   }
 
   record(value: number, attributes: MyappTaskDurationAttributes): void {
-    this.instrument.record(value, toMyappTaskDurationAttributes(attributes));
+    this.#instrument.record(value, toMyappTaskDurationAttributes(attributes));
   }
 }
 
@@ -299,14 +287,14 @@ export class MyappTaskDuration {
  * Fractional active task adjustment.
  */
 export class MyappTaskFloatActive {
-  static get NAME(): "myapp.task.float.active" {
+  static getName(): "myapp.task.float.active" {
     return "myapp.task.float.active";
   }
 
-  private readonly instrument: api.UpDownCounter;
+  readonly #instrument: api.UpDownCounter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createUpDownCounter("myapp.task.float.active", {
+    this.#instrument = meter.createUpDownCounter("myapp.task.float.active", {
       description: "Fractional active task adjustment.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
@@ -314,44 +302,40 @@ export class MyappTaskFloatActive {
   }
 
   add(value: number): void {
-    this.instrument.add(value);
+    this.#instrument.add(value);
   }
 }
 
-export type MyappTaskFloatActiveObserver = {
-  observe(value: number): void;
-};
+export type MyappTaskFloatActiveObserve = (value: number) => void;
 
-export type MyappTaskFloatActiveCallback = (observer: MyappTaskFloatActiveObserver) => void | Promise<void>;
+export type MyappTaskFloatActiveCallback = (observe: MyappTaskFloatActiveObserve) => void | Promise<void>;
 
 /**
  * Observes myapp.task.float.active when the SDK collects.
  */
 export class MyappTaskFloatActiveObservable {
-  static get NAME(): "myapp.task.float.active" {
+  static getName(): "myapp.task.float.active" {
     return "myapp.task.float.active";
   }
 
-  private readonly instrument: api.ObservableUpDownCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableUpDownCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskFloatActiveCallback) {
-    this.instrument = meter.createObservableUpDownCounter("myapp.task.float.active", {
+    this.#instrument = meter.createObservableUpDownCounter("myapp.task.float.active", {
       description: "Fractional active task adjustment.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value) => {
-          result.observe(value);
-        },
+    this.#callback = (result) =>
+      callback((value) => {
+        result.observe(value);
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 
@@ -359,14 +343,14 @@ export class MyappTaskFloatActiveObservable {
  * Fractional queue depth.
  */
 export class MyappTaskFloatDepth {
-  static get NAME(): "myapp.task.float.depth" {
+  static getName(): "myapp.task.float.depth" {
     return "myapp.task.float.depth";
   }
 
-  private readonly instrument: api.Gauge;
+  readonly #instrument: api.Gauge;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createGauge("myapp.task.float.depth", {
+    this.#instrument = meter.createGauge("myapp.task.float.depth", {
       description: "Fractional queue depth.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
@@ -374,44 +358,40 @@ export class MyappTaskFloatDepth {
   }
 
   record(value: number): void {
-    this.instrument.record(value);
+    this.#instrument.record(value);
   }
 }
 
-export type MyappTaskFloatDepthObserver = {
-  observe(value: number): void;
-};
+export type MyappTaskFloatDepthObserve = (value: number) => void;
 
-export type MyappTaskFloatDepthCallback = (observer: MyappTaskFloatDepthObserver) => void | Promise<void>;
+export type MyappTaskFloatDepthCallback = (observe: MyappTaskFloatDepthObserve) => void | Promise<void>;
 
 /**
  * Observes myapp.task.float.depth when the SDK collects.
  */
 export class MyappTaskFloatDepthObservable {
-  static get NAME(): "myapp.task.float.depth" {
+  static getName(): "myapp.task.float.depth" {
     return "myapp.task.float.depth";
   }
 
-  private readonly instrument: api.ObservableGauge;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableGauge;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskFloatDepthCallback) {
-    this.instrument = meter.createObservableGauge("myapp.task.float.depth", {
+    this.#instrument = meter.createObservableGauge("myapp.task.float.depth", {
       description: "Fractional queue depth.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value) => {
-          result.observe(value);
-        },
+    this.#callback = (result) =>
+      callback((value) => {
+        result.observe(value);
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 
@@ -419,14 +399,14 @@ export class MyappTaskFloatDepthObservable {
  * Fractional tasks started.
  */
 export class MyappTaskFloatStarted {
-  static get NAME(): "myapp.task.float.started" {
+  static getName(): "myapp.task.float.started" {
     return "myapp.task.float.started";
   }
 
-  private readonly instrument: api.Counter;
+  readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createCounter("myapp.task.float.started", {
+    this.#instrument = meter.createCounter("myapp.task.float.started", {
       description: "Fractional tasks started.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
@@ -434,44 +414,40 @@ export class MyappTaskFloatStarted {
   }
 
   add(value: number): void {
-    this.instrument.add(value);
+    this.#instrument.add(value);
   }
 }
 
-export type MyappTaskFloatStartedObserver = {
-  observe(value: number): void;
-};
+export type MyappTaskFloatStartedObserve = (value: number) => void;
 
-export type MyappTaskFloatStartedCallback = (observer: MyappTaskFloatStartedObserver) => void | Promise<void>;
+export type MyappTaskFloatStartedCallback = (observe: MyappTaskFloatStartedObserve) => void | Promise<void>;
 
 /**
  * Observes myapp.task.float.started when the SDK collects.
  */
 export class MyappTaskFloatStartedObservable {
-  static get NAME(): "myapp.task.float.started" {
+  static getName(): "myapp.task.float.started" {
     return "myapp.task.float.started";
   }
 
-  private readonly instrument: api.ObservableCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskFloatStartedCallback) {
-    this.instrument = meter.createObservableCounter("myapp.task.float.started", {
+    this.#instrument = meter.createObservableCounter("myapp.task.float.started", {
       description: "Fractional tasks started.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value) => {
-          result.observe(value);
-        },
+    this.#callback = (result) =>
+      callback((value) => {
+        result.observe(value);
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 
@@ -479,14 +455,14 @@ export class MyappTaskFloatStartedObservable {
  * Task payload size.
  */
 export class MyappTaskPayload {
-  static get NAME(): "myapp.task.payload" {
+  static getName(): "myapp.task.payload" {
     return "myapp.task.payload";
   }
 
-  private readonly instrument: api.Histogram;
+  readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createHistogram("myapp.task.payload", {
+    this.#instrument = meter.createHistogram("myapp.task.payload", {
       description: "Task payload size.",
       unit: "By",
       valueType: api.ValueType.INT,
@@ -495,7 +471,7 @@ export class MyappTaskPayload {
   }
 
   record(value: number): void {
-    this.instrument.record(value);
+    this.#instrument.record(value);
   }
 }
 
@@ -522,14 +498,14 @@ function toMyappTaskStartedAttributes(attributes: MyappTaskStartedAttributes): a
  * Opt-in: record it only when the user asks for it.
  */
 export class MyappTaskStarted {
-  static get NAME(): "myapp.task.started" {
+  static getName(): "myapp.task.started" {
     return "myapp.task.started";
   }
 
-  private readonly instrument: api.Counter;
+  readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createCounter("myapp.task.started", {
+    this.#instrument = meter.createCounter("myapp.task.started", {
       description: "Number of tasks started.",
       unit: "{task}",
       valueType: api.ValueType.INT,
@@ -537,43 +513,39 @@ export class MyappTaskStarted {
   }
 
   add(value: number, attributes: MyappTaskStartedAttributes = {}): void {
-    this.instrument.add(value, toMyappTaskStartedAttributes(attributes));
+    this.#instrument.add(value, toMyappTaskStartedAttributes(attributes));
   }
 }
 
-export type MyappTaskStartedObserver = {
-  observe(value: number, attributes?: MyappTaskStartedAttributes): void;
-};
+export type MyappTaskStartedObserve = (value: number, attributes?: MyappTaskStartedAttributes) => void;
 
-export type MyappTaskStartedCallback = (observer: MyappTaskStartedObserver) => void | Promise<void>;
+export type MyappTaskStartedCallback = (observe: MyappTaskStartedObserve) => void | Promise<void>;
 
 /**
  * Observes myapp.task.started when the SDK collects.
  */
 export class MyappTaskStartedObservable {
-  static get NAME(): "myapp.task.started" {
+  static getName(): "myapp.task.started" {
     return "myapp.task.started";
   }
 
-  private readonly instrument: api.ObservableCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskStartedCallback) {
-    this.instrument = meter.createObservableCounter("myapp.task.started", {
+    this.#instrument = meter.createObservableCounter("myapp.task.started", {
       description: "Number of tasks started.",
       unit: "{task}",
       valueType: api.ValueType.INT,
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value, attributes) => {
-          result.observe(value, toMyappTaskStartedAttributes(attributes ?? {}));
-        },
+    this.#callback = (result) =>
+      callback((value, attributes) => {
+        result.observe(value, toMyappTaskStartedAttributes(attributes ?? {}));
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }

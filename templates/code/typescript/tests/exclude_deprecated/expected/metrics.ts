@@ -47,57 +47,53 @@ function toSampleKeptAttributes(attributes: SampleKeptAttributes): api.Attribute
  * Kept metric.
  */
 export class SampleKept {
-  static get NAME(): "sample.kept" {
+  static getName(): "sample.kept" {
     return "sample.kept";
   }
 
-  private readonly instrument: api.Counter;
+  readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createCounter("sample.kept", {
+    this.#instrument = meter.createCounter("sample.kept", {
       description: "Kept metric.",
       unit: "{item}",
     });
   }
 
   add(value: number, attributes: SampleKeptAttributes): void {
-    this.instrument.add(value, toSampleKeptAttributes(attributes));
+    this.#instrument.add(value, toSampleKeptAttributes(attributes));
   }
 }
 
-export type SampleKeptObserver = {
-  observe(value: number, attributes: SampleKeptAttributes): void;
-};
+export type SampleKeptObserve = (value: number, attributes: SampleKeptAttributes) => void;
 
-export type SampleKeptCallback = (observer: SampleKeptObserver) => void | Promise<void>;
+export type SampleKeptCallback = (observe: SampleKeptObserve) => void | Promise<void>;
 
 /**
  * Observes sample.kept when the SDK collects.
  */
 export class SampleKeptObservable {
-  static get NAME(): "sample.kept" {
+  static getName(): "sample.kept" {
     return "sample.kept";
   }
 
-  private readonly instrument: api.ObservableCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleKeptCallback) {
-    this.instrument = meter.createObservableCounter("sample.kept", {
+    this.#instrument = meter.createObservableCounter("sample.kept", {
       description: "Kept metric.",
       unit: "{item}",
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value, attributes) => {
-          result.observe(value, toSampleKeptAttributes(attributes));
-        },
+    this.#callback = (result) =>
+      callback((value, attributes) => {
+        result.observe(value, toSampleKeptAttributes(attributes));
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 
@@ -105,56 +101,52 @@ export class SampleKeptObservable {
  * Unstable metric.
  */
 export class SampleUnstable {
-  static get NAME(): "sample.unstable" {
+  static getName(): "sample.unstable" {
     return "sample.unstable";
   }
 
-  private readonly instrument: api.Gauge;
+  readonly #instrument: api.Gauge;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createGauge("sample.unstable", {
+    this.#instrument = meter.createGauge("sample.unstable", {
       description: "Unstable metric.",
       unit: "{item}",
     });
   }
 
   record(value: number): void {
-    this.instrument.record(value);
+    this.#instrument.record(value);
   }
 }
 
-export type SampleUnstableObserver = {
-  observe(value: number): void;
-};
+export type SampleUnstableObserve = (value: number) => void;
 
-export type SampleUnstableCallback = (observer: SampleUnstableObserver) => void | Promise<void>;
+export type SampleUnstableCallback = (observe: SampleUnstableObserve) => void | Promise<void>;
 
 /**
  * Observes sample.unstable when the SDK collects.
  */
 export class SampleUnstableObservable {
-  static get NAME(): "sample.unstable" {
+  static getName(): "sample.unstable" {
     return "sample.unstable";
   }
 
-  private readonly instrument: api.ObservableGauge;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableGauge;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleUnstableCallback) {
-    this.instrument = meter.createObservableGauge("sample.unstable", {
+    this.#instrument = meter.createObservableGauge("sample.unstable", {
       description: "Unstable metric.",
       unit: "{item}",
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value) => {
-          result.observe(value);
-        },
+    this.#callback = (result) =>
+      callback((value) => {
+        result.observe(value);
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }

@@ -39,56 +39,52 @@ function toSampleKeptAttributes(attributes: SampleKeptAttributes): api.Attribute
  * Kept metric.
  */
 export class SampleKept {
-  static get NAME(): "sample.kept" {
+  static getName(): "sample.kept" {
     return "sample.kept";
   }
 
-  private readonly instrument: api.Counter;
+  readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createCounter("sample.kept", {
+    this.#instrument = meter.createCounter("sample.kept", {
       description: "Kept metric.",
       unit: "{item}",
     });
   }
 
   add(value: number, attributes: SampleKeptAttributes): void {
-    this.instrument.add(value, toSampleKeptAttributes(attributes));
+    this.#instrument.add(value, toSampleKeptAttributes(attributes));
   }
 }
 
-export type SampleKeptObserver = {
-  observe(value: number, attributes: SampleKeptAttributes): void;
-};
+export type SampleKeptObserve = (value: number, attributes: SampleKeptAttributes) => void;
 
-export type SampleKeptCallback = (observer: SampleKeptObserver) => void | Promise<void>;
+export type SampleKeptCallback = (observe: SampleKeptObserve) => void | Promise<void>;
 
 /**
  * Observes sample.kept when the SDK collects.
  */
 export class SampleKeptObservable {
-  static get NAME(): "sample.kept" {
+  static getName(): "sample.kept" {
     return "sample.kept";
   }
 
-  private readonly instrument: api.ObservableCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleKeptCallback) {
-    this.instrument = meter.createObservableCounter("sample.kept", {
+    this.#instrument = meter.createObservableCounter("sample.kept", {
       description: "Kept metric.",
       unit: "{item}",
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value, attributes) => {
-          result.observe(value, toSampleKeptAttributes(attributes));
-        },
+    this.#callback = (result) =>
+      callback((value, attributes) => {
+        result.observe(value, toSampleKeptAttributes(attributes));
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }

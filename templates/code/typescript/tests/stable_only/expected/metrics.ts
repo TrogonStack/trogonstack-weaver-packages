@@ -28,29 +28,27 @@ export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeter
  * @deprecated No longer recorded.
  */
 export class SampleDeprecated {
-  static get NAME(): "sample.deprecated" {
+  static getName(): "sample.deprecated" {
     return "sample.deprecated";
   }
 
-  private readonly instrument: api.Gauge;
+  readonly #instrument: api.Gauge;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createGauge("sample.deprecated", {
+    this.#instrument = meter.createGauge("sample.deprecated", {
       description: "Deprecated metric.",
       unit: "{item}",
     });
   }
 
   record(value: number): void {
-    this.instrument.record(value);
+    this.#instrument.record(value);
   }
 }
 
-export type SampleDeprecatedObserver = {
-  observe(value: number): void;
-};
+export type SampleDeprecatedObserve = (value: number) => void;
 
-export type SampleDeprecatedCallback = (observer: SampleDeprecatedObserver) => void | Promise<void>;
+export type SampleDeprecatedCallback = (observe: SampleDeprecatedObserve) => void | Promise<void>;
 
 /**
  * Observes sample.deprecated when the SDK collects.
@@ -58,29 +56,27 @@ export type SampleDeprecatedCallback = (observer: SampleDeprecatedObserver) => v
  * @deprecated No longer recorded.
  */
 export class SampleDeprecatedObservable {
-  static get NAME(): "sample.deprecated" {
+  static getName(): "sample.deprecated" {
     return "sample.deprecated";
   }
 
-  private readonly instrument: api.ObservableGauge;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableGauge;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleDeprecatedCallback) {
-    this.instrument = meter.createObservableGauge("sample.deprecated", {
+    this.#instrument = meter.createObservableGauge("sample.deprecated", {
       description: "Deprecated metric.",
       unit: "{item}",
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value) => {
-          result.observe(value);
-        },
+    this.#callback = (result) =>
+      callback((value) => {
+        result.observe(value);
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 
@@ -101,56 +97,52 @@ function toSampleKeptAttributes(attributes: SampleKeptAttributes): api.Attribute
  * Kept metric.
  */
 export class SampleKept {
-  static get NAME(): "sample.kept" {
+  static getName(): "sample.kept" {
     return "sample.kept";
   }
 
-  private readonly instrument: api.Counter;
+  readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createCounter("sample.kept", {
+    this.#instrument = meter.createCounter("sample.kept", {
       description: "Kept metric.",
       unit: "{item}",
     });
   }
 
   add(value: number, attributes: SampleKeptAttributes): void {
-    this.instrument.add(value, toSampleKeptAttributes(attributes));
+    this.#instrument.add(value, toSampleKeptAttributes(attributes));
   }
 }
 
-export type SampleKeptObserver = {
-  observe(value: number, attributes: SampleKeptAttributes): void;
-};
+export type SampleKeptObserve = (value: number, attributes: SampleKeptAttributes) => void;
 
-export type SampleKeptCallback = (observer: SampleKeptObserver) => void | Promise<void>;
+export type SampleKeptCallback = (observe: SampleKeptObserve) => void | Promise<void>;
 
 /**
  * Observes sample.kept when the SDK collects.
  */
 export class SampleKeptObservable {
-  static get NAME(): "sample.kept" {
+  static getName(): "sample.kept" {
     return "sample.kept";
   }
 
-  private readonly instrument: api.ObservableCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleKeptCallback) {
-    this.instrument = meter.createObservableCounter("sample.kept", {
+    this.#instrument = meter.createObservableCounter("sample.kept", {
       description: "Kept metric.",
       unit: "{item}",
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value, attributes) => {
-          result.observe(value, toSampleKeptAttributes(attributes));
-        },
+    this.#callback = (result) =>
+      callback((value, attributes) => {
+        result.observe(value, toSampleKeptAttributes(attributes));
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }

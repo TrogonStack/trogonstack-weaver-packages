@@ -69,10 +69,10 @@ produces no `metrics.ts`.
 Every top-level statement in the three modules is free of side effects, so a
 bundler drops each class, function, and constant that the application does not
 import. The test suite holds that line for esbuild, which is stricter about it
-than Rollup. The classes use no static fields, static blocks, or `#private`
-fields, because a compiler that targets a release before ES2022 turns them into
-top-level statements, and `#private` fields into a `WeakMap` lookup on every
-call.
+than Rollup. The classes use no static fields or static blocks, because a
+compiler that targets a release before ES2022 turns them into top-level
+statements. `tsc` does the same with `#private` fields, so build for ES2022 or
+later to keep the classes removable.
 
 Each name starts with the registry name in PascalCase after the first vendor
 prefix in `vendor_prefixes` is removed. For example, `myapp.task.id` becomes
@@ -113,13 +113,13 @@ Enums from a dependency become literal unions.
 defaults to the global meter provider. `Meter` is an OpenTelemetry meter with a
 type-only brand, so an instrument does not accept a meter of another scope.
 
-Each metric becomes a class with a static `NAME`, the name it records under. A
+Each metric becomes a class with a static `getName()`, the name it records under. A
 histogram has `record(value, attributes)`. A counter and an up-down counter have
 `add(value, attributes)`. A gauge has `record(value, attributes)`.
 
 ```ts
 export class AuthAttempts {
-  static get NAME(): "auth.attempts";
+  static getName(): "auth.attempts";
 
   constructor(meter: Meter);
   add(value: number, attributes: AuthAttemptsAttributes): void;
@@ -135,12 +135,12 @@ SDK.
 
 Every metric except a histogram also gets an observable form: a class named
 like the metric with an `Observable` suffix. Its constructor takes the `Meter`
-and a callback that receives an observer. The callback may be asynchronous.
+and a callback that receives an `observe` function. The callback may be asynchronous.
 `stop()` removes the callback from the SDK.
 
 ```ts
-const depth = new MyappQueueDepthObservable(meter, (observer) => {
-  observer.observe(queue.length);
+const depth = new MyappQueueDepthObservable(meter, (observe) => {
+  observe(queue.length);
 });
 depth.stop();
 ```

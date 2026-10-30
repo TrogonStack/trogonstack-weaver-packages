@@ -39,14 +39,14 @@ function toAuthAttemptsAttributes(attributes: AuthAttemptsAttributes): api.Attri
  * Number of authentication attempts.
  */
 export class AuthAttempts {
-  static get NAME(): "auth.attempts" {
+  static getName(): "auth.attempts" {
     return "auth.attempts";
   }
 
-  private readonly instrument: api.Counter;
+  readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createCounter("auth.attempts", {
+    this.#instrument = meter.createCounter("auth.attempts", {
       description: "Number of authentication attempts.",
       unit: "{attempt}",
       valueType: api.ValueType.INT,
@@ -54,44 +54,40 @@ export class AuthAttempts {
   }
 
   add(value: number, attributes: AuthAttemptsAttributes): void {
-    this.instrument.add(value, toAuthAttemptsAttributes(attributes));
+    this.#instrument.add(value, toAuthAttemptsAttributes(attributes));
   }
 }
 
-export type AuthAttemptsObserver = {
-  observe(value: number, attributes: AuthAttemptsAttributes): void;
-};
+export type AuthAttemptsObserve = (value: number, attributes: AuthAttemptsAttributes) => void;
 
-export type AuthAttemptsCallback = (observer: AuthAttemptsObserver) => void | Promise<void>;
+export type AuthAttemptsCallback = (observe: AuthAttemptsObserve) => void | Promise<void>;
 
 /**
  * Observes auth.attempts when the SDK collects.
  */
 export class AuthAttemptsObservable {
-  static get NAME(): "auth.attempts" {
+  static getName(): "auth.attempts" {
     return "auth.attempts";
   }
 
-  private readonly instrument: api.ObservableCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: AuthAttemptsCallback) {
-    this.instrument = meter.createObservableCounter("auth.attempts", {
+    this.#instrument = meter.createObservableCounter("auth.attempts", {
       description: "Number of authentication attempts.",
       unit: "{attempt}",
       valueType: api.ValueType.INT,
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value, attributes) => {
-          result.observe(value, toAuthAttemptsAttributes(attributes));
-        },
+    this.#callback = (result) =>
+      callback((value, attributes) => {
+        result.observe(value, toAuthAttemptsAttributes(attributes));
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 
@@ -114,14 +110,14 @@ function toMyappAttributes(attributes: MyappAttributes): api.Attributes {
  * Metric named like the vendor prefix.
  */
 export class Myapp {
-  static get NAME(): "myapp" {
+  static getName(): "myapp" {
     return "myapp";
   }
 
-  private readonly instrument: api.Counter;
+  readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createCounter("myapp", {
+    this.#instrument = meter.createCounter("myapp", {
       description: "Metric named like the vendor prefix.",
       unit: "{item}",
       valueType: api.ValueType.INT,
@@ -129,44 +125,40 @@ export class Myapp {
   }
 
   add(value: number, attributes: MyappAttributes = {}): void {
-    this.instrument.add(value, toMyappAttributes(attributes));
+    this.#instrument.add(value, toMyappAttributes(attributes));
   }
 }
 
-export type MyappObserver = {
-  observe(value: number, attributes?: MyappAttributes): void;
-};
+export type MyappObserve = (value: number, attributes?: MyappAttributes) => void;
 
-export type MyappCallback = (observer: MyappObserver) => void | Promise<void>;
+export type MyappCallback = (observe: MyappObserve) => void | Promise<void>;
 
 /**
  * Observes myapp when the SDK collects.
  */
 export class MyappObservable {
-  static get NAME(): "myapp" {
+  static getName(): "myapp" {
     return "myapp";
   }
 
-  private readonly instrument: api.ObservableCounter;
-  private readonly callback: api.ObservableCallback;
+  readonly #instrument: api.ObservableCounter;
+  readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappCallback) {
-    this.instrument = meter.createObservableCounter("myapp", {
+    this.#instrument = meter.createObservableCounter("myapp", {
       description: "Metric named like the vendor prefix.",
       unit: "{item}",
       valueType: api.ValueType.INT,
     });
-    this.callback = (result) =>
-      callback({
-        observe: (value, attributes) => {
-          result.observe(value, toMyappAttributes(attributes ?? {}));
-        },
+    this.#callback = (result) =>
+      callback((value, attributes) => {
+        result.observe(value, toMyappAttributes(attributes ?? {}));
       });
-    this.instrument.addCallback(this.callback);
+    this.#instrument.addCallback(this.#callback);
   }
 
   stop(): void {
-    this.instrument.removeCallback(this.callback);
+    this.#instrument.removeCallback(this.#callback);
   }
 }
 
@@ -202,14 +194,14 @@ function toTaskDurationAttributes(attributes: TaskDurationAttributes): api.Attri
  * Time a task took.
  */
 export class TaskDuration {
-  static get NAME(): "myapp.task.duration" {
+  static getName(): "myapp.task.duration" {
     return "myapp.task.duration";
   }
 
-  private readonly instrument: api.Histogram;
+  readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.instrument = meter.createHistogram("myapp.task.duration", {
+    this.#instrument = meter.createHistogram("myapp.task.duration", {
       description: "Time a task took.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -218,6 +210,6 @@ export class TaskDuration {
   }
 
   record(value: number, attributes: TaskDurationAttributes): void {
-    this.instrument.record(value, toTaskDurationAttributes(attributes));
+    this.#instrument.record(value, toTaskDurationAttributes(attributes));
   }
 }
