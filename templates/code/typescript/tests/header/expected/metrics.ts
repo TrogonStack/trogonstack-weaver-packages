@@ -45,15 +45,13 @@ function toMyappTaskStartedAttributes(attributes: MyappTaskStartedAttributes): a
  */
 export class MyappTaskStarted {
   static readonly NAME = "myapp.task.started";
-  static readonly UNIT = "{task}";
-  static readonly DESCRIPTION = "Number of tasks started.";
 
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createCounter(MyappTaskStarted.NAME, {
-      description: MyappTaskStarted.DESCRIPTION,
-      unit: MyappTaskStarted.UNIT,
+      description: "Number of tasks started.",
+      unit: "{task}",
       valueType: api.ValueType.INT,
     });
   }
@@ -74,16 +72,14 @@ export type MyappTaskStartedCallback = (observer: MyappTaskStartedObserver) => v
  */
 export class MyappTaskStartedObservable {
   static readonly NAME = MyappTaskStarted.NAME;
-  static readonly UNIT = MyappTaskStarted.UNIT;
-  static readonly DESCRIPTION = MyappTaskStarted.DESCRIPTION;
 
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskStartedCallback) {
     this.#instrument = apiMeter(meter).createObservableCounter(MyappTaskStartedObservable.NAME, {
-      description: MyappTaskStartedObservable.DESCRIPTION,
-      unit: MyappTaskStartedObservable.UNIT,
+      description: "Number of tasks started.",
+      unit: "{task}",
       valueType: api.ValueType.INT,
     });
     this.#callback = (result) =>

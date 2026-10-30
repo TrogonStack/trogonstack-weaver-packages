@@ -42,15 +42,13 @@ function toAuthAttemptsAttributes(attributes: AuthAttemptsAttributes): api.Attri
  */
 export class AuthAttempts {
   static readonly NAME = "auth.attempts";
-  static readonly UNIT = "{attempt}";
-  static readonly DESCRIPTION = "Number of authentication attempts.";
 
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createCounter(AuthAttempts.NAME, {
-      description: AuthAttempts.DESCRIPTION,
-      unit: AuthAttempts.UNIT,
+      description: "Number of authentication attempts.",
+      unit: "{attempt}",
       valueType: api.ValueType.INT,
     });
   }
@@ -71,16 +69,14 @@ export type AuthAttemptsCallback = (observer: AuthAttemptsObserver) => void | Pr
  */
 export class AuthAttemptsObservable {
   static readonly NAME = AuthAttempts.NAME;
-  static readonly UNIT = AuthAttempts.UNIT;
-  static readonly DESCRIPTION = AuthAttempts.DESCRIPTION;
 
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: AuthAttemptsCallback) {
     this.#instrument = apiMeter(meter).createObservableCounter(AuthAttemptsObservable.NAME, {
-      description: AuthAttemptsObservable.DESCRIPTION,
-      unit: AuthAttemptsObservable.UNIT,
+      description: "Number of authentication attempts.",
+      unit: "{attempt}",
       valueType: api.ValueType.INT,
     });
     this.#callback = (result) =>
@@ -117,15 +113,13 @@ function toMyappAttributes(attributes: MyappAttributes): api.Attributes {
  */
 export class Myapp {
   static readonly NAME = "myapp";
-  static readonly UNIT = "{item}";
-  static readonly DESCRIPTION = "Metric named like the vendor prefix.";
 
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createCounter(Myapp.NAME, {
-      description: Myapp.DESCRIPTION,
-      unit: Myapp.UNIT,
+      description: "Metric named like the vendor prefix.",
+      unit: "{item}",
       valueType: api.ValueType.INT,
     });
   }
@@ -146,16 +140,14 @@ export type MyappCallback = (observer: MyappObserver) => void | Promise<void>;
  */
 export class MyappObservable {
   static readonly NAME = Myapp.NAME;
-  static readonly UNIT = Myapp.UNIT;
-  static readonly DESCRIPTION = Myapp.DESCRIPTION;
 
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappCallback) {
     this.#instrument = apiMeter(meter).createObservableCounter(MyappObservable.NAME, {
-      description: MyappObservable.DESCRIPTION,
-      unit: MyappObservable.UNIT,
+      description: "Metric named like the vendor prefix.",
+      unit: "{item}",
       valueType: api.ValueType.INT,
     });
     this.#callback = (result) =>
@@ -205,15 +197,13 @@ function toTaskDurationAttributes(attributes: TaskDurationAttributes): api.Attri
  */
 export class TaskDuration {
   static readonly NAME = "myapp.task.duration";
-  static readonly UNIT = "s";
-  static readonly DESCRIPTION = "Time a task took.";
 
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createHistogram(TaskDuration.NAME, {
-      description: TaskDuration.DESCRIPTION,
-      unit: TaskDuration.UNIT,
+      description: "Time a task took.",
+      unit: "s",
       valueType: api.ValueType.DOUBLE,
       advice: { explicitBucketBoundaries: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10] },
     });

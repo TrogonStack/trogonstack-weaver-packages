@@ -76,15 +76,13 @@ function to{{ type }}Attributes(attributes: {{ type }}Attributes): api.Attribute
 
 {{ m.doc(metric.brief, metric.note, "Opt-in: record it only when the user asks for it." if metric.requirement_level == "opt_in" else none, metric.deprecation, 0) }}export class {{ type }} {
   static readonly NAME = {{ metric.instrument_name | tojson }};
-  static readonly UNIT = {{ metric.unit | tojson }};
-  static readonly DESCRIPTION = {{ (metric.description or "") | trim | tojson }};
 
   readonly #instrument: api.{{ kind }};
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).create{{ kind }}({{ type }}.NAME, {
-      description: {{ type }}.DESCRIPTION,
-      unit: {{ type }}.UNIT,
+      description: {{ (metric.description or "") | trim | tojson }},
+      unit: {{ metric.unit | tojson }},
 {% if metric.value_type %}
       valueType: api.ValueType.{{ metric.value_type | upper }},
 {% endif %}
@@ -108,16 +106,14 @@ export type {{ type }}Callback = (observer: {{ type }}Observer) => void | Promis
 
 {{ m.doc("Observes " ~ metric.instrument_name ~ " when the SDK collects.", none, none, metric.deprecation, 0) }}export class {{ type }}Observable {
   static readonly NAME = {{ type }}.NAME;
-  static readonly UNIT = {{ type }}.UNIT;
-  static readonly DESCRIPTION = {{ type }}.DESCRIPTION;
 
   readonly #instrument: api.Observable{{ kind }};
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: {{ type }}Callback) {
     this.#instrument = apiMeter(meter).createObservable{{ kind }}({{ type }}Observable.NAME, {
-      description: {{ type }}Observable.DESCRIPTION,
-      unit: {{ type }}Observable.UNIT,
+      description: {{ (metric.description or "") | trim | tojson }},
+      unit: {{ metric.unit | tojson }},
 {% if metric.value_type %}
       valueType: api.ValueType.{{ metric.value_type | upper }},
 {% endif %}

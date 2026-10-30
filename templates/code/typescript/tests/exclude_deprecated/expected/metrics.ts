@@ -50,15 +50,13 @@ function toSampleKeptAttributes(attributes: SampleKeptAttributes): api.Attribute
  */
 export class SampleKept {
   static readonly NAME = "sample.kept";
-  static readonly UNIT = "{item}";
-  static readonly DESCRIPTION = "Kept metric.";
 
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createCounter(SampleKept.NAME, {
-      description: SampleKept.DESCRIPTION,
-      unit: SampleKept.UNIT,
+      description: "Kept metric.",
+      unit: "{item}",
     });
   }
 
@@ -78,16 +76,14 @@ export type SampleKeptCallback = (observer: SampleKeptObserver) => void | Promis
  */
 export class SampleKeptObservable {
   static readonly NAME = SampleKept.NAME;
-  static readonly UNIT = SampleKept.UNIT;
-  static readonly DESCRIPTION = SampleKept.DESCRIPTION;
 
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleKeptCallback) {
     this.#instrument = apiMeter(meter).createObservableCounter(SampleKeptObservable.NAME, {
-      description: SampleKeptObservable.DESCRIPTION,
-      unit: SampleKeptObservable.UNIT,
+      description: "Kept metric.",
+      unit: "{item}",
     });
     this.#callback = (result) =>
       callback({
@@ -108,15 +104,13 @@ export class SampleKeptObservable {
  */
 export class SampleUnstable {
   static readonly NAME = "sample.unstable";
-  static readonly UNIT = "{item}";
-  static readonly DESCRIPTION = "Unstable metric.";
 
   readonly #instrument: api.Gauge;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createGauge(SampleUnstable.NAME, {
-      description: SampleUnstable.DESCRIPTION,
-      unit: SampleUnstable.UNIT,
+      description: "Unstable metric.",
+      unit: "{item}",
     });
   }
 
@@ -136,16 +130,14 @@ export type SampleUnstableCallback = (observer: SampleUnstableObserver) => void 
  */
 export class SampleUnstableObservable {
   static readonly NAME = SampleUnstable.NAME;
-  static readonly UNIT = SampleUnstable.UNIT;
-  static readonly DESCRIPTION = SampleUnstable.DESCRIPTION;
 
   readonly #instrument: api.ObservableGauge;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleUnstableCallback) {
     this.#instrument = apiMeter(meter).createObservableGauge(SampleUnstableObservable.NAME, {
-      description: SampleUnstableObservable.DESCRIPTION,
-      unit: SampleUnstableObservable.UNIT,
+      description: "Unstable metric.",
+      unit: "{item}",
     });
     this.#callback = (result) =>
       callback({

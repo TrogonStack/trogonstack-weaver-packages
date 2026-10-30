@@ -72,15 +72,13 @@ function toSampleRecordedAttributes(attributes: SampleRecordedAttributes): api.A
  */
 export class SampleRecorded {
   static readonly NAME = "sample.recorded";
-  static readonly UNIT = "{item}";
-  static readonly DESCRIPTION = "Synthetic metric.";
 
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createCounter(SampleRecorded.NAME, {
-      description: SampleRecorded.DESCRIPTION,
-      unit: SampleRecorded.UNIT,
+      description: "Synthetic metric.",
+      unit: "{item}",
     });
   }
 
@@ -100,16 +98,14 @@ export type SampleRecordedCallback = (observer: SampleRecordedObserver) => void 
  */
 export class SampleRecordedObservable {
   static readonly NAME = SampleRecorded.NAME;
-  static readonly UNIT = SampleRecorded.UNIT;
-  static readonly DESCRIPTION = SampleRecorded.DESCRIPTION;
 
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleRecordedCallback) {
     this.#instrument = apiMeter(meter).createObservableCounter(SampleRecordedObservable.NAME, {
-      description: SampleRecordedObservable.DESCRIPTION,
-      unit: SampleRecordedObservable.UNIT,
+      description: "Synthetic metric.",
+      unit: "{item}",
     });
     this.#callback = (result) =>
       callback({

@@ -28,15 +28,13 @@ export class Meter {
  */
 export class SampleDuration {
   static readonly NAME = "sample.duration";
-  static readonly UNIT = "s";
-  static readonly DESCRIPTION = "Synthetic metric.";
 
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createHistogram(SampleDuration.NAME, {
-      description: SampleDuration.DESCRIPTION,
-      unit: SampleDuration.UNIT,
+      description: "Synthetic metric.",
+      unit: "s",
       advice: { explicitBucketBoundaries: [0.1, 0.5, 1] },
     });
   }
@@ -51,15 +49,13 @@ export class SampleDuration {
  */
 export class SampleSize {
   static readonly NAME = "sample.size";
-  static readonly UNIT = "By";
-  static readonly DESCRIPTION = "Synthetic metric.";
 
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createHistogram(SampleSize.NAME, {
-      description: SampleSize.DESCRIPTION,
-      unit: SampleSize.UNIT,
+      description: "Synthetic metric.",
+      unit: "By",
       advice: { explicitBucketBoundaries: [1, 2, 4] },
     });
   }

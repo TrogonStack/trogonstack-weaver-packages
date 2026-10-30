@@ -31,15 +31,13 @@ export class Meter {
  */
 export class SampleDeprecated {
   static readonly NAME = "sample.deprecated";
-  static readonly UNIT = "{item}";
-  static readonly DESCRIPTION = "Deprecated metric.";
 
   readonly #instrument: api.Gauge;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createGauge(SampleDeprecated.NAME, {
-      description: SampleDeprecated.DESCRIPTION,
-      unit: SampleDeprecated.UNIT,
+      description: "Deprecated metric.",
+      unit: "{item}",
     });
   }
 
@@ -61,16 +59,14 @@ export type SampleDeprecatedCallback = (observer: SampleDeprecatedObserver) => v
  */
 export class SampleDeprecatedObservable {
   static readonly NAME = SampleDeprecated.NAME;
-  static readonly UNIT = SampleDeprecated.UNIT;
-  static readonly DESCRIPTION = SampleDeprecated.DESCRIPTION;
 
   readonly #instrument: api.ObservableGauge;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleDeprecatedCallback) {
     this.#instrument = apiMeter(meter).createObservableGauge(SampleDeprecatedObservable.NAME, {
-      description: SampleDeprecatedObservable.DESCRIPTION,
-      unit: SampleDeprecatedObservable.UNIT,
+      description: "Deprecated metric.",
+      unit: "{item}",
     });
     this.#callback = (result) =>
       callback({
@@ -104,15 +100,13 @@ function toSampleKeptAttributes(attributes: SampleKeptAttributes): api.Attribute
  */
 export class SampleKept {
   static readonly NAME = "sample.kept";
-  static readonly UNIT = "{item}";
-  static readonly DESCRIPTION = "Kept metric.";
 
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createCounter(SampleKept.NAME, {
-      description: SampleKept.DESCRIPTION,
-      unit: SampleKept.UNIT,
+      description: "Kept metric.",
+      unit: "{item}",
     });
   }
 
@@ -132,16 +126,14 @@ export type SampleKeptCallback = (observer: SampleKeptObserver) => void | Promis
  */
 export class SampleKeptObservable {
   static readonly NAME = SampleKept.NAME;
-  static readonly UNIT = SampleKept.UNIT;
-  static readonly DESCRIPTION = SampleKept.DESCRIPTION;
 
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleKeptCallback) {
     this.#instrument = apiMeter(meter).createObservableCounter(SampleKeptObservable.NAME, {
-      description: SampleKeptObservable.DESCRIPTION,
-      unit: SampleKeptObservable.UNIT,
+      description: "Kept metric.",
+      unit: "{item}",
     });
     this.#callback = (result) =>
       callback({

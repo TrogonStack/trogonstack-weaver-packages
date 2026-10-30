@@ -49,15 +49,13 @@ function toSampleImportedAttributes(attributes: SampleImportedAttributes): api.A
  */
 export class SampleImported {
   static readonly NAME = "sample.imported";
-  static readonly UNIT = "{item}";
-  static readonly DESCRIPTION = "Synthetic metric.";
 
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createCounter(SampleImported.NAME, {
-      description: SampleImported.DESCRIPTION,
-      unit: SampleImported.UNIT,
+      description: "Synthetic metric.",
+      unit: "{item}",
     });
   }
 
@@ -77,16 +75,14 @@ export type SampleImportedCallback = (observer: SampleImportedObserver) => void 
  */
 export class SampleImportedObservable {
   static readonly NAME = SampleImported.NAME;
-  static readonly UNIT = SampleImported.UNIT;
-  static readonly DESCRIPTION = SampleImported.DESCRIPTION;
 
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleImportedCallback) {
     this.#instrument = apiMeter(meter).createObservableCounter(SampleImportedObservable.NAME, {
-      description: SampleImportedObservable.DESCRIPTION,
-      unit: SampleImportedObservable.UNIT,
+      description: "Synthetic metric.",
+      unit: "{item}",
     });
     this.#callback = (result) =>
       callback({

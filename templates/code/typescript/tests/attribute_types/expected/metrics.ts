@@ -77,15 +77,13 @@ function toMyappJobPendingAttributes(attributes: MyappJobPendingAttributes): api
  */
 export class MyappJobPending {
   static readonly NAME = "myapp.job.pending";
-  static readonly UNIT = "{job}";
-  static readonly DESCRIPTION = "Number of pending jobs.";
 
   readonly #instrument: api.UpDownCounter;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createUpDownCounter(MyappJobPending.NAME, {
-      description: MyappJobPending.DESCRIPTION,
-      unit: MyappJobPending.UNIT,
+      description: "Number of pending jobs.",
+      unit: "{job}",
       valueType: api.ValueType.INT,
     });
   }
@@ -106,16 +104,14 @@ export type MyappJobPendingCallback = (observer: MyappJobPendingObserver) => voi
  */
 export class MyappJobPendingObservable {
   static readonly NAME = MyappJobPending.NAME;
-  static readonly UNIT = MyappJobPending.UNIT;
-  static readonly DESCRIPTION = MyappJobPending.DESCRIPTION;
 
   readonly #instrument: api.ObservableUpDownCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappJobPendingCallback) {
     this.#instrument = apiMeter(meter).createObservableUpDownCounter(MyappJobPendingObservable.NAME, {
-      description: MyappJobPendingObservable.DESCRIPTION,
-      unit: MyappJobPendingObservable.UNIT,
+      description: "Number of pending jobs.",
+      unit: "{job}",
       valueType: api.ValueType.INT,
     });
     this.#callback = (result) =>
@@ -200,15 +196,13 @@ function toMyappJobRunsAttributes(attributes: MyappJobRunsAttributes): api.Attri
  */
 export class MyappJobRuns {
   static readonly NAME = "myapp.job.runs";
-  static readonly UNIT = "{run}";
-  static readonly DESCRIPTION = "Number of job runs.";
 
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createCounter(MyappJobRuns.NAME, {
-      description: MyappJobRuns.DESCRIPTION,
-      unit: MyappJobRuns.UNIT,
+      description: "Number of job runs.",
+      unit: "{run}",
       valueType: api.ValueType.INT,
     });
   }
@@ -229,16 +223,14 @@ export type MyappJobRunsCallback = (observer: MyappJobRunsObserver) => void | Pr
  */
 export class MyappJobRunsObservable {
   static readonly NAME = MyappJobRuns.NAME;
-  static readonly UNIT = MyappJobRuns.UNIT;
-  static readonly DESCRIPTION = MyappJobRuns.DESCRIPTION;
 
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappJobRunsCallback) {
     this.#instrument = apiMeter(meter).createObservableCounter(MyappJobRunsObservable.NAME, {
-      description: MyappJobRunsObservable.DESCRIPTION,
-      unit: MyappJobRunsObservable.UNIT,
+      description: "Number of job runs.",
+      unit: "{run}",
       valueType: api.ValueType.INT,
     });
     this.#callback = (result) =>

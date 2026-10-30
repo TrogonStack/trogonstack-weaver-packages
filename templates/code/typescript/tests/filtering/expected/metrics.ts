@@ -42,15 +42,13 @@ function toSampleKeptAttributes(attributes: SampleKeptAttributes): api.Attribute
  */
 export class SampleKept {
   static readonly NAME = "sample.kept";
-  static readonly UNIT = "{item}";
-  static readonly DESCRIPTION = "Kept metric.";
 
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createCounter(SampleKept.NAME, {
-      description: SampleKept.DESCRIPTION,
-      unit: SampleKept.UNIT,
+      description: "Kept metric.",
+      unit: "{item}",
     });
   }
 
@@ -70,16 +68,14 @@ export type SampleKeptCallback = (observer: SampleKeptObserver) => void | Promis
  */
 export class SampleKeptObservable {
   static readonly NAME = SampleKept.NAME;
-  static readonly UNIT = SampleKept.UNIT;
-  static readonly DESCRIPTION = SampleKept.DESCRIPTION;
 
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleKeptCallback) {
     this.#instrument = apiMeter(meter).createObservableCounter(SampleKeptObservable.NAME, {
-      description: SampleKeptObservable.DESCRIPTION,
-      unit: SampleKeptObservable.UNIT,
+      description: "Kept metric.",
+      unit: "{item}",
     });
     this.#callback = (result) =>
       callback({

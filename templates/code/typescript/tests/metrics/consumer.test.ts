@@ -115,10 +115,9 @@ test("a meter without a provider is harmless until a global provider is set", as
   metrics.disable();
 });
 
-test("constants expose name, unit and description", () => {
+test("NAME is the name the metric records under", () => {
   assert.equal(Metrics.AuthAttempts.NAME, "auth.attempts");
-  assert.equal(Metrics.AuthAttempts.UNIT, "{attempt}");
-  assert.equal(Metrics.AuthAttempts.DESCRIPTION, "Number of authentication attempts.");
+  assert.equal(Metrics.AuthAttemptsObservable.NAME, "auth.attempts");
 });
 
 function invalidConsumers() {

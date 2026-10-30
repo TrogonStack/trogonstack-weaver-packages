@@ -42,15 +42,13 @@ function toMyappTaskDurationAttributes(attributes: MyappTaskDurationAttributes):
  */
 export class MyappTaskDuration {
   static readonly NAME = "myapp.task.duration";
-  static readonly UNIT = "s";
-  static readonly DESCRIPTION = "Time a task took from start to finish.";
 
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createHistogram(MyappTaskDuration.NAME, {
-      description: MyappTaskDuration.DESCRIPTION,
-      unit: MyappTaskDuration.UNIT,
+      description: "Time a task took from start to finish.",
+      unit: "s",
       valueType: api.ValueType.DOUBLE,
       advice: { explicitBucketBoundaries: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10] },
     });
@@ -79,15 +77,13 @@ function toMyappTaskLatencyAttributes(attributes: MyappTaskLatencyAttributes): a
  */
 export class MyappTaskLatency {
   static readonly NAME = "myapp.task.latency";
-  static readonly UNIT = "s";
-  static readonly DESCRIPTION = "Time between a task being queued and started.";
 
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createHistogram(MyappTaskLatency.NAME, {
-      description: MyappTaskLatency.DESCRIPTION,
-      unit: MyappTaskLatency.UNIT,
+      description: "Time between a task being queued and started.",
+      unit: "s",
       valueType: api.ValueType.DOUBLE,
       advice: { explicitBucketBoundaries: [1, 10, 100] },
     });
@@ -116,15 +112,13 @@ function toMyappTaskRetryDurationAttributes(attributes: MyappTaskRetryDurationAt
  */
 export class MyappTaskRetryDuration {
   static readonly NAME = "myapp.task.duration";
-  static readonly UNIT = "s";
-  static readonly DESCRIPTION = "Time a task took from start to finish.";
 
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createHistogram(MyappTaskRetryDuration.NAME, {
-      description: MyappTaskRetryDuration.DESCRIPTION,
-      unit: MyappTaskRetryDuration.UNIT,
+      description: "Time a task took from start to finish.",
+      unit: "s",
       valueType: api.ValueType.DOUBLE,
       advice: { explicitBucketBoundaries: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10] },
     });
@@ -153,15 +147,13 @@ function toMyappTaskSizeAttributes(attributes: MyappTaskSizeAttributes): api.Att
  */
 export class MyappTaskSize {
   static readonly NAME = "myapp.task.size";
-  static readonly UNIT = "By";
-  static readonly DESCRIPTION = "Size of a task\u0027s payload.";
 
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
     this.#instrument = apiMeter(meter).createHistogram(MyappTaskSize.NAME, {
-      description: MyappTaskSize.DESCRIPTION,
-      unit: MyappTaskSize.UNIT,
+      description: "Size of a task\u0027s payload.",
+      unit: "By",
       valueType: api.ValueType.DOUBLE,
     });
   }

@@ -103,15 +103,13 @@ Enums from a dependency become literal unions.
 the optional `instrumentation_version`, and the registry schema URL. The
 provider argument defaults to the global meter provider.
 
-Each metric becomes a class with static `NAME`, `UNIT`, and `DESCRIPTION`. A
+Each metric becomes a class with a static `NAME`, the name it records under. A
 histogram has `record(value, attributes)`. A counter and an up-down counter have
 `add(value, attributes)`. A gauge has `record(value, attributes)`.
 
 ```ts
 export class AuthAttempts {
   static readonly NAME = "auth.attempts";
-  static readonly UNIT = "{attempt}";
-  static readonly DESCRIPTION = "Number of authentication attempts.";
 
   constructor(meter: Meter);
   add(value: number, attributes: AuthAttemptsAttributes): void;
