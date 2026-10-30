@@ -3,7 +3,7 @@
 /**
  * Synthetic naming value.
  */
-export const MyappArrayFlags = Object.freeze({
+export const MyappArrayFlags = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.array.flags",
 } as const);
 
@@ -15,7 +15,7 @@ export type MyappArrayFlags = readonly boolean[];
 /**
  * Synthetic naming value.
  */
-export const MyappArrayIndices = Object.freeze({
+export const MyappArrayIndices = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.array.indices",
 } as const);
 
@@ -27,7 +27,7 @@ export type MyappArrayIndices = readonly number[];
 /**
  * Synthetic naming value.
  */
-export const MyappArraySamples = Object.freeze({
+export const MyappArraySamples = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.array.samples",
 } as const);
 
@@ -39,7 +39,7 @@ export type MyappArraySamples = readonly number[];
 /**
  * Synthetic naming value.
  */
-export const MyappArrayTags = Object.freeze({
+export const MyappArrayTags = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.array.tags",
 } as const);
 
@@ -51,7 +51,7 @@ export type MyappArrayTags = readonly string[];
 /**
  * Synthetic naming value.
  */
-export const MyappNumberValue = Object.freeze({
+export const MyappNumberValue = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.number.value",
 } as const);
 
@@ -63,7 +63,7 @@ export type MyappNumberValue = number;
 /**
  * Name of the queue the task came from.
  */
-export const MyappQueueName = Object.freeze({
+export const MyappQueueName = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.queue.name",
 } as const);
 
@@ -75,7 +75,7 @@ export type MyappQueueName = string;
 /**
  * Number of the attempt, starting at one.
  */
-export const MyappTaskAttempt = Object.freeze({
+export const MyappTaskAttempt = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.task.attempt",
 } as const);
 
@@ -87,7 +87,7 @@ export type MyappTaskAttempt = number;
 /**
  * Unique identifier of the task.
  */
-export const MyappTaskId = Object.freeze({
+export const MyappTaskId = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.task.id",
 } as const);
 
@@ -99,7 +99,7 @@ export type MyappTaskId = string;
 /**
  * Current state of the task.
  */
-export const MyappTaskState = Object.freeze({
+export const MyappTaskState = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.task.state",
   /**
    * The task is waiting to run.
@@ -119,7 +119,7 @@ export type MyappTaskState = "queued" | "done";
 /**
  * Host name of the worker.
  */
-export const WorkerHostName = Object.freeze({
+export const WorkerHostName = /* @__PURE__ */ Object.freeze({
   KEY: "worker.host.name",
 } as const);
 
@@ -131,7 +131,7 @@ export type WorkerHostName = string;
 /**
  * Port the worker listens on.
  */
-export const WorkerHostPort = Object.freeze({
+export const WorkerHostPort = /* @__PURE__ */ Object.freeze({
   KEY: "worker.host.port",
 } as const);
 

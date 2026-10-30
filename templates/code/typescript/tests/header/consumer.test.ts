@@ -7,7 +7,7 @@ import { SCHEMA_URL } from "./schema.ts";
 
 test("the scope carries the configured name, version and schema URL", async () => {
   const recorder = createRecorder();
-  new Metrics.MyappTaskStarted(new Metrics.Meter(recorder.meterProvider)).add(1, {
+  new Metrics.MyappTaskStarted(Metrics.getMeter(recorder.meterProvider)).add(1, {
     taskId: "task_0001",
   });
   await recorder.metric("myapp.task.started");

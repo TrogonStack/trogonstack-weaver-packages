@@ -6,7 +6,7 @@ import * as Metrics from "./metrics.ts";
 
 test("every attribute type reaches the SDK under its wire key", async () => {
   const recorder = createRecorder();
-  const runs = new Metrics.MyappJobRuns(new Metrics.Meter(recorder.meterProvider));
+  const runs = new Metrics.MyappJobRuns(Metrics.getMeter(recorder.meterProvider));
   const attemptNumbers = [1, 2];
   runs.add(1, {
     jobName: "sync",
@@ -41,7 +41,7 @@ test("every attribute type reaches the SDK under its wire key", async () => {
 
 test("falsy attribute values are kept and undefined ones are dropped", async () => {
   const recorder = createRecorder();
-  const pending = new Metrics.MyappJobPending(new Metrics.Meter(recorder.meterProvider));
+  const pending = new Metrics.MyappJobPending(Metrics.getMeter(recorder.meterProvider));
   pending.add(1, { jobName: "", jobAttempt: 0, jobTags: [] });
   pending.add(1, { jobName: "sync", jobAttempt: undefined, jobState: undefined });
 
@@ -66,11 +66,11 @@ test("enum constants carry the wire values and the key", () => {
 });
 
 function invalidConsumers() {
-  const pending = new Metrics.MyappJobPending(new Metrics.Meter());
+  const pending = new Metrics.MyappJobPending(Metrics.getMeter());
   // @ts-expect-error A string enum stays closed.
   pending.add(1, { jobName: "sync", jobState: "unknown" });
   // @ts-expect-error A numeric enum stays closed.
-  new Metrics.MyappJobRuns(new Metrics.Meter()).add(1, { ...allRunAttributes, jobPriority: 3 });
+  new Metrics.MyappJobRuns(Metrics.getMeter()).add(1, { ...allRunAttributes, jobPriority: 3 });
   // @ts-expect-error An int attribute is a number.
   pending.add(1, { jobName: "sync", jobAttempt: "1" });
   // @ts-expect-error An array attribute holds one element type.

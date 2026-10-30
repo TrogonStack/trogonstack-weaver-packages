@@ -6,7 +6,7 @@ import * as Metrics from "./metrics.ts";
 
 test("awkward enum values reach the SDK unchanged", async () => {
   const recorder = createRecorder();
-  new Metrics.SampleRecorded(new Metrics.Meter(recorder.meterProvider)).add(1, {
+  new Metrics.SampleRecorded(Metrics.getMeter(recorder.meterProvider)).add(1, {
     taskId: "a",
     otherName: "b",
     remoteTaskState: "c",

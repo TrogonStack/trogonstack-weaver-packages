@@ -6,22 +6,20 @@ import { SCHEMA_URL } from "./schema.ts";
 
 export const INSTRUMENTATION_NAME = "generated-semconv";
 
-let apiMeter: (meter: Meter) => api.Meter;
+declare const registryMeter: unique symbol;
 
 /**
- * Creates the generated instruments with the instrumentation scope and schema
- * URL of the registry. Without a provider, it uses the global meter provider.
+ * A meter with the instrumentation scope and schema URL of the registry. Only
+ * `getMeter` returns one, so every generated instrument reports under that scope.
  */
-export class Meter {
-  readonly #meter: api.Meter;
+export type Meter = api.Meter & { readonly [registryMeter]: true };
 
-  static {
-    apiMeter = (meter) => meter.#meter;
-  }
-
-  constructor(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()) {
-    this.#meter = meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL });
-  }
+/**
+ * Returns the meter of the registry. Without a provider, it uses the global
+ * meter provider.
+ */
+export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()): Meter {
+  return meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL }) as Meter;
 }
 
 export type MyappJobPendingAttributes = {
@@ -76,12 +74,14 @@ function toMyappJobPendingAttributes(attributes: MyappJobPendingAttributes): api
  * Number of pending jobs.
  */
 export class MyappJobPending {
-  static readonly NAME = "myapp.job.pending";
+  static get NAME(): "myapp.job.pending" {
+    return "myapp.job.pending";
+  }
 
-  readonly #instrument: api.UpDownCounter;
+  private readonly instrument: api.UpDownCounter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createUpDownCounter(MyappJobPending.NAME, {
+    this.instrument = meter.createUpDownCounter("myapp.job.pending", {
       description: "Number of pending jobs.",
       unit: "{job}",
       valueType: api.ValueType.INT,
@@ -89,7 +89,7 @@ export class MyappJobPending {
   }
 
   add(value: number, attributes: MyappJobPendingAttributes): void {
-    this.#instrument.add(value, toMyappJobPendingAttributes(attributes));
+    this.instrument.add(value, toMyappJobPendingAttributes(attributes));
   }
 }
 
@@ -103,28 +103,30 @@ export type MyappJobPendingCallback = (observer: MyappJobPendingObserver) => voi
  * Observes myapp.job.pending when the SDK collects.
  */
 export class MyappJobPendingObservable {
-  static readonly NAME = MyappJobPending.NAME;
+  static get NAME(): "myapp.job.pending" {
+    return "myapp.job.pending";
+  }
 
-  readonly #instrument: api.ObservableUpDownCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableUpDownCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappJobPendingCallback) {
-    this.#instrument = apiMeter(meter).createObservableUpDownCounter(MyappJobPendingObservable.NAME, {
+    this.instrument = meter.createObservableUpDownCounter("myapp.job.pending", {
       description: "Number of pending jobs.",
       unit: "{job}",
       valueType: api.ValueType.INT,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value, attributes) => {
           result.observe(value, toMyappJobPendingAttributes(attributes));
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -195,12 +197,14 @@ function toMyappJobRunsAttributes(attributes: MyappJobRunsAttributes): api.Attri
  * Number of job runs.
  */
 export class MyappJobRuns {
-  static readonly NAME = "myapp.job.runs";
+  static get NAME(): "myapp.job.runs" {
+    return "myapp.job.runs";
+  }
 
-  readonly #instrument: api.Counter;
+  private readonly instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createCounter(MyappJobRuns.NAME, {
+    this.instrument = meter.createCounter("myapp.job.runs", {
       description: "Number of job runs.",
       unit: "{run}",
       valueType: api.ValueType.INT,
@@ -208,7 +212,7 @@ export class MyappJobRuns {
   }
 
   add(value: number, attributes: MyappJobRunsAttributes): void {
-    this.#instrument.add(value, toMyappJobRunsAttributes(attributes));
+    this.instrument.add(value, toMyappJobRunsAttributes(attributes));
   }
 }
 
@@ -222,27 +226,29 @@ export type MyappJobRunsCallback = (observer: MyappJobRunsObserver) => void | Pr
  * Observes myapp.job.runs when the SDK collects.
  */
 export class MyappJobRunsObservable {
-  static readonly NAME = MyappJobRuns.NAME;
+  static get NAME(): "myapp.job.runs" {
+    return "myapp.job.runs";
+  }
 
-  readonly #instrument: api.ObservableCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappJobRunsCallback) {
-    this.#instrument = apiMeter(meter).createObservableCounter(MyappJobRunsObservable.NAME, {
+    this.instrument = meter.createObservableCounter("myapp.job.runs", {
       description: "Number of job runs.",
       unit: "{run}",
       valueType: api.ValueType.INT,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value, attributes) => {
           result.observe(value, toMyappJobRunsAttributes(attributes));
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }

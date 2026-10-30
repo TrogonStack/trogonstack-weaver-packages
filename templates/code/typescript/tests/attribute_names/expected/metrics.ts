@@ -6,22 +6,20 @@ import { SCHEMA_URL } from "./schema.ts";
 
 export const INSTRUMENTATION_NAME = "generated-semconv";
 
-let apiMeter: (meter: Meter) => api.Meter;
+declare const registryMeter: unique symbol;
 
 /**
- * Creates the generated instruments with the instrumentation scope and schema
- * URL of the registry. Without a provider, it uses the global meter provider.
+ * A meter with the instrumentation scope and schema URL of the registry. Only
+ * `getMeter` returns one, so every generated instrument reports under that scope.
  */
-export class Meter {
-  readonly #meter: api.Meter;
+export type Meter = api.Meter & { readonly [registryMeter]: true };
 
-  static {
-    apiMeter = (meter) => meter.#meter;
-  }
-
-  constructor(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()) {
-    this.#meter = meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL });
-  }
+/**
+ * Returns the meter of the registry. Without a provider, it uses the global
+ * meter provider.
+ */
+export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()): Meter {
+  return meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL }) as Meter;
 }
 
 export type SampleRecordedAttributes = {
@@ -71,19 +69,21 @@ function toSampleRecordedAttributes(attributes: SampleRecordedAttributes): api.A
  * Synthetic metric.
  */
 export class SampleRecorded {
-  static readonly NAME = "sample.recorded";
+  static get NAME(): "sample.recorded" {
+    return "sample.recorded";
+  }
 
-  readonly #instrument: api.Counter;
+  private readonly instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createCounter(SampleRecorded.NAME, {
+    this.instrument = meter.createCounter("sample.recorded", {
       description: "Synthetic metric.",
       unit: "{item}",
     });
   }
 
   add(value: number, attributes: SampleRecordedAttributes): void {
-    this.#instrument.add(value, toSampleRecordedAttributes(attributes));
+    this.instrument.add(value, toSampleRecordedAttributes(attributes));
   }
 }
 
@@ -97,26 +97,28 @@ export type SampleRecordedCallback = (observer: SampleRecordedObserver) => void 
  * Observes sample.recorded when the SDK collects.
  */
 export class SampleRecordedObservable {
-  static readonly NAME = SampleRecorded.NAME;
+  static get NAME(): "sample.recorded" {
+    return "sample.recorded";
+  }
 
-  readonly #instrument: api.ObservableCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleRecordedCallback) {
-    this.#instrument = apiMeter(meter).createObservableCounter(SampleRecordedObservable.NAME, {
+    this.instrument = meter.createObservableCounter("sample.recorded", {
       description: "Synthetic metric.",
       unit: "{item}",
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value, attributes) => {
           result.observe(value, toSampleRecordedAttributes(attributes));
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }

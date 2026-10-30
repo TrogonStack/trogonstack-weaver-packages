@@ -3,7 +3,7 @@
 /**
  * Optional label.
  */
-export const SampleOptional = Object.freeze({
+export const SampleOptional = /* @__PURE__ */ Object.freeze({
   KEY: "sample.optional",
 } as const);
 
@@ -15,7 +15,7 @@ export type SampleOptional = string;
 /**
  * State.
  */
-export const SampleState = Object.freeze({
+export const SampleState = /* @__PURE__ */ Object.freeze({
   KEY: "sample.state",
   /**
    * Ready.

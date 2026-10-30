@@ -5,7 +5,7 @@ import * as Metrics from "./metrics.ts";
 
 test("the params replace the unit defaults", async () => {
   const recorder = createRecorder();
-  const meter = new Metrics.Meter(recorder.meterProvider);
+  const meter = Metrics.getMeter(recorder.meterProvider);
   new Metrics.SampleDuration(meter).record(0.2);
   new Metrics.SampleSize(meter).record(3);
 

@@ -6,22 +6,20 @@ import { SCHEMA_URL } from "./schema.ts";
 
 export const INSTRUMENTATION_NAME = "generated-semconv";
 
-let apiMeter: (meter: Meter) => api.Meter;
+declare const registryMeter: unique symbol;
 
 /**
- * Creates the generated instruments with the instrumentation scope and schema
- * URL of the registry. Without a provider, it uses the global meter provider.
+ * A meter with the instrumentation scope and schema URL of the registry. Only
+ * `getMeter` returns one, so every generated instrument reports under that scope.
  */
-export class Meter {
-  readonly #meter: api.Meter;
+export type Meter = api.Meter & { readonly [registryMeter]: true };
 
-  static {
-    apiMeter = (meter) => meter.#meter;
-  }
-
-  constructor(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()) {
-    this.#meter = meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL });
-  }
+/**
+ * Returns the meter of the registry. Without a provider, it uses the global
+ * meter provider.
+ */
+export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()): Meter {
+  return meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL }) as Meter;
 }
 
 /**
@@ -30,19 +28,21 @@ export class Meter {
  * @deprecated No longer recorded.
  */
 export class SampleDeprecated {
-  static readonly NAME = "sample.deprecated";
+  static get NAME(): "sample.deprecated" {
+    return "sample.deprecated";
+  }
 
-  readonly #instrument: api.Gauge;
+  private readonly instrument: api.Gauge;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createGauge(SampleDeprecated.NAME, {
+    this.instrument = meter.createGauge("sample.deprecated", {
       description: "Deprecated metric.",
       unit: "{item}",
     });
   }
 
   record(value: number): void {
-    this.#instrument.record(value);
+    this.instrument.record(value);
   }
 }
 
@@ -58,27 +58,29 @@ export type SampleDeprecatedCallback = (observer: SampleDeprecatedObserver) => v
  * @deprecated No longer recorded.
  */
 export class SampleDeprecatedObservable {
-  static readonly NAME = SampleDeprecated.NAME;
+  static get NAME(): "sample.deprecated" {
+    return "sample.deprecated";
+  }
 
-  readonly #instrument: api.ObservableGauge;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableGauge;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleDeprecatedCallback) {
-    this.#instrument = apiMeter(meter).createObservableGauge(SampleDeprecatedObservable.NAME, {
+    this.instrument = meter.createObservableGauge("sample.deprecated", {
       description: "Deprecated metric.",
       unit: "{item}",
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value) => {
           result.observe(value);
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -99,19 +101,21 @@ function toSampleKeptAttributes(attributes: SampleKeptAttributes): api.Attribute
  * Kept metric.
  */
 export class SampleKept {
-  static readonly NAME = "sample.kept";
+  static get NAME(): "sample.kept" {
+    return "sample.kept";
+  }
 
-  readonly #instrument: api.Counter;
+  private readonly instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createCounter(SampleKept.NAME, {
+    this.instrument = meter.createCounter("sample.kept", {
       description: "Kept metric.",
       unit: "{item}",
     });
   }
 
   add(value: number, attributes: SampleKeptAttributes): void {
-    this.#instrument.add(value, toSampleKeptAttributes(attributes));
+    this.instrument.add(value, toSampleKeptAttributes(attributes));
   }
 }
 
@@ -125,26 +129,28 @@ export type SampleKeptCallback = (observer: SampleKeptObserver) => void | Promis
  * Observes sample.kept when the SDK collects.
  */
 export class SampleKeptObservable {
-  static readonly NAME = SampleKept.NAME;
+  static get NAME(): "sample.kept" {
+    return "sample.kept";
+  }
 
-  readonly #instrument: api.ObservableCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleKeptCallback) {
-    this.#instrument = apiMeter(meter).createObservableCounter(SampleKeptObservable.NAME, {
+    this.instrument = meter.createObservableCounter("sample.kept", {
       description: "Kept metric.",
       unit: "{item}",
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value, attributes) => {
           result.observe(value, toSampleKeptAttributes(attributes));
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }

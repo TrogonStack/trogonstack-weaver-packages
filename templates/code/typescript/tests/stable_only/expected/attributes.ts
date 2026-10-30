@@ -3,7 +3,7 @@
 /**
  * State.
  */
-export const SampleState = Object.freeze({
+export const SampleState = /* @__PURE__ */ Object.freeze({
   KEY: "sample.state",
   /**
    * Ready.

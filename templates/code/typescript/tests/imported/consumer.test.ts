@@ -6,7 +6,7 @@ import { SCHEMA_URL } from "./schema.ts";
 
 test("attributes of a dependency keep their wire keys and closed value types", async () => {
   const recorder = createRecorder();
-  const imported = new Metrics.SampleImported(new Metrics.Meter(recorder.meterProvider));
+  const imported = new Metrics.SampleImported(Metrics.getMeter(recorder.meterProvider));
   imported.add(1, { remoteStatus: "ready", remotePort: 443 });
   imported.add(1, { remoteStatus: "done", remotePort: 0 });
   imported.add(1, { remoteStatus: "done" });
@@ -21,7 +21,7 @@ test("attributes of a dependency keep their wire keys and closed value types", a
 });
 
 function invalidConsumers() {
-  const imported = new Metrics.SampleImported(new Metrics.Meter());
+  const imported = new Metrics.SampleImported(Metrics.getMeter());
   // @ts-expect-error Imported enums stay closed.
   imported.add(1, { remoteStatus: "unknown" });
 }

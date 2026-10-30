@@ -5,7 +5,7 @@ import * as Metrics from "./metrics.ts";
 
 async function boundariesOf(name: string, record: (meter: Metrics.Meter) => void) {
   const recorder = createRecorder();
-  record(new Metrics.Meter(recorder.meterProvider));
+  record(Metrics.getMeter(recorder.meterProvider));
   const [point] = (await recorder.metric(name)).dataPoints;
   return (point?.value as { buckets: { boundaries: number[] } }).buckets.boundaries;
 }

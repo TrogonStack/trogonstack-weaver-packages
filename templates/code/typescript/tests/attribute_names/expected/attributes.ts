@@ -3,7 +3,7 @@
 /**
  * Synthetic label.
  */
-export const RemoteTaskState = Object.freeze({
+export const RemoteTaskState = /* @__PURE__ */ Object.freeze({
   KEY: "remote.task.state",
 } as const);
 
@@ -15,7 +15,7 @@ export type RemoteTaskState = string;
 /**
  * Synthetic label.
  */
-export const SampleClass = Object.freeze({
+export const SampleClass = /* @__PURE__ */ Object.freeze({
   KEY: "sample.class",
 } as const);
 
@@ -27,7 +27,7 @@ export type SampleClass = string;
 /**
  * Synthetic label.
  */
-export const SampleEnabled = Object.freeze({
+export const SampleEnabled = /* @__PURE__ */ Object.freeze({
   KEY: "sample.enabled",
   /**
    * Synthetic value.
@@ -47,7 +47,7 @@ export type SampleEnabled = true | false;
 /**
  * Synthetic label.
  */
-export const SampleNumericCode = Object.freeze({
+export const SampleNumericCode = /* @__PURE__ */ Object.freeze({
   KEY: "sample.numeric_code",
   /**
    * Synthetic value.
@@ -67,7 +67,7 @@ export type SampleNumericCode = 1 | 2;
 /**
  * Synthetic label.
  */
-export const SampleOtherName = Object.freeze({
+export const SampleOtherName = /* @__PURE__ */ Object.freeze({
   KEY: "sample.other_name",
 } as const);
 
@@ -79,7 +79,7 @@ export type SampleOtherName = string;
 /**
  * Synthetic label.
  */
-export const SampleQuoteState = Object.freeze({
+export const SampleQuoteState = /* @__PURE__ */ Object.freeze({
   KEY: "sample.quote_state",
   /**
    * Synthetic value.
@@ -103,7 +103,7 @@ export type SampleQuoteState = "a\"b" | "a\\b" | "a\nb";
 /**
  * Synthetic label.
  */
-export const SampleTaskId = Object.freeze({
+export const SampleTaskId = /* @__PURE__ */ Object.freeze({
   KEY: "sample.task.id",
 } as const);
 

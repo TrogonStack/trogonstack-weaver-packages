@@ -8,7 +8,7 @@ import { SCHEMA_URL } from "./schema.ts";
 
 test("instruments carry the registry name, unit, description, scope and schema URL", async () => {
   const recorder = createRecorder();
-  const meter = new Metrics.Meter(recorder.meterProvider);
+  const meter = Metrics.getMeter(recorder.meterProvider);
   new Metrics.MyappTaskDuration(meter).record(1.5, { taskId: "task_0001" });
 
   const metric = await recorder.metric("myapp.task.duration");
@@ -24,7 +24,7 @@ test("instruments carry the registry name, unit, description, scope and schema U
 
 test("a histogram records required and optional attributes under their wire keys", async () => {
   const recorder = createRecorder();
-  const duration = new Metrics.MyappTaskDuration(new Metrics.Meter(recorder.meterProvider));
+  const duration = new Metrics.MyappTaskDuration(Metrics.getMeter(recorder.meterProvider));
   duration.record(0.05, {
     taskId: "task_0001",
     taskState: MyappTaskState.Done,
@@ -43,7 +43,7 @@ test("a histogram records required and optional attributes under their wire keys
 
 test("histogram bucket boundaries come from the registry aggregation", async () => {
   const recorder = createRecorder();
-  new Metrics.MyappTaskDuration(new Metrics.Meter(recorder.meterProvider)).record(0.05, {
+  new Metrics.MyappTaskDuration(Metrics.getMeter(recorder.meterProvider)).record(0.05, {
     taskId: MyappTaskId.KEY,
   });
   const metric = await recorder.metric("myapp.task.duration");
@@ -55,7 +55,7 @@ test("histogram bucket boundaries come from the registry aggregation", async () 
 
 test("a counter whose attributes are all optional can be added without them", async () => {
   const recorder = createRecorder();
-  const started = new Metrics.MyappTaskStarted(new Metrics.Meter(recorder.meterProvider));
+  const started = new Metrics.MyappTaskStarted(Metrics.getMeter(recorder.meterProvider));
   started.add(1);
   started.add(2, { taskId: "task_0001" });
   const metric = await recorder.metric("myapp.task.started");
@@ -71,7 +71,7 @@ test("a counter whose attributes are all optional can be added without them", as
 
 test("an up-down counter and a gauge record their values", async () => {
   const recorder = createRecorder();
-  const meter = new Metrics.Meter(recorder.meterProvider);
+  const meter = Metrics.getMeter(recorder.meterProvider);
   const active = new Metrics.MyappTaskActive(meter);
   active.add(2, { taskState: MyappTaskState.Queued });
   active.add(-1, { taskState: MyappTaskState.Queued });
@@ -84,7 +84,7 @@ test("an up-down counter and a gauge record their values", async () => {
 
 test("an observable instrument reports when the SDK collects and stops on request", async () => {
   const recorder = createRecorder();
-  const meter = new Metrics.Meter(recorder.meterProvider);
+  const meter = Metrics.getMeter(recorder.meterProvider);
   const observable = new Metrics.MyappTaskActiveObservable(meter, (observer) => {
     observer.observe(4, { taskState: MyappTaskState.Done });
   });
@@ -103,12 +103,12 @@ test("an observable instrument reports when the SDK collects and stops on reques
 });
 
 test("a meter without a provider is harmless until a global provider is set", async () => {
-  const meter = new Metrics.Meter();
+  const meter = Metrics.getMeter();
   new Metrics.AuthAttempts(meter).add(1, { method: "password", success: true });
 
   const recorder = createRecorder();
   metrics.setGlobalMeterProvider(recorder.meterProvider);
-  const late = new Metrics.Meter();
+  const late = Metrics.getMeter();
   new Metrics.AuthAttempts(late).add(1, { method: "token", success: false });
   const [point] = (await recorder.metric("auth.attempts")).dataPoints;
   assert.deepEqual(point?.attributes, { "auth.method": "token", "auth.success": false });
@@ -121,7 +121,7 @@ test("NAME is the name the metric records under", () => {
 });
 
 function invalidConsumers() {
-  const meter = new Metrics.Meter();
+  const meter = Metrics.getMeter();
   const attempts = new Metrics.AuthAttempts(meter);
   // @ts-expect-error A required attribute is missing.
   attempts.add(1, { method: "password" });
@@ -139,5 +139,9 @@ function invalidConsumers() {
   new Metrics.MyappTaskFloatDepth(meter).add(1);
   // @ts-expect-error A histogram has no observable form.
   new Metrics.MyappTaskDurationObservable(meter, () => {});
+  // @ts-expect-error A meter without the registry scope is rejected.
+  new Metrics.AuthAttempts(metrics.getMeter("other"));
+  // @ts-expect-error The metric name cannot be reassigned.
+  Metrics.AuthAttempts.NAME = "other";
 }
 void invalidConsumers;

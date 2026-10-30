@@ -1,7 +1,7 @@
 {% import "macros.j2" as m %}
 {{ m.header() }}{% for attribute in ctx.attributes %}
 
-{{ m.doc(attribute.brief, attribute.note, none, attribute.deprecation, 0) }}export const {{ attribute.identifier }} = Object.freeze({
+{{ m.doc(attribute.brief, attribute.note, none, attribute.deprecation, 0) }}export const {{ attribute.identifier }} = /* @__PURE__ */ Object.freeze({
   KEY: {{ attribute.key | tojson }},
 {% if attribute.members %}
 {% for member in attribute.members %}

@@ -3,7 +3,7 @@
 /**
  * How the user was authenticated.
  */
-export const AuthMethod = Object.freeze({
+export const AuthMethod = /* @__PURE__ */ Object.freeze({
   KEY: "auth.method",
 } as const);
 
@@ -15,7 +15,7 @@ export type AuthMethod = string;
 /**
  * Attribute named like the vendor prefix.
  */
-export const Myapp = Object.freeze({
+export const Myapp = /* @__PURE__ */ Object.freeze({
   KEY: "myapp",
 } as const);
 
@@ -27,7 +27,7 @@ export type Myapp = string;
 /**
  * Identifier of the task.
  */
-export const TaskId = Object.freeze({
+export const TaskId = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.task.id",
 } as const);
 
@@ -39,7 +39,7 @@ export type TaskId = string;
 /**
  * State of the task.
  */
-export const TaskState = Object.freeze({
+export const TaskState = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.task.state",
   /**
    * The task is waiting to run.

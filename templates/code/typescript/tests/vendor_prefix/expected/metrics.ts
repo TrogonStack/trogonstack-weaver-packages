@@ -6,22 +6,20 @@ import { SCHEMA_URL } from "./schema.ts";
 
 export const INSTRUMENTATION_NAME = "generated-semconv";
 
-let apiMeter: (meter: Meter) => api.Meter;
+declare const registryMeter: unique symbol;
 
 /**
- * Creates the generated instruments with the instrumentation scope and schema
- * URL of the registry. Without a provider, it uses the global meter provider.
+ * A meter with the instrumentation scope and schema URL of the registry. Only
+ * `getMeter` returns one, so every generated instrument reports under that scope.
  */
-export class Meter {
-  readonly #meter: api.Meter;
+export type Meter = api.Meter & { readonly [registryMeter]: true };
 
-  static {
-    apiMeter = (meter) => meter.#meter;
-  }
-
-  constructor(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()) {
-    this.#meter = meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL });
-  }
+/**
+ * Returns the meter of the registry. Without a provider, it uses the global
+ * meter provider.
+ */
+export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()): Meter {
+  return meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL }) as Meter;
 }
 
 export type AuthAttemptsAttributes = {
@@ -41,12 +39,14 @@ function toAuthAttemptsAttributes(attributes: AuthAttemptsAttributes): api.Attri
  * Number of authentication attempts.
  */
 export class AuthAttempts {
-  static readonly NAME = "auth.attempts";
+  static get NAME(): "auth.attempts" {
+    return "auth.attempts";
+  }
 
-  readonly #instrument: api.Counter;
+  private readonly instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createCounter(AuthAttempts.NAME, {
+    this.instrument = meter.createCounter("auth.attempts", {
       description: "Number of authentication attempts.",
       unit: "{attempt}",
       valueType: api.ValueType.INT,
@@ -54,7 +54,7 @@ export class AuthAttempts {
   }
 
   add(value: number, attributes: AuthAttemptsAttributes): void {
-    this.#instrument.add(value, toAuthAttemptsAttributes(attributes));
+    this.instrument.add(value, toAuthAttemptsAttributes(attributes));
   }
 }
 
@@ -68,28 +68,30 @@ export type AuthAttemptsCallback = (observer: AuthAttemptsObserver) => void | Pr
  * Observes auth.attempts when the SDK collects.
  */
 export class AuthAttemptsObservable {
-  static readonly NAME = AuthAttempts.NAME;
+  static get NAME(): "auth.attempts" {
+    return "auth.attempts";
+  }
 
-  readonly #instrument: api.ObservableCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: AuthAttemptsCallback) {
-    this.#instrument = apiMeter(meter).createObservableCounter(AuthAttemptsObservable.NAME, {
+    this.instrument = meter.createObservableCounter("auth.attempts", {
       description: "Number of authentication attempts.",
       unit: "{attempt}",
       valueType: api.ValueType.INT,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value, attributes) => {
           result.observe(value, toAuthAttemptsAttributes(attributes));
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -112,12 +114,14 @@ function toMyappAttributes(attributes: MyappAttributes): api.Attributes {
  * Metric named like the vendor prefix.
  */
 export class Myapp {
-  static readonly NAME = "myapp";
+  static get NAME(): "myapp" {
+    return "myapp";
+  }
 
-  readonly #instrument: api.Counter;
+  private readonly instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createCounter(Myapp.NAME, {
+    this.instrument = meter.createCounter("myapp", {
       description: "Metric named like the vendor prefix.",
       unit: "{item}",
       valueType: api.ValueType.INT,
@@ -125,7 +129,7 @@ export class Myapp {
   }
 
   add(value: number, attributes: MyappAttributes = {}): void {
-    this.#instrument.add(value, toMyappAttributes(attributes));
+    this.instrument.add(value, toMyappAttributes(attributes));
   }
 }
 
@@ -139,28 +143,30 @@ export type MyappCallback = (observer: MyappObserver) => void | Promise<void>;
  * Observes myapp when the SDK collects.
  */
 export class MyappObservable {
-  static readonly NAME = Myapp.NAME;
+  static get NAME(): "myapp" {
+    return "myapp";
+  }
 
-  readonly #instrument: api.ObservableCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappCallback) {
-    this.#instrument = apiMeter(meter).createObservableCounter(MyappObservable.NAME, {
+    this.instrument = meter.createObservableCounter("myapp", {
       description: "Metric named like the vendor prefix.",
       unit: "{item}",
       valueType: api.ValueType.INT,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value, attributes) => {
           result.observe(value, toMyappAttributes(attributes ?? {}));
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -196,12 +202,14 @@ function toTaskDurationAttributes(attributes: TaskDurationAttributes): api.Attri
  * Time a task took.
  */
 export class TaskDuration {
-  static readonly NAME = "myapp.task.duration";
+  static get NAME(): "myapp.task.duration" {
+    return "myapp.task.duration";
+  }
 
-  readonly #instrument: api.Histogram;
+  private readonly instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createHistogram(TaskDuration.NAME, {
+    this.instrument = meter.createHistogram("myapp.task.duration", {
       description: "Time a task took.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -210,6 +218,6 @@ export class TaskDuration {
   }
 
   record(value: number, attributes: TaskDurationAttributes): void {
-    this.#instrument.record(value, toTaskDurationAttributes(attributes));
+    this.instrument.record(value, toTaskDurationAttributes(attributes));
   }
 }

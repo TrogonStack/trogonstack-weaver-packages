@@ -6,7 +6,7 @@ import * as Metrics from "./metrics.ts";
 
 test("the vendor prefix leaves the TypeScript names but not the wire keys", async () => {
   const recorder = createRecorder();
-  const meter = new Metrics.Meter(recorder.meterProvider);
+  const meter = Metrics.getMeter(recorder.meterProvider);
   new Metrics.TaskDuration(meter).record(1, {
     id: "task_0001",
     state: Attributes.TaskState.Done,

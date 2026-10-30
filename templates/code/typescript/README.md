@@ -37,12 +37,12 @@ before regenerating after removing conventions.
 import { metrics } from "@opentelemetry/api";
 import { MyappTaskState } from "./semconv/attributes.ts";
 import {
-  Meter,
+  getMeter,
   MyappTaskDuration,
   MyappTaskStarted,
 } from "./semconv/metrics.ts";
 
-const meter = new Meter(metrics.getMeterProvider());
+const meter = getMeter(metrics.getMeterProvider());
 
 const started = new MyappTaskStarted(meter);
 started.add(1, { taskId: "task-1" });
@@ -57,7 +57,7 @@ duration.record(0.42, { taskId: "task-1", taskState: MyappTaskState.Done });
 | --------------- | -------------------------------------------------------------------------------- |
 | `schema.ts`     | `SCHEMA_URL`, the schema URL of the registry. Always generated.                  |
 | `attributes.ts` | One constant and one type per attribute. Generated when attributes are rendered. |
-| `metrics.ts`    | `Meter`, and a class per metric. Generated when the registry holds a metric.     |
+| `metrics.ts`    | `getMeter`, and a class per metric. Generated when the registry holds a metric.  |
 
 The three modules keep the dependencies one way. `metrics.ts` imports the
 attribute types from `attributes.ts` with `import type`, so code that only
@@ -65,6 +65,14 @@ names an attribute does not load the OpenTelemetry API. `schema.ts` holds one
 constant, so a tool that only needs the schema URL can import it alone. An
 empty registry produces only `schema.ts`, and a registry without metrics
 produces no `metrics.ts`.
+
+Every top-level statement in the three modules is free of side effects, so a
+bundler drops each class, function, and constant that the application does not
+import. The test suite holds that line for esbuild, which is stricter about it
+than Rollup. The classes use no static fields, static blocks, or `#private`
+fields, because a compiler that targets a release before ES2022 turns them into
+top-level statements, and `#private` fields into a `WeakMap` lookup on every
+call.
 
 Each name starts with the registry name in PascalCase after the first vendor
 prefix in `vendor_prefixes` is removed. For example, `myapp.task.id` becomes
@@ -80,7 +88,7 @@ for an array. The object carries `KEY`, the wire name, and one member per enum
 value:
 
 ```ts
-export const AuthMethod = Object.freeze({
+export const AuthMethod = /* @__PURE__ */ Object.freeze({
   KEY: "auth.method",
   Password: "password",
   Token: "token",
@@ -99,9 +107,11 @@ Enums from a dependency become literal unions.
 
 ### Metrics
 
-`Meter` creates the instruments. It calls `getMeter` with `instrumentation_name`,
-the optional `instrumentation_version`, and the registry schema URL. The
-provider argument defaults to the global meter provider.
+`getMeter` returns the `Meter` that creates the instruments. It calls the
+`getMeter` of the provider with `instrumentation_name`, the optional
+`instrumentation_version`, and the registry schema URL. The provider argument
+defaults to the global meter provider. `Meter` is an OpenTelemetry meter with a
+type-only brand, so an instrument does not accept a meter of another scope.
 
 Each metric becomes a class with a static `NAME`, the name it records under. A
 histogram has `record(value, attributes)`. A counter and an up-down counter have
@@ -109,7 +119,7 @@ histogram has `record(value, attributes)`. A counter and an up-down counter have
 
 ```ts
 export class AuthAttempts {
-  static readonly NAME = "auth.attempts";
+  static get NAME(): "auth.attempts";
 
   constructor(meter: Meter);
   add(value: number, attributes: AuthAttemptsAttributes): void;

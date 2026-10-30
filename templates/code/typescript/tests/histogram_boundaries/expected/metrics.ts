@@ -6,22 +6,20 @@ import { SCHEMA_URL } from "./schema.ts";
 
 export const INSTRUMENTATION_NAME = "generated-semconv";
 
-let apiMeter: (meter: Meter) => api.Meter;
+declare const registryMeter: unique symbol;
 
 /**
- * Creates the generated instruments with the instrumentation scope and schema
- * URL of the registry. Without a provider, it uses the global meter provider.
+ * A meter with the instrumentation scope and schema URL of the registry. Only
+ * `getMeter` returns one, so every generated instrument reports under that scope.
  */
-export class Meter {
-  readonly #meter: api.Meter;
+export type Meter = api.Meter & { readonly [registryMeter]: true };
 
-  static {
-    apiMeter = (meter) => meter.#meter;
-  }
-
-  constructor(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()) {
-    this.#meter = meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL });
-  }
+/**
+ * Returns the meter of the registry. Without a provider, it uses the global
+ * meter provider.
+ */
+export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()): Meter {
+  return meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL }) as Meter;
 }
 
 export type MyappTaskDurationAttributes = {
@@ -41,12 +39,14 @@ function toMyappTaskDurationAttributes(attributes: MyappTaskDurationAttributes):
  * Time a task took from start to finish.
  */
 export class MyappTaskDuration {
-  static readonly NAME = "myapp.task.duration";
+  static get NAME(): "myapp.task.duration" {
+    return "myapp.task.duration";
+  }
 
-  readonly #instrument: api.Histogram;
+  private readonly instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createHistogram(MyappTaskDuration.NAME, {
+    this.instrument = meter.createHistogram("myapp.task.duration", {
       description: "Time a task took from start to finish.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -55,7 +55,7 @@ export class MyappTaskDuration {
   }
 
   record(value: number, attributes: MyappTaskDurationAttributes): void {
-    this.#instrument.record(value, toMyappTaskDurationAttributes(attributes));
+    this.instrument.record(value, toMyappTaskDurationAttributes(attributes));
   }
 }
 
@@ -76,12 +76,14 @@ function toMyappTaskLatencyAttributes(attributes: MyappTaskLatencyAttributes): a
  * Time between a task being queued and started.
  */
 export class MyappTaskLatency {
-  static readonly NAME = "myapp.task.latency";
+  static get NAME(): "myapp.task.latency" {
+    return "myapp.task.latency";
+  }
 
-  readonly #instrument: api.Histogram;
+  private readonly instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createHistogram(MyappTaskLatency.NAME, {
+    this.instrument = meter.createHistogram("myapp.task.latency", {
       description: "Time between a task being queued and started.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -90,7 +92,7 @@ export class MyappTaskLatency {
   }
 
   record(value: number, attributes: MyappTaskLatencyAttributes): void {
-    this.#instrument.record(value, toMyappTaskLatencyAttributes(attributes));
+    this.instrument.record(value, toMyappTaskLatencyAttributes(attributes));
   }
 }
 
@@ -111,12 +113,14 @@ function toMyappTaskRetryDurationAttributes(attributes: MyappTaskRetryDurationAt
  * Time a retried task took from start to finish.
  */
 export class MyappTaskRetryDuration {
-  static readonly NAME = "myapp.task.duration";
+  static get NAME(): "myapp.task.duration" {
+    return "myapp.task.duration";
+  }
 
-  readonly #instrument: api.Histogram;
+  private readonly instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createHistogram(MyappTaskRetryDuration.NAME, {
+    this.instrument = meter.createHistogram("myapp.task.duration", {
       description: "Time a task took from start to finish.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -125,7 +129,7 @@ export class MyappTaskRetryDuration {
   }
 
   record(value: number, attributes: MyappTaskRetryDurationAttributes): void {
-    this.#instrument.record(value, toMyappTaskRetryDurationAttributes(attributes));
+    this.instrument.record(value, toMyappTaskRetryDurationAttributes(attributes));
   }
 }
 
@@ -146,12 +150,14 @@ function toMyappTaskSizeAttributes(attributes: MyappTaskSizeAttributes): api.Att
  * Size of a task's payload.
  */
 export class MyappTaskSize {
-  static readonly NAME = "myapp.task.size";
+  static get NAME(): "myapp.task.size" {
+    return "myapp.task.size";
+  }
 
-  readonly #instrument: api.Histogram;
+  private readonly instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createHistogram(MyappTaskSize.NAME, {
+    this.instrument = meter.createHistogram("myapp.task.size", {
       description: "Size of a task\u0027s payload.",
       unit: "By",
       valueType: api.ValueType.DOUBLE,
@@ -159,6 +165,6 @@ export class MyappTaskSize {
   }
 
   record(value: number, attributes: MyappTaskSizeAttributes): void {
-    this.#instrument.record(value, toMyappTaskSizeAttributes(attributes));
+    this.instrument.record(value, toMyappTaskSizeAttributes(attributes));
   }
 }

@@ -5,7 +5,7 @@ import * as Metrics from "./metrics.ts";
 
 test("a refinement has its own attribute type and records into the base instrument", async () => {
   const recorder = createRecorder();
-  const meter = new Metrics.Meter(recorder.meterProvider);
+  const meter = Metrics.getMeter(recorder.meterProvider);
   new Metrics.MyappTaskRetryDuration(meter).record(2, {
     taskId: "task_0001",
     taskState: "done",
@@ -25,7 +25,7 @@ test("a refinement has its own attribute type and records into the base instrume
 });
 
 function invalidConsumers() {
-  const meter = new Metrics.Meter();
+  const meter = Metrics.getMeter();
   // @ts-expect-error The refinement requires the task state.
   new Metrics.MyappTaskRetryDuration(meter).record(1, { taskId: "task_0001" });
 }

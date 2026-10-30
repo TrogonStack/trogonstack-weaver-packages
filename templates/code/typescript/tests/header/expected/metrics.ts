@@ -9,22 +9,20 @@ import { SCHEMA_URL } from "./schema.ts";
 export const INSTRUMENTATION_NAME = "myapp-metrics";
 export const INSTRUMENTATION_VERSION = "1.2.3";
 
-let apiMeter: (meter: Meter) => api.Meter;
+declare const registryMeter: unique symbol;
 
 /**
- * Creates the generated instruments with the instrumentation scope and schema
- * URL of the registry. Without a provider, it uses the global meter provider.
+ * A meter with the instrumentation scope and schema URL of the registry. Only
+ * `getMeter` returns one, so every generated instrument reports under that scope.
  */
-export class Meter {
-  readonly #meter: api.Meter;
+export type Meter = api.Meter & { readonly [registryMeter]: true };
 
-  static {
-    apiMeter = (meter) => meter.#meter;
-  }
-
-  constructor(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()) {
-    this.#meter = meterProvider.getMeter(INSTRUMENTATION_NAME, INSTRUMENTATION_VERSION, { schemaUrl: SCHEMA_URL });
-  }
+/**
+ * Returns the meter of the registry. Without a provider, it uses the global
+ * meter provider.
+ */
+export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()): Meter {
+  return meterProvider.getMeter(INSTRUMENTATION_NAME, INSTRUMENTATION_VERSION, { schemaUrl: SCHEMA_URL }) as Meter;
 }
 
 export type MyappTaskStartedAttributes = {
@@ -44,12 +42,14 @@ function toMyappTaskStartedAttributes(attributes: MyappTaskStartedAttributes): a
  * Number of tasks started.
  */
 export class MyappTaskStarted {
-  static readonly NAME = "myapp.task.started";
+  static get NAME(): "myapp.task.started" {
+    return "myapp.task.started";
+  }
 
-  readonly #instrument: api.Counter;
+  private readonly instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createCounter(MyappTaskStarted.NAME, {
+    this.instrument = meter.createCounter("myapp.task.started", {
       description: "Number of tasks started.",
       unit: "{task}",
       valueType: api.ValueType.INT,
@@ -57,7 +57,7 @@ export class MyappTaskStarted {
   }
 
   add(value: number, attributes: MyappTaskStartedAttributes): void {
-    this.#instrument.add(value, toMyappTaskStartedAttributes(attributes));
+    this.instrument.add(value, toMyappTaskStartedAttributes(attributes));
   }
 }
 
@@ -71,27 +71,29 @@ export type MyappTaskStartedCallback = (observer: MyappTaskStartedObserver) => v
  * Observes myapp.task.started when the SDK collects.
  */
 export class MyappTaskStartedObservable {
-  static readonly NAME = MyappTaskStarted.NAME;
+  static get NAME(): "myapp.task.started" {
+    return "myapp.task.started";
+  }
 
-  readonly #instrument: api.ObservableCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskStartedCallback) {
-    this.#instrument = apiMeter(meter).createObservableCounter(MyappTaskStartedObservable.NAME, {
+    this.instrument = meter.createObservableCounter("myapp.task.started", {
       description: "Number of tasks started.",
       unit: "{task}",
       valueType: api.ValueType.INT,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value, attributes) => {
           result.observe(value, toMyappTaskStartedAttributes(attributes));
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }

@@ -6,22 +6,20 @@ import { SCHEMA_URL } from "./schema.ts";
 
 export const INSTRUMENTATION_NAME = "generated-semconv";
 
-let apiMeter: (meter: Meter) => api.Meter;
+declare const registryMeter: unique symbol;
 
 /**
- * Creates the generated instruments with the instrumentation scope and schema
- * URL of the registry. Without a provider, it uses the global meter provider.
+ * A meter with the instrumentation scope and schema URL of the registry. Only
+ * `getMeter` returns one, so every generated instrument reports under that scope.
  */
-export class Meter {
-  readonly #meter: api.Meter;
+export type Meter = api.Meter & { readonly [registryMeter]: true };
 
-  static {
-    apiMeter = (meter) => meter.#meter;
-  }
-
-  constructor(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()) {
-    this.#meter = meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL });
-  }
+/**
+ * Returns the meter of the registry. Without a provider, it uses the global
+ * meter provider.
+ */
+export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()): Meter {
+  return meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL }) as Meter;
 }
 
 export type AuthAttemptsAttributes = {
@@ -46,12 +44,14 @@ function toAuthAttemptsAttributes(attributes: AuthAttemptsAttributes): api.Attri
  * Number of authentication attempts.
  */
 export class AuthAttempts {
-  static readonly NAME = "auth.attempts";
+  static get NAME(): "auth.attempts" {
+    return "auth.attempts";
+  }
 
-  readonly #instrument: api.Counter;
+  private readonly instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createCounter(AuthAttempts.NAME, {
+    this.instrument = meter.createCounter("auth.attempts", {
       description: "Number of authentication attempts.",
       unit: "{attempt}",
       valueType: api.ValueType.INT,
@@ -59,7 +59,7 @@ export class AuthAttempts {
   }
 
   add(value: number, attributes: AuthAttemptsAttributes): void {
-    this.#instrument.add(value, toAuthAttemptsAttributes(attributes));
+    this.instrument.add(value, toAuthAttemptsAttributes(attributes));
   }
 }
 
@@ -73,28 +73,30 @@ export type AuthAttemptsCallback = (observer: AuthAttemptsObserver) => void | Pr
  * Observes auth.attempts when the SDK collects.
  */
 export class AuthAttemptsObservable {
-  static readonly NAME = AuthAttempts.NAME;
+  static get NAME(): "auth.attempts" {
+    return "auth.attempts";
+  }
 
-  readonly #instrument: api.ObservableCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: AuthAttemptsCallback) {
-    this.#instrument = apiMeter(meter).createObservableCounter(AuthAttemptsObservable.NAME, {
+    this.instrument = meter.createObservableCounter("auth.attempts", {
       description: "Number of authentication attempts.",
       unit: "{attempt}",
       valueType: api.ValueType.INT,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value, attributes) => {
           result.observe(value, toAuthAttemptsAttributes(attributes));
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -104,12 +106,14 @@ export class AuthAttemptsObservable {
  * @deprecated Replaced by `myapp.task.active`.
  */
 export class MyappQueueDepth {
-  static readonly NAME = "myapp.queue.depth";
+  static get NAME(): "myapp.queue.depth" {
+    return "myapp.queue.depth";
+  }
 
-  readonly #instrument: api.Gauge;
+  private readonly instrument: api.Gauge;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createGauge(MyappQueueDepth.NAME, {
+    this.instrument = meter.createGauge("myapp.queue.depth", {
       description: "Number of tasks waiting in the queue.",
       unit: "{task}",
       valueType: api.ValueType.INT,
@@ -117,7 +121,7 @@ export class MyappQueueDepth {
   }
 
   record(value: number): void {
-    this.#instrument.record(value);
+    this.instrument.record(value);
   }
 }
 
@@ -133,28 +137,30 @@ export type MyappQueueDepthCallback = (observer: MyappQueueDepthObserver) => voi
  * @deprecated Replaced by `myapp.task.active`.
  */
 export class MyappQueueDepthObservable {
-  static readonly NAME = MyappQueueDepth.NAME;
+  static get NAME(): "myapp.queue.depth" {
+    return "myapp.queue.depth";
+  }
 
-  readonly #instrument: api.ObservableGauge;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableGauge;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappQueueDepthCallback) {
-    this.#instrument = apiMeter(meter).createObservableGauge(MyappQueueDepthObservable.NAME, {
+    this.instrument = meter.createObservableGauge("myapp.queue.depth", {
       description: "Number of tasks waiting in the queue.",
       unit: "{task}",
       valueType: api.ValueType.INT,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value) => {
           result.observe(value);
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -175,12 +181,14 @@ function toMyappTaskActiveAttributes(attributes: MyappTaskActiveAttributes): api
  * Number of tasks currently running.
  */
 export class MyappTaskActive {
-  static readonly NAME = "myapp.task.active";
+  static get NAME(): "myapp.task.active" {
+    return "myapp.task.active";
+  }
 
-  readonly #instrument: api.UpDownCounter;
+  private readonly instrument: api.UpDownCounter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createUpDownCounter(MyappTaskActive.NAME, {
+    this.instrument = meter.createUpDownCounter("myapp.task.active", {
       description: "Number of tasks currently running.",
       unit: "{task}",
       valueType: api.ValueType.INT,
@@ -188,7 +196,7 @@ export class MyappTaskActive {
   }
 
   add(value: number, attributes: MyappTaskActiveAttributes): void {
-    this.#instrument.add(value, toMyappTaskActiveAttributes(attributes));
+    this.instrument.add(value, toMyappTaskActiveAttributes(attributes));
   }
 }
 
@@ -202,28 +210,30 @@ export type MyappTaskActiveCallback = (observer: MyappTaskActiveObserver) => voi
  * Observes myapp.task.active when the SDK collects.
  */
 export class MyappTaskActiveObservable {
-  static readonly NAME = MyappTaskActive.NAME;
+  static get NAME(): "myapp.task.active" {
+    return "myapp.task.active";
+  }
 
-  readonly #instrument: api.ObservableUpDownCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableUpDownCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskActiveCallback) {
-    this.#instrument = apiMeter(meter).createObservableUpDownCounter(MyappTaskActiveObservable.NAME, {
+    this.instrument = meter.createObservableUpDownCounter("myapp.task.active", {
       description: "Number of tasks currently running.",
       unit: "{task}",
       valueType: api.ValueType.INT,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value, attributes) => {
           result.observe(value, toMyappTaskActiveAttributes(attributes));
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -265,12 +275,14 @@ function toMyappTaskDurationAttributes(attributes: MyappTaskDurationAttributes):
  * Measured by the worker that ran the task.
  */
 export class MyappTaskDuration {
-  static readonly NAME = "myapp.task.duration";
+  static get NAME(): "myapp.task.duration" {
+    return "myapp.task.duration";
+  }
 
-  readonly #instrument: api.Histogram;
+  private readonly instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createHistogram(MyappTaskDuration.NAME, {
+    this.instrument = meter.createHistogram("myapp.task.duration", {
       description: "Time a task took from start to finish.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -279,7 +291,7 @@ export class MyappTaskDuration {
   }
 
   record(value: number, attributes: MyappTaskDurationAttributes): void {
-    this.#instrument.record(value, toMyappTaskDurationAttributes(attributes));
+    this.instrument.record(value, toMyappTaskDurationAttributes(attributes));
   }
 }
 
@@ -287,12 +299,14 @@ export class MyappTaskDuration {
  * Fractional active task adjustment.
  */
 export class MyappTaskFloatActive {
-  static readonly NAME = "myapp.task.float.active";
+  static get NAME(): "myapp.task.float.active" {
+    return "myapp.task.float.active";
+  }
 
-  readonly #instrument: api.UpDownCounter;
+  private readonly instrument: api.UpDownCounter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createUpDownCounter(MyappTaskFloatActive.NAME, {
+    this.instrument = meter.createUpDownCounter("myapp.task.float.active", {
       description: "Fractional active task adjustment.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
@@ -300,7 +314,7 @@ export class MyappTaskFloatActive {
   }
 
   add(value: number): void {
-    this.#instrument.add(value);
+    this.instrument.add(value);
   }
 }
 
@@ -314,28 +328,30 @@ export type MyappTaskFloatActiveCallback = (observer: MyappTaskFloatActiveObserv
  * Observes myapp.task.float.active when the SDK collects.
  */
 export class MyappTaskFloatActiveObservable {
-  static readonly NAME = MyappTaskFloatActive.NAME;
+  static get NAME(): "myapp.task.float.active" {
+    return "myapp.task.float.active";
+  }
 
-  readonly #instrument: api.ObservableUpDownCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableUpDownCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskFloatActiveCallback) {
-    this.#instrument = apiMeter(meter).createObservableUpDownCounter(MyappTaskFloatActiveObservable.NAME, {
+    this.instrument = meter.createObservableUpDownCounter("myapp.task.float.active", {
       description: "Fractional active task adjustment.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value) => {
           result.observe(value);
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -343,12 +359,14 @@ export class MyappTaskFloatActiveObservable {
  * Fractional queue depth.
  */
 export class MyappTaskFloatDepth {
-  static readonly NAME = "myapp.task.float.depth";
+  static get NAME(): "myapp.task.float.depth" {
+    return "myapp.task.float.depth";
+  }
 
-  readonly #instrument: api.Gauge;
+  private readonly instrument: api.Gauge;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createGauge(MyappTaskFloatDepth.NAME, {
+    this.instrument = meter.createGauge("myapp.task.float.depth", {
       description: "Fractional queue depth.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
@@ -356,7 +374,7 @@ export class MyappTaskFloatDepth {
   }
 
   record(value: number): void {
-    this.#instrument.record(value);
+    this.instrument.record(value);
   }
 }
 
@@ -370,28 +388,30 @@ export type MyappTaskFloatDepthCallback = (observer: MyappTaskFloatDepthObserver
  * Observes myapp.task.float.depth when the SDK collects.
  */
 export class MyappTaskFloatDepthObservable {
-  static readonly NAME = MyappTaskFloatDepth.NAME;
+  static get NAME(): "myapp.task.float.depth" {
+    return "myapp.task.float.depth";
+  }
 
-  readonly #instrument: api.ObservableGauge;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableGauge;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskFloatDepthCallback) {
-    this.#instrument = apiMeter(meter).createObservableGauge(MyappTaskFloatDepthObservable.NAME, {
+    this.instrument = meter.createObservableGauge("myapp.task.float.depth", {
       description: "Fractional queue depth.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value) => {
           result.observe(value);
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -399,12 +419,14 @@ export class MyappTaskFloatDepthObservable {
  * Fractional tasks started.
  */
 export class MyappTaskFloatStarted {
-  static readonly NAME = "myapp.task.float.started";
+  static get NAME(): "myapp.task.float.started" {
+    return "myapp.task.float.started";
+  }
 
-  readonly #instrument: api.Counter;
+  private readonly instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createCounter(MyappTaskFloatStarted.NAME, {
+    this.instrument = meter.createCounter("myapp.task.float.started", {
       description: "Fractional tasks started.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
@@ -412,7 +434,7 @@ export class MyappTaskFloatStarted {
   }
 
   add(value: number): void {
-    this.#instrument.add(value);
+    this.instrument.add(value);
   }
 }
 
@@ -426,28 +448,30 @@ export type MyappTaskFloatStartedCallback = (observer: MyappTaskFloatStartedObse
  * Observes myapp.task.float.started when the SDK collects.
  */
 export class MyappTaskFloatStartedObservable {
-  static readonly NAME = MyappTaskFloatStarted.NAME;
+  static get NAME(): "myapp.task.float.started" {
+    return "myapp.task.float.started";
+  }
 
-  readonly #instrument: api.ObservableCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskFloatStartedCallback) {
-    this.#instrument = apiMeter(meter).createObservableCounter(MyappTaskFloatStartedObservable.NAME, {
+    this.instrument = meter.createObservableCounter("myapp.task.float.started", {
       description: "Fractional tasks started.",
       unit: "{task}",
       valueType: api.ValueType.DOUBLE,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value) => {
           result.observe(value);
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -455,12 +479,14 @@ export class MyappTaskFloatStartedObservable {
  * Task payload size.
  */
 export class MyappTaskPayload {
-  static readonly NAME = "myapp.task.payload";
+  static get NAME(): "myapp.task.payload" {
+    return "myapp.task.payload";
+  }
 
-  readonly #instrument: api.Histogram;
+  private readonly instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createHistogram(MyappTaskPayload.NAME, {
+    this.instrument = meter.createHistogram("myapp.task.payload", {
       description: "Task payload size.",
       unit: "By",
       valueType: api.ValueType.INT,
@@ -469,7 +495,7 @@ export class MyappTaskPayload {
   }
 
   record(value: number): void {
-    this.#instrument.record(value);
+    this.instrument.record(value);
   }
 }
 
@@ -507,12 +533,14 @@ function toMyappTaskRetryDurationAttributes(attributes: MyappTaskRetryDurationAt
  * Recorded only for tasks that ran more than once.
  */
 export class MyappTaskRetryDuration {
-  static readonly NAME = "myapp.task.duration";
+  static get NAME(): "myapp.task.duration" {
+    return "myapp.task.duration";
+  }
 
-  readonly #instrument: api.Histogram;
+  private readonly instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createHistogram(MyappTaskRetryDuration.NAME, {
+    this.instrument = meter.createHistogram("myapp.task.duration", {
       description: "Time a task took from start to finish.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -521,7 +549,7 @@ export class MyappTaskRetryDuration {
   }
 
   record(value: number, attributes: MyappTaskRetryDurationAttributes): void {
-    this.#instrument.record(value, toMyappTaskRetryDurationAttributes(attributes));
+    this.instrument.record(value, toMyappTaskRetryDurationAttributes(attributes));
   }
 }
 
@@ -548,12 +576,14 @@ function toMyappTaskStartedAttributes(attributes: MyappTaskStartedAttributes): a
  * Opt-in: record it only when the user asks for it.
  */
 export class MyappTaskStarted {
-  static readonly NAME = "myapp.task.started";
+  static get NAME(): "myapp.task.started" {
+    return "myapp.task.started";
+  }
 
-  readonly #instrument: api.Counter;
+  private readonly instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createCounter(MyappTaskStarted.NAME, {
+    this.instrument = meter.createCounter("myapp.task.started", {
       description: "Number of tasks started.",
       unit: "{task}",
       valueType: api.ValueType.INT,
@@ -561,7 +591,7 @@ export class MyappTaskStarted {
   }
 
   add(value: number, attributes: MyappTaskStartedAttributes = {}): void {
-    this.#instrument.add(value, toMyappTaskStartedAttributes(attributes));
+    this.instrument.add(value, toMyappTaskStartedAttributes(attributes));
   }
 }
 
@@ -575,28 +605,30 @@ export type MyappTaskStartedCallback = (observer: MyappTaskStartedObserver) => v
  * Observes myapp.task.started when the SDK collects.
  */
 export class MyappTaskStartedObservable {
-  static readonly NAME = MyappTaskStarted.NAME;
+  static get NAME(): "myapp.task.started" {
+    return "myapp.task.started";
+  }
 
-  readonly #instrument: api.ObservableCounter;
-  readonly #callback: api.ObservableCallback;
+  private readonly instrument: api.ObservableCounter;
+  private readonly callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskStartedCallback) {
-    this.#instrument = apiMeter(meter).createObservableCounter(MyappTaskStartedObservable.NAME, {
+    this.instrument = meter.createObservableCounter("myapp.task.started", {
       description: "Number of tasks started.",
       unit: "{task}",
       valueType: api.ValueType.INT,
     });
-    this.#callback = (result) =>
+    this.callback = (result) =>
       callback({
         observe: (value, attributes) => {
           result.observe(value, toMyappTaskStartedAttributes(attributes ?? {}));
         },
       });
-    this.#instrument.addCallback(this.#callback);
+    this.instrument.addCallback(this.callback);
   }
 
   stop(): void {
-    this.#instrument.removeCallback(this.#callback);
+    this.instrument.removeCallback(this.callback);
   }
 }
 
@@ -638,12 +670,14 @@ function toWorkerTaskDurationAttributes(attributes: WorkerTaskDurationAttributes
  * Measured by the worker that ran the task.
  */
 export class WorkerTaskDuration {
-  static readonly NAME = "myapp.task.duration";
+  static get NAME(): "myapp.task.duration" {
+    return "myapp.task.duration";
+  }
 
-  readonly #instrument: api.Histogram;
+  private readonly instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = apiMeter(meter).createHistogram(WorkerTaskDuration.NAME, {
+    this.instrument = meter.createHistogram("myapp.task.duration", {
       description: "Time a task took from start to finish.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -652,6 +686,6 @@ export class WorkerTaskDuration {
   }
 
   record(value: number, attributes: WorkerTaskDurationAttributes): void {
-    this.#instrument.record(value, toWorkerTaskDurationAttributes(attributes));
+    this.instrument.record(value, toWorkerTaskDurationAttributes(attributes));
   }
 }

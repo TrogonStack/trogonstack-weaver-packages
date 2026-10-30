@@ -3,7 +3,7 @@
 /**
  * Attempt number of the job.
  */
-export const MyappJobAttempt = Object.freeze({
+export const MyappJobAttempt = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.attempt",
 } as const);
 
@@ -15,7 +15,7 @@ export type MyappJobAttempt = number;
 /**
  * Attempt numbers the job has seen.
  */
-export const MyappJobAttemptNumbers = Object.freeze({
+export const MyappJobAttemptNumbers = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.attempt_numbers",
 } as const);
 
@@ -27,7 +27,7 @@ export type MyappJobAttemptNumbers = readonly number[];
 /**
  * Whether the job only simulates its work.
  */
-export const MyappJobDryRun = Object.freeze({
+export const MyappJobDryRun = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.dry_run",
   /**
    * Dry run.
@@ -47,7 +47,7 @@ export type MyappJobDryRun = true | false;
 /**
  * Flags the job had on each attempt.
  */
-export const MyappJobFlags = Object.freeze({
+export const MyappJobFlags = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.flags",
 } as const);
 
@@ -59,7 +59,7 @@ export type MyappJobFlags = readonly boolean[];
 /**
  * Load the job puts on the worker.
  */
-export const MyappJobLoad = Object.freeze({
+export const MyappJobLoad = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.load",
 } as const);
 
@@ -71,7 +71,7 @@ export type MyappJobLoad = number;
 /**
  * Loads the job had on each attempt.
  */
-export const MyappJobLoads = Object.freeze({
+export const MyappJobLoads = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.loads",
 } as const);
 
@@ -83,7 +83,7 @@ export type MyappJobLoads = readonly number[];
 /**
  * Name of the job.
  */
-export const MyappJobName = Object.freeze({
+export const MyappJobName = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.name",
 } as const);
 
@@ -95,7 +95,7 @@ export type MyappJobName = string;
 /**
  * Priority of the job.
  */
-export const MyappJobPriority = Object.freeze({
+export const MyappJobPriority = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.priority",
   /**
    * Low priority.
@@ -115,7 +115,7 @@ export type MyappJobPriority = 1 | 2;
 /**
  * Whether the job ran before.
  */
-export const MyappJobRetried = Object.freeze({
+export const MyappJobRetried = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.retried",
 } as const);
 
@@ -127,7 +127,7 @@ export type MyappJobRetried = boolean;
 /**
  * State of the job.
  */
-export const MyappJobState = Object.freeze({
+export const MyappJobState = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.state",
   /**
    * The job is waiting to run.
@@ -153,7 +153,7 @@ export type MyappJobState = "queued" | "running" | "legacy";
 /**
  * Tags of the job.
  */
-export const MyappJobTags = Object.freeze({
+export const MyappJobTags = /* @__PURE__ */ Object.freeze({
   KEY: "myapp.job.tags",
 } as const);
 
