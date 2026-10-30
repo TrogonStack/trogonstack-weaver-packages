@@ -53,7 +53,6 @@
 {%- endmacro %}
 {{ h.header() }}
 
-import enum
 {% if ctx.uses_sequence %}
 from collections.abc import Sequence
 {% endif %}
@@ -66,15 +65,6 @@ from opentelemetry.util.types import AttributeValue
 {% endif %}
 
 from . import {{ ctx.package_imports | join(", ") }}
-
-
-class InstrumentKind(enum.StrEnum):
-    """Kind of an OpenTelemetry instrument."""
-
-    COUNTER = "counter"
-    UP_DOWN_COUNTER = "updowncounter"
-    GAUGE = "gauge"
-    HISTOGRAM = "histogram"
 
 
 def get_meter(meter_provider: MeterProvider | None = None) -> Meter:
@@ -94,30 +84,20 @@ class {{ metric.class_name }}:
 
 {% endif %}
     NAME: Final = {{ (metric.instrument_name) | tojson }}
-    UNIT: Final = {{ metric.unit_literal }}
-    DESCRIPTION: Final = {{ metric.description_literal }}
-    KIND: Final = InstrumentKind.{{ metric.constant_kind }}
-{% if metric.instrument == "histogram" %}
-{% if metric.bucket_boundaries %}
-    BUCKET_BOUNDARIES: Final[tuple[float, ...] | None] = (
-{% for boundary in metric.bucket_boundaries %}
-        {{ boundary }},
-{% endfor %}
-    )
-{% else %}
-    BUCKET_BOUNDARIES: Final[tuple[float, ...] | None] = None
-{% endif %}
-{% endif %}
 
     def __init__(self, meter: Meter | None = None) -> None:
         if meter is None:
             meter = get_meter()
         self._instrument = meter.{{ metric.create_method }}(
             self.NAME,
-            unit=self.UNIT,
-            description=self.DESCRIPTION,
-{% if metric.instrument == "histogram" %}
-            explicit_bucket_boundaries_advisory=self.BUCKET_BOUNDARIES,
+            unit={{ metric.unit_literal }},
+            description={{ metric.description_literal }},
+{% if metric.instrument == "histogram" and metric.bucket_boundaries %}
+            explicit_bucket_boundaries_advisory=(
+{% for boundary in metric.bucket_boundaries %}
+                {{ boundary }},
+{% endfor %}
+            ),
 {% endif %}
         )
 
@@ -145,9 +125,6 @@ class {{ metric.class_name }}Observable:
     """Observable form of `{{ metric.class_name }}`, reported by callbacks."""
 
     NAME: Final = {{ metric.class_name }}.NAME
-    UNIT: Final = {{ metric.class_name }}.UNIT
-    DESCRIPTION: Final = {{ metric.class_name }}.DESCRIPTION
-    KIND: Final = {{ metric.class_name }}.KIND
 
     def __init__(
         self,
@@ -159,8 +136,8 @@ class {{ metric.class_name }}Observable:
         self._instrument = meter.{{ metric.observable_method }}(
             self.NAME,
             callbacks=callbacks,
-            unit=self.UNIT,
-            description=self.DESCRIPTION,
+            unit={{ metric.unit_literal }},
+            description={{ metric.description_literal }},
         )
 
 {% if metric.attributes %}

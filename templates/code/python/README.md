@@ -81,17 +81,13 @@ attribute, without the `_KEY` suffix. Deprecated attributes and members carry a
 
 ### Metrics
 
-Each metric becomes one class. The class constants carry the registry values, so
-code that records by name, unit, or description can read them from one place.
+Each metric becomes one class. `NAME` is the name the metric records under, for
+code such as a view that selects the instrument by name.
 
 ```python
 from semconv import metrics
 
 metrics.MyappTaskDuration.NAME  # "myapp.task.duration"
-metrics.MyappTaskDuration.UNIT  # "s"
-metrics.MyappTaskDuration.DESCRIPTION
-metrics.MyappTaskDuration.KIND  # metrics.InstrumentKind.HISTOGRAM
-metrics.MyappTaskDuration.BUCKET_BOUNDARIES  # tuple of floats, or None
 ```
 
 The constructor creates the instrument on a meter. It uses `get_meter()` when
@@ -148,7 +144,7 @@ A histogram takes `explicit_bucket_boundaries_advisory` from, in order:
 3. Nothing, which leaves the SDK default boundaries in place.
 
 The boundaries are an advisory. A view that sets its own boundaries overrides
-them. `BUCKET_BOUNDARIES` is `None` when no boundaries apply.
+them.
 
 ## Parameters
 

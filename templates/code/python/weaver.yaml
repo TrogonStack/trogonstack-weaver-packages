@@ -193,8 +193,7 @@ templates:
               elif .instrument == "histogram" and ($unit | type) == "string" and ($histogram_boundaries_by_unit | has($unit)) then
                 . + {bucket_boundaries: ($histogram_boundaries_by_unit[$unit] | boundary_literals($metric; "histogram_boundaries_by_unit for unit \($unit)"))}
               else . end)
-      | map(. + {class_name: (.name | title), constant_kind: ({"counter": "COUNTER", "updowncounter": "UP_DOWN_COUNTER", "histogram": "HISTOGRAM", "gauge": "GAUGE"}[.instrument]),
-                 value_type: (if .annotations.code_generation.metric_value_type == "int" then "int" else "float" end),
+      | map(. + {class_name: (.name | title), value_type: (if .annotations.code_generation.metric_value_type == "int" then "int" else "float" end),
                  create_method: ({"counter": "create_counter", "updowncounter": "create_up_down_counter", "histogram": "create_histogram", "gauge": "create_gauge"}[.instrument]),
                  observable_method: ({"counter": "create_observable_counter", "updowncounter": "create_observable_up_down_counter", "gauge": "create_observable_gauge"}[.instrument]),
                  record_method: ({"counter": "add", "updowncounter": "add", "histogram": "record", "gauge": "set"}[.instrument]),
@@ -245,7 +244,7 @@ templates:
           ([.[] | .name as $metric | .class_name as $class | .instrument as $kind
             | ([$class] + (if $kind == "histogram" then [] else [$class + "Observable"] end))[]
             | {symbol: ., name: $metric}]
-           + (["InstrumentKind", "Final", "Sequence", "Meter", "MeterProvider", "CallbackT", "Observation", "AttributeValue", "SCHEMA_URL", "INSTRUMENTATION_NAME", "INSTRUMENTATION_VERSION", "None", "True", "False", "attributes", "get_meter", "otel_metrics", "enum"]
+           + (["Final", "Sequence", "Meter", "MeterProvider", "CallbackT", "Observation", "AttributeValue", "SCHEMA_URL", "INSTRUMENTATION_NAME", "INSTRUMENTATION_VERSION", "None", "True", "False", "attributes", "get_meter", "otel_metrics"]
               | map({symbol: ., name: "a reserved Python symbol"}))
            | group_by(.symbol)
            | map(select(length > 1) | map(.name) | unique | join(" and "))

@@ -71,7 +71,6 @@ def test_only_metric_classes_are_defined() -> None:
         if member.__module__ == metrics.__name__
     }
     assert defined == {
-        "InstrumentKind",
         "MyappTaskStarted",
         "MyappTaskStartedObservable",
     }

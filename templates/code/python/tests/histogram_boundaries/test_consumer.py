@@ -87,18 +87,6 @@ def advertised(boundaries: tuple[float, ...] | None) -> tuple[float, ...]:
     return SDK_DEFAULT_BOUNDARIES if boundaries is None else boundaries
 
 
-def test_the_constants_follow_the_unit_and_the_annotation() -> None:
-    assert metrics.MyappTaskDuration.BUCKET_BOUNDARIES == DURATION_BOUNDARIES
-    assert metrics.MyappTaskQueueWait.BUCKET_BOUNDARIES == QUEUE_WAIT_BOUNDARIES
-    assert metrics.MyappTaskPayload.BUCKET_BOUNDARIES == PAYLOAD_BOUNDARIES
-    assert metrics.MyappTaskStep.BUCKET_BOUNDARIES == STEP_BOUNDARIES
-
-
-def test_a_counter_has_no_bucket_boundaries() -> None:
-    assert not hasattr(metrics.MyappTaskRetries, "BUCKET_BOUNDARIES")
-    assert not hasattr(metrics.MyappTaskRetriesObservable, "BUCKET_BOUNDARIES")
-
-
 def test_the_sdk_reports_the_advertised_boundaries() -> None:
     reader, provider = new_provider()
     meter = metrics.get_meter(provider)
@@ -129,5 +117,9 @@ def test_a_value_lands_in_the_bucket_of_the_advertised_boundaries() -> None:
 
 
 def test_the_annotation_overrides_the_unit_default() -> None:
-    assert metrics.MyappTaskStep.UNIT == "s"
-    assert metrics.MyappTaskStep.BUCKET_BOUNDARIES == (0.0, 0.5, 1.5, 3.0)
+    reader, provider = new_provider()
+    metrics.MyappTaskStep(metrics.get_meter(provider)).record(1.0)
+    metric = collect(reader)["myapp.task.step"]
+    assert metric.unit == "s"
+    (point,) = histogram_points(metric)
+    assert tuple(point.explicit_bounds) == (0.0, 0.5, 1.5, 3.0)

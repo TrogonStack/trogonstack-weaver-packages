@@ -66,24 +66,7 @@ def test_scope_carries_the_schema_url() -> None:
 def test_constants_match_the_registry() -> None:
     assert SCHEMA_URL == "https://example.com/schemas/metrics/1.0.0"
     assert metrics.MyappTaskDuration.NAME == "myapp.task.duration"
-    assert metrics.MyappTaskDuration.UNIT == "s"
-    assert metrics.MyappTaskDuration.DESCRIPTION == (
-        "Time a task took from start to finish."
-    )
-    assert metrics.MyappTaskDuration.KIND is metrics.InstrumentKind.HISTOGRAM
-    assert metrics.MyappTaskDuration.BUCKET_BOUNDARIES == (
-        0.0,
-        0.005,
-        0.01,
-        0.1,
-        1.0,
-        10.0,
-    )
-    assert metrics.MyappTaskStarted.KIND is metrics.InstrumentKind.COUNTER
-    assert metrics.MyappTaskActive.KIND is metrics.InstrumentKind.UP_DOWN_COUNTER
-    assert metrics.MyappQueueDepth.KIND is metrics.InstrumentKind.GAUGE
-    assert metrics.MyappTaskStarted.UNIT == "{task}"
-    assert metrics.InstrumentKind.UP_DOWN_COUNTER.value == "updowncounter"
+    assert metrics.MyappTaskStarted.NAME == "myapp.task.started"
     assert attributes.MYAPP_TASK_ID_KEY == "myapp.task.id"
     assert attributes.MYAPP_TASK_STATE_KEY == "myapp.task.state"
     assert attributes.AUTH_SUCCESS_KEY == "auth.success"
@@ -127,9 +110,10 @@ def test_histogram_reports_the_registry_boundaries() -> None:
 def test_integer_histogram_reports_its_own_boundaries() -> None:
     reader, provider = new_provider()
     metrics.MyappTaskPayload(metrics.get_meter(provider)).record(200)
-    (point,) = histogram_points(collect(reader)["myapp.task.payload"])
+    metric = collect(reader)["myapp.task.payload"]
+    assert metric.unit == "By"
+    (point,) = histogram_points(metric)
     assert point.explicit_bounds == (128.0, 256.0, 1024.0)
-    assert metrics.MyappTaskPayload.UNIT == "By"
 
 
 def test_counter_adds_attributes() -> None:
@@ -199,10 +183,6 @@ def test_refinements_record_into_the_base_instrument() -> None:
     metrics.WorkerTaskDuration(meter).record(3.0, myapp_task_id="worker")
     assert metrics.MyappTaskRetryDuration.NAME == "myapp.task.duration"
     assert metrics.WorkerTaskDuration.NAME == "myapp.task.duration"
-    assert (
-        metrics.WorkerTaskDuration.BUCKET_BOUNDARIES
-        == metrics.MyappTaskDuration.BUCKET_BOUNDARIES
-    )
     metric = collect(reader)["myapp.task.duration"]
     ids = sorted(
         str(attributes_of(point)["myapp.task.id"]) for point in histogram_points(metric)
@@ -239,7 +219,7 @@ def test_observable_instruments_report_through_callbacks() -> None:
     assert number_points(collected["myapp.task.active"])[0].value == 2
     assert number_points(collected["myapp.task.float.depth"])[0].value == 1.5
     assert metrics.MyappTaskStartedObservable.NAME == metrics.MyappTaskStarted.NAME
-    assert metrics.MyappTaskStartedObservable.UNIT == metrics.MyappTaskStarted.UNIT
+    assert collected["myapp.task.started"].unit == "{task}"
 
 
 def test_required_attributes_cannot_be_omitted() -> None:

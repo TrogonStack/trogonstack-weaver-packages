@@ -79,8 +79,6 @@ def test_enum_values_round_trip() -> None:
 
 
 def test_name_unit_and_description_round_trip() -> None:
-    assert metrics.DemoWork.UNIT == '{"unit"}'
-    assert metrics.DemoWork.DESCRIPTION == 'Counts "quoted" work with a \\\\ backslash.'
     reader, provider = new_provider()
     metrics.DemoWork(metrics.get_meter(provider)).add(1)
     metric = collect(reader)["demo.work"]
