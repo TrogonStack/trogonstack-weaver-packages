@@ -15,6 +15,31 @@ attribute.{{ a.attr_type | map_text("attribute_type_method") }}({{ a.key | tojso
 {{ v }}.KeyValue()
 {%- endif -%}
 {%- endmacro -%}
+{%- macro attr_params(def) -%}
+{%- for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.optional %}, opts ...{{ n.exported(def.short_name) }}Attr{% endif %}
+{%- endmacro -%}
+{#- A fixed-size array stays on the stack, where a make with a length that
+    depends on len(opts) would go to the heap on every call. #}
+{%- macro attr_set(def) %}
+	var buffer [{{ def.attributes | length }}]attribute.KeyValue
+	kvs := buffer[:0]
+{%- for req in def.required %}
+{%- if req.imported %}
+	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
+{%- else %}
+	if kv := {{ n.unexported(req.attr_param) }}.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+{%- endif %}
+{%- endfor %}
+{%- if def.optional %}
+	for _, opt := range opts {
+		if kv := opt.{{ n.unexported(def.short_name) }}Attr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+{%- endif %}
+{%- endmacro -%}
 {%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
 {{ h.header() }}
 
@@ -41,6 +66,7 @@ import (
 {%- set gotype = value_type | lower %}
 {%- set instrument = value_type ~ suffix %}
 {%- set deprecated = d.notice(def) %}
+{%- set has_attributes = def.required or def.optional %}
 {%- set opt_in = "Opt-in: the convention records `" ~ def.name ~ "` only when a user asks for it." if def.requirement_level == "opt_in" else none -%}
 {% if def.optional %}
 {{ [name ~ "Attr is an attribute `" ~ def.name ~ "` accepts in addition to the ones " ~ name ~ "." ~ method ~ " requires."] | join | comment }}
@@ -86,30 +112,14 @@ func ({{ name }}) Name() string {
 	return {{ def.instrument_name | tojson }}
 }
 
-{{ [method ~ " records one `" ~ def.name ~ "` measurement. The zero " ~ name ~ " records nothing."] | join | comment }}
-func (m {{ name }}) {{ method }}(ctx context.Context, {{ arg }} {{ gotype }}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.optional %}, opts ...{{ name }}Attr{% endif %}) {
-	if m.inst == nil {
+{{ [method ~ " records one `" ~ def.name ~ "` measurement. The zero " ~ name ~ " records nothing, and neither does one whose instrument is disabled."] | join | comment }}
+func (m {{ name }}) {{ method }}(ctx context.Context, {{ arg }} {{ gotype }}{{ attr_params(def) }}) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-{%- if def.required or def.optional %}
-	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
-{%- for req in def.required %}
-{%- if req.imported %}
-	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
-{%- else %}
-	if kv := {{ n.unexported(req.attr_param) }}.KeyValue(); kv.Valid() {
-		kvs = append(kvs, kv)
-	}
-{%- endif %}
-{%- endfor %}
-{%- if def.optional %}
-	for _, opt := range opts {
-		if kv := opt.{{ private }}Attr(); kv.Valid() {
-			kvs = append(kvs, kv)
-		}
-	}
-{%- endif %}
-	m.inst.{{ method }}(ctx, {{ arg }}, metric.WithAttributes(kvs...))
+{%- if has_attributes %}
+{{- attr_set(def) }}
+	m.inst.{{ method }}(ctx, {{ arg }}, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 {%- else %}
 	m.inst.{{ method }}(ctx, {{ arg }})
 {%- endif %}
@@ -125,29 +135,13 @@ type {{ observer }} struct {
 }
 
 {{ ["Observe records one `" ~ def.name ~ "` observation."] | join | comment }}
-func (o {{ observer }}) Observe(value {{ gotype }}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.optional %}, opts ...{{ name }}Attr{% endif %}) {
+func (o {{ observer }}) Observe(value {{ gotype }}{{ attr_params(def) }}) {
 	if o.o == nil {
 		return
 	}
-{%- if def.required or def.optional %}
-	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
-{%- for req in def.required %}
-{%- if req.imported %}
-	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
-{%- else %}
-	if kv := {{ n.unexported(req.attr_param) }}.KeyValue(); kv.Valid() {
-		kvs = append(kvs, kv)
-	}
-{%- endif %}
-{%- endfor %}
-{%- if def.optional %}
-	for _, opt := range opts {
-		if kv := opt.{{ private }}Attr(); kv.Valid() {
-			kvs = append(kvs, kv)
-		}
-	}
-{%- endif %}
-	o.o.Observe(value, metric.WithAttributes(kvs...))
+{%- if has_attributes %}
+{{- attr_set(def) }}
+	o.o.Observe(value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 {%- else %}
 	o.o.Observe(value)
 {%- endif %}

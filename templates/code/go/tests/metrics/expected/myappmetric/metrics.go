@@ -44,9 +44,9 @@ func (QueueDepth) Name() string {
 }
 
 // Record records one `myapp.queue.depth` measurement. The zero QueueDepth
-// records nothing.
+// records nothing, and neither does one whose instrument is disabled.
 func (m QueueDepth) Record(ctx context.Context, value int64) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
 	m.inst.Record(ctx, value)
@@ -137,16 +137,17 @@ func (TaskActive) Name() string {
 }
 
 // Add records one `myapp.task.active` measurement. The zero TaskActive
-// records nothing.
+// records nothing, and neither does one whose instrument is disabled.
 func (m TaskActive) Add(ctx context.Context, incr int64, myappTaskState myappattr.TaskState) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskState.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
+	m.inst.Add(ctx, incr, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskActiveObserver records `myapp.task.active` observations from the
@@ -161,11 +162,12 @@ func (o TaskActiveObserver) Observe(value int64, myappTaskState myappattr.TaskSt
 	if o.o == nil {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskState.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	o.o.Observe(value, metric.WithAttributes(kvs...))
+	o.o.Observe(value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskActiveCallback observes `myapp.task.active` through o on every
@@ -267,12 +269,14 @@ func (TaskDuration) Name() string {
 }
 
 // Record records one `myapp.task.duration` measurement. The zero
-// TaskDuration records nothing.
+// TaskDuration records nothing, and neither does one whose instrument is
+// disabled.
 func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID, opts ...TaskDurationAttr) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
@@ -281,7 +285,7 @@ func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID mya
 			kvs = append(kvs, kv)
 		}
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskRetryDurationAttr is an attribute `myapp.task.retry.duration` accepts
@@ -333,12 +337,14 @@ func (TaskRetryDuration) Name() string {
 }
 
 // Record records one `myapp.task.retry.duration` measurement. The zero
-// TaskRetryDuration records nothing.
+// TaskRetryDuration records nothing, and neither does one whose instrument
+// is disabled.
 func (m TaskRetryDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID, myappTaskState myappattr.TaskState, opts ...TaskRetryDurationAttr) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
@@ -350,7 +356,7 @@ func (m TaskRetryDuration) Record(ctx context.Context, value float64, myappTaskI
 			kvs = append(kvs, kv)
 		}
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskStartedAttr is an attribute `myapp.task.started` accepts in addition
@@ -403,18 +409,19 @@ func (TaskStarted) Name() string {
 }
 
 // Add records one `myapp.task.started` measurement. The zero TaskStarted
-// records nothing.
+// records nothing, and neither does one whose instrument is disabled.
 func (m TaskStarted) Add(ctx context.Context, incr int64, opts ...TaskStartedAttr) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	for _, opt := range opts {
 		if kv := opt.taskStartedAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
 		}
 	}
-	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
+	m.inst.Add(ctx, incr, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskStartedObserver records `myapp.task.started` observations from the
@@ -429,13 +436,14 @@ func (o TaskStartedObserver) Observe(value int64, opts ...TaskStartedAttr) {
 	if o.o == nil {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	for _, opt := range opts {
 		if kv := opt.taskStartedAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
 		}
 	}
-	o.o.Observe(value, metric.WithAttributes(kvs...))
+	o.o.Observe(value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskStartedCallback observes `myapp.task.started` through o on every

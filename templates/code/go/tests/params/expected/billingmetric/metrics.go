@@ -70,12 +70,14 @@ func (InvoiceAmount) Name() string {
 }
 
 // Record records one `acme.billing.invoice.amount` measurement. The zero
-// InvoiceAmount records nothing.
+// InvoiceAmount records nothing, and neither does one whose instrument is
+// disabled.
 func (m InvoiceAmount) Record(ctx context.Context, value float64, billingInvoiceID billingattr.InvoiceID, opts ...InvoiceAmountAttr) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := billingInvoiceID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
@@ -84,5 +86,5 @@ func (m InvoiceAmount) Record(ctx context.Context, value float64, billingInvoice
 			kvs = append(kvs, kv)
 		}
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }

@@ -40,16 +40,18 @@ func (TaskDuration) Name() string {
 }
 
 // Record records one `myapp.task.duration` measurement. The zero
-// TaskDuration records nothing.
+// TaskDuration records nothing, and neither does one whose instrument is
+// disabled.
 func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskLatency is `myapp.task.latency`.
@@ -78,16 +80,17 @@ func (TaskLatency) Name() string {
 }
 
 // Record records one `myapp.task.latency` measurement. The zero TaskLatency
-// records nothing.
+// records nothing, and neither does one whose instrument is disabled.
 func (m TaskLatency) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskRetryDuration is `myapp.task.retry.duration`, a refinement of
@@ -118,16 +121,18 @@ func (TaskRetryDuration) Name() string {
 }
 
 // Record records one `myapp.task.retry.duration` measurement. The zero
-// TaskRetryDuration records nothing.
+// TaskRetryDuration records nothing, and neither does one whose instrument
+// is disabled.
 func (m TaskRetryDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskSize is `myapp.task.size`.
@@ -155,14 +160,15 @@ func (TaskSize) Name() string {
 }
 
 // Record records one `myapp.task.size` measurement. The zero TaskSize
-// records nothing.
+// records nothing, and neither does one whose instrument is disabled.
 func (m TaskSize) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
