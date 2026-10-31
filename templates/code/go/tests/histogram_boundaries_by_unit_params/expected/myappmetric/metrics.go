@@ -39,16 +39,18 @@ func (TaskDuration) Name() string {
 }
 
 // Record records one `myapp.task.duration` measurement. The zero
-// TaskDuration records nothing.
+// TaskDuration records nothing, and neither does one whose instrument is
+// disabled.
 func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskQueueWait is `myapp.task.queue_wait`.
@@ -78,14 +80,16 @@ func (TaskQueueWait) Name() string {
 }
 
 // Record records one `myapp.task.queue_wait` measurement. The zero
-// TaskQueueWait records nothing.
+// TaskQueueWait records nothing, and neither does one whose instrument is
+// disabled.
 func (m TaskQueueWait) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }

@@ -39,16 +39,17 @@ func (TaskStarted) Name() string {
 }
 
 // Add records one `myapp.task.started` measurement. The zero TaskStarted
-// records nothing.
+// records nothing, and neither does one whose instrument is disabled.
 func (m TaskStarted) Add(ctx context.Context, incr int64, myappTaskState myappattr.TaskState) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskState.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
+	m.inst.Add(ctx, incr, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskStartedObserver records `myapp.task.started` observations from the
@@ -63,11 +64,12 @@ func (o TaskStartedObserver) Observe(value int64, myappTaskState myappattr.TaskS
 	if o.o == nil {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskState.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	o.o.Observe(value, metric.WithAttributes(kvs...))
+	o.o.Observe(value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskStartedCallback observes `myapp.task.started` through o on every

@@ -57,12 +57,13 @@ func (TaskFailed) Name() string {
 }
 
 // Add records one `myapp.task.failed` measurement. The zero TaskFailed
-// records nothing.
+// records nothing, and neither does one whose instrument is disabled.
 func (m TaskFailed) Add(ctx context.Context, incr int64, errorType string, myappTaskID myappattr.TaskID, opts ...TaskFailedAttr) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
 	kvs = append(kvs, attribute.String("error.type", errorType))
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
@@ -72,7 +73,7 @@ func (m TaskFailed) Add(ctx context.Context, incr int64, errorType string, myapp
 			kvs = append(kvs, kv)
 		}
 	}
-	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
+	m.inst.Add(ctx, incr, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskFailedObserver records `myapp.task.failed` observations from the
@@ -87,7 +88,8 @@ func (o TaskFailedObserver) Observe(value int64, errorType string, myappTaskID m
 	if o.o == nil {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
 	kvs = append(kvs, attribute.String("error.type", errorType))
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
@@ -97,7 +99,7 @@ func (o TaskFailedObserver) Observe(value int64, errorType string, myappTaskID m
 			kvs = append(kvs, kv)
 		}
 	}
-	o.o.Observe(value, metric.WithAttributes(kvs...))
+	o.o.Observe(value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // TaskFailedCallback observes `myapp.task.failed` through o on every

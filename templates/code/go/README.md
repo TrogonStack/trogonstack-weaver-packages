@@ -182,6 +182,10 @@ created and runs on every collection. An error it returns is returned by that
 collection, and the observations made before it are still recorded. Histograms
 have no asynchronous form in OpenTelemetry, so they get none.
 
+`Add` and `Record` return before building any attribute when the SDK has
+disabled the instrument, such as through a view that drops it, so a call on a
+disabled instrument costs one `Enabled` check.
+
 Each instrument type, synchronous or observable, reports the name it records
 under through `Name`, which works on the zero value, so SDK views and tests can
 refer to it. The underlying OpenTelemetry instrument, the unit, and the
@@ -692,7 +696,7 @@ or is tied to no schema, when:
 | Case                                  | Covers                                                                                                                                                                                        |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `attributes`                          | Every supported type, enums of every member type, notes, deprecated attributes and members.                                                                                                   |
-| `metrics`                             | Every instrument, every requirement level, cross-namespace references, bucket boundaries.                                                                                                     |
+| `metrics`                             | Every instrument, every requirement level, cross-namespace references, bucket boundaries, and a disabled instrument.                                                                          |
 | `imported`                            | Required and optional attributes imported from a dependency registry, including an enum, a span named from them, and an event.                                                                |
 | `imported_typed`                      | An imported namespace mapped with `imported_import_paths`, taken as a typed value alongside a local attribute and an unmapped raw one, across a metric, a span named from them, and an event. |
 | `params`                              | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`.                                                                                      |

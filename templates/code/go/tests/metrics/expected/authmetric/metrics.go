@@ -39,19 +39,20 @@ func (Attempts) Name() string {
 }
 
 // Add records one `auth.attempts` measurement. The zero Attempts records
-// nothing.
+// nothing, and neither does one whose instrument is disabled.
 func (m Attempts) Add(ctx context.Context, incr int64, authMethod authattr.Method, authSuccess authattr.Success) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 2)
+	var buffer [2]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := authMethod.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
 	if kv := authSuccess.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
+	m.inst.Add(ctx, incr, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // AttemptsObserver records `auth.attempts` observations from the callback of
@@ -65,14 +66,15 @@ func (o AttemptsObserver) Observe(value int64, authMethod authattr.Method, authS
 	if o.o == nil {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 2)
+	var buffer [2]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := authMethod.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
 	if kv := authSuccess.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	o.o.Observe(value, metric.WithAttributes(kvs...))
+	o.o.Observe(value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
 // AttemptsCallback observes `auth.attempts` through o on every collection of
