@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import CallbackT, Meter, MeterProvider, Observation
 from opentelemetry.util.types import AttributeValue
 
@@ -57,13 +58,14 @@ class EdgeUpstreamDuration:
         *,
         server_address: str,
         server_port: int | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             "server.address": server_address,
         }
         if server_port is not None:
             _attributes["server.port"] = server_port
-        self._instrument.record(amount, _attributes)
+        self._instrument.record(amount, _attributes, context=context)
 
 
 class MyappTaskFailed:
@@ -88,6 +90,7 @@ class MyappTaskFailed:
         error_type: str,
         task_id: str,
         http_request_method_list: Sequence[str] | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             "error.type": error_type,
@@ -95,7 +98,7 @@ class MyappTaskFailed:
         }
         if http_request_method_list is not None:
             _attributes["http.request.method_list"] = [*http_request_method_list]
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskFailedObservable:

@@ -1,6 +1,6 @@
 {%- filter trim %}
 {% import "header.j2" as h %}
-{% macro parameters(metric) %}
+{% macro parameters(metric, with_context=false) %}
         *,
 {% for attribute in metric.required_attributes %}
         {{ attribute.field }}: {{ attribute.python_type }},
@@ -8,6 +8,9 @@
 {% for attribute in metric.optional_attributes %}
         {{ attribute.field }}: {{ attribute.python_type }} | None = None,
 {% endfor %}
+{% if with_context %}
+        context: Context | None = None,
+{% endif %}
 {%- endmacro %}
 {% macro attribute_dict(metric) %}
 {% if metric.required_attributes %}
@@ -59,6 +62,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import {{ ctx.api_imports | join(", ") }}
 {% if ctx.has_attributes %}
 from opentelemetry.util.types import AttributeValue
@@ -106,17 +110,17 @@ class {{ metric.class_name }}:
         self,
         amount: {{ metric.value_type }},
         /,
-{{ parameters(metric) | trim("\n") }}
+{{ parameters(metric, true) | trim("\n") }}
     ) -> None:
 {% if metric.attributes | selectattr("requirement_doc") | list %}
 {{ argument_docs(metric, "Add to the counter." if metric.record_method == "add" else ("Set the gauge." if metric.record_method == "set" else "Record a measurement.")) | trim("\n") }}
 
 {% endif %}
 {{ attribute_dict(metric) | trim("\n") }}
-        self._instrument.{{ metric.record_method }}(amount, _attributes)
+        self._instrument.{{ metric.record_method }}(amount, _attributes, context=context)
 {% else %}
-    def {{ metric.record_method }}(self, amount: {{ metric.value_type }}, /) -> None:
-        self._instrument.{{ metric.record_method }}(amount)
+    def {{ metric.record_method }}(self, amount: {{ metric.value_type }}, /, *, context: Context | None = None) -> None:
+        self._instrument.{{ metric.record_method }}(amount, context=context)
 {% endif %}
 {% if metric.instrument != "histogram" %}
 

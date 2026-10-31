@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import CallbackT, Meter, MeterProvider, Observation
 from opentelemetry.util.types import AttributeValue
 
@@ -41,12 +42,13 @@ class AuthAttempts:
         *,
         method: attributes.AuthMethod,
         success: bool,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.AUTH_METHOD_KEY: method.value,
             attributes.AUTH_SUCCESS_KEY: success,
         }
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class AuthAttemptsObservable:
@@ -99,8 +101,8 @@ class MyappQueueDepth:
             description="Number of tasks waiting in the queue.",
         )
 
-    def set(self, amount: int, /) -> None:
-        self._instrument.set(amount)
+    def set(self, amount: int, /, *, context: Context | None = None) -> None:
+        self._instrument.set(amount, context=context)
 
 
 class MyappQueueDepthObservable:
@@ -147,11 +149,12 @@ class MyappTaskActive:
         /,
         *,
         task_state: attributes.MyappTaskState,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.MYAPP_TASK_STATE_KEY: task_state.value,
         }
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskActiveObservable:
@@ -218,6 +221,7 @@ class MyappTaskDuration:
         task_id: str,
         auth_method: attributes.AuthMethod | None = None,
         task_state: attributes.MyappTaskState | None = None,
+        context: Context | None = None,
     ) -> None:
         """Record a measurement.
 
@@ -233,7 +237,7 @@ class MyappTaskDuration:
             _attributes[attributes.AUTH_METHOD_KEY] = auth_method.value
         if task_state is not None:
             _attributes[attributes.MYAPP_TASK_STATE_KEY] = task_state.value
-        self._instrument.record(amount, _attributes)
+        self._instrument.record(amount, _attributes, context=context)
 
 
 class MyappTaskFloatActive:
@@ -250,8 +254,8 @@ class MyappTaskFloatActive:
             description="Fractional active task adjustment.",
         )
 
-    def add(self, amount: float, /) -> None:
-        self._instrument.add(amount)
+    def add(self, amount: float, /, *, context: Context | None = None) -> None:
+        self._instrument.add(amount, context=context)
 
 
 class MyappTaskFloatActiveObservable:
@@ -292,8 +296,8 @@ class MyappTaskFloatDepth:
             description="Fractional queue depth.",
         )
 
-    def set(self, amount: float, /) -> None:
-        self._instrument.set(amount)
+    def set(self, amount: float, /, *, context: Context | None = None) -> None:
+        self._instrument.set(amount, context=context)
 
 
 class MyappTaskFloatDepthObservable:
@@ -334,8 +338,8 @@ class MyappTaskFloatStarted:
             description="Fractional tasks started.",
         )
 
-    def add(self, amount: float, /) -> None:
-        self._instrument.add(amount)
+    def add(self, amount: float, /, *, context: Context | None = None) -> None:
+        self._instrument.add(amount, context=context)
 
 
 class MyappTaskFloatStartedObservable:
@@ -381,8 +385,8 @@ class MyappTaskPayload:
             ),
         )
 
-    def record(self, amount: int, /) -> None:
-        self._instrument.record(amount)
+    def record(self, amount: int, /, *, context: Context | None = None) -> None:
+        self._instrument.record(amount, context=context)
 
 
 class MyappTaskRetryDuration:
@@ -417,6 +421,7 @@ class MyappTaskRetryDuration:
         task_id: str,
         task_state: attributes.MyappTaskState,
         auth_method: attributes.AuthMethod | None = None,
+        context: Context | None = None,
     ) -> None:
         """Record a measurement.
 
@@ -430,7 +435,7 @@ class MyappTaskRetryDuration:
         }
         if auth_method is not None:
             _attributes[attributes.AUTH_METHOD_KEY] = auth_method.value
-        self._instrument.record(amount, _attributes)
+        self._instrument.record(amount, _attributes, context=context)
 
 
 class MyappTaskStarted:
@@ -455,6 +460,7 @@ class MyappTaskStarted:
         /,
         *,
         task_id: str | None = None,
+        context: Context | None = None,
     ) -> None:
         """Add to the counter.
 
@@ -465,7 +471,7 @@ class MyappTaskStarted:
         _attributes: dict[str, AttributeValue] = {}
         if task_id is not None:
             _attributes[attributes.MYAPP_TASK_ID_KEY] = task_id
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskStartedObservable:
@@ -538,6 +544,7 @@ class WorkerTaskDuration:
         myapp_task_id: str,
         auth_method: attributes.AuthMethod | None = None,
         myapp_task_state: attributes.MyappTaskState | None = None,
+        context: Context | None = None,
     ) -> None:
         """Record a measurement.
 
@@ -553,4 +560,4 @@ class WorkerTaskDuration:
             _attributes[attributes.AUTH_METHOD_KEY] = auth_method.value
         if myapp_task_state is not None:
             _attributes[attributes.MYAPP_TASK_STATE_KEY] = myapp_task_state.value
-        self._instrument.record(amount, _attributes)
+        self._instrument.record(amount, _attributes, context=context)

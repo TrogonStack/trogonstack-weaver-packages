@@ -109,7 +109,7 @@ attributes:
           stability: stable
           brief: One task in ten is sampled.
         - id: all
-          value: 1
+          value: 1.0
           stability: stable
           brief: Every task is sampled.
     stability: stable

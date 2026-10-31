@@ -78,6 +78,7 @@ def test_parameters_drop_only_the_metric_namespace() -> None:
         "billing_invoice_id",
         "billing_invoice_currency",
         "billing_invoice_paid",
+        "context",
     ]
 
 

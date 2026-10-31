@@ -79,6 +79,18 @@ Constants are named `<NAME>_KEY`. An enum class has the title-cased name of the
 attribute, without the `_KEY` suffix. Deprecated attributes and members carry a
 `Deprecated:` line in their docstring.
 
+Integer enum values retain the full signed 64-bit range. Floating-point values
+such as `1.0` and `1.0e3` produce floating-point enum members, even without a
+fractional part. A generated numeric enum class whose members all have no
+fractional part must stay within the signed 64-bit range. Weaver's resolver can
+convert an overflowing integer to a double before generation, so the template
+cannot distinguish that value from a floating-point value authored in the
+registry. The range check rejects both forms conservatively.
+
+An enum must use one value type. Integer and floating-point members cannot be
+mixed, because conversion to floating point can lose integer precision. Write
+`1.0` when a floating-point enum includes a whole-number value.
+
 ### Metrics
 
 Each metric becomes one class. `NAME` is the name the metric records under, for
@@ -103,6 +115,11 @@ leading metric namespace. Required attributes are required parameters. Every
 other requirement level is an optional parameter that defaults to `None` and is
 left out of the recorded attributes when `None`. Enum members are recorded by
 value, and array attributes are copied into a list at record time.
+
+Synchronous methods accept an optional keyword-only `context` argument of type
+`opentelemetry.context.Context`. It passes unchanged to the API. When omitted,
+the SDK uses the current context. Required attributes remain required when a
+context is supplied. Observable observations have no context argument.
 
 | Instrument kind | Class method | Observable class method and constructor           |
 | --------------- | ------------ | ------------------------------------------------- |

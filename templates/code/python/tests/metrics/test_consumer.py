@@ -1,15 +1,16 @@
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 import pytest
-from opentelemetry.metrics import CallbackOptions, Observation
-from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.context import Context, attach, detach, get_current
+from opentelemetry.metrics import CallbackOptions, Meter, Observation
+from opentelemetry.sdk.metrics import ExemplarFilter, MeterProvider
 from opentelemetry.sdk.metrics.export import (
     HistogramDataPoint,
     InMemoryMetricReader,
     Metric,
     NumberDataPoint,
 )
-from opentelemetry.util.types import AttributeValue
+from opentelemetry.util.types import Attributes, AttributeValue
 
 from semconv import (
     INSTRUMENTATION_NAME,
@@ -53,6 +54,122 @@ def histogram_points(metric: Metric) -> list[HistogramDataPoint]:
     points = list(metric.data.data_points)
     assert all(isinstance(point, HistogramDataPoint) for point in points)
     return [point for point in points if isinstance(point, HistogramDataPoint)]
+
+
+class ContextFilter(ExemplarFilter):
+    def __init__(self) -> None:
+        self.contexts: list[Context | None] = []
+
+    def should_sample(
+        self,
+        value: float,
+        time_unix_nano: int,
+        attributes: Attributes,
+        context: Context,
+    ) -> bool:
+        self.contexts.append(context)
+        return False
+
+
+def record_required_counter(meter: Meter, context: Context | None) -> None:
+    metrics.AuthAttempts(meter).add(
+        1, method=attributes.AuthMethod.TOKEN, success=True, context=context
+    )
+
+
+def record_optional_counter(meter: Meter, context: Context | None) -> None:
+    metrics.MyappTaskStarted(meter).add(1, context=context)
+
+
+def record_no_attribute_counter(meter: Meter, context: Context | None) -> None:
+    metrics.MyappTaskFloatStarted(meter).add(1.0, context=context)
+
+
+def record_required_up_down_counter(meter: Meter, context: Context | None) -> None:
+    metrics.MyappTaskActive(meter).add(
+        1, task_state=attributes.MyappTaskState.QUEUED, context=context
+    )
+
+
+def record_no_attribute_up_down_counter(meter: Meter, context: Context | None) -> None:
+    metrics.MyappTaskFloatActive(meter).add(1.0, context=context)
+
+
+def record_gauge(meter: Meter, context: Context | None) -> None:
+    metrics.MyappTaskFloatDepth(meter).set(1.0, context=context)
+
+
+def record_required_histogram(meter: Meter, context: Context | None) -> None:
+    metrics.MyappTaskDuration(meter).record(1.0, task_id="task-1", context=context)
+
+
+def record_no_attribute_histogram(meter: Meter, context: Context | None) -> None:
+    metrics.MyappTaskPayload(meter).record(1, context=context)
+
+
+@pytest.mark.parametrize(
+    "record",
+    [
+        record_required_counter,
+        record_optional_counter,
+        record_no_attribute_counter,
+        record_required_up_down_counter,
+        record_no_attribute_up_down_counter,
+        record_gauge,
+        record_required_histogram,
+        record_no_attribute_histogram,
+    ],
+)
+def test_synchronous_instruments_forward_context(
+    record: Callable[[Meter, Context | None], None],
+) -> None:
+    exemplar_filter = ContextFilter()
+    provider = MeterProvider(
+        metric_readers=[InMemoryMetricReader()], exemplar_filter=exemplar_filter
+    )
+    active_context = Context({"request": "active"})
+    explicit_context = Context({"request": "explicit"})
+    token = attach(active_context)
+    try:
+        meter = metrics.get_meter(provider)
+        meter.create_counter("native.context").add(1, context=explicit_context)
+        assert exemplar_filter.contexts[-1] is explicit_context
+        record(meter, explicit_context)
+        assert exemplar_filter.contexts[-1] is explicit_context
+        meter.create_counter("native.default").add(1)
+        native_default_context = exemplar_filter.contexts[-1]
+        record(meter, None)
+        assert exemplar_filter.contexts[-1] is native_default_context
+        assert get_current() is active_context
+    finally:
+        detach(token)
+        provider.shutdown()
+
+
+def invalid_context_consumers(meter: Meter) -> None:
+    metrics.AuthAttempts(meter).add(1, context=Context())  # type: ignore[call-arg]
+    metrics.AuthAttempts(meter).add(
+        1,
+        method="token",  # type: ignore[arg-type]
+        success=True,
+        context=Context(),
+    )
+    metrics.AuthAttempts(meter).add(
+        1,
+        method=attributes.AuthMethod.TOKEN,
+        success=True,
+        context={},  # type: ignore[arg-type]
+    )
+    metrics.MyappTaskFloatDepth(meter).set(1.0, context="bad")  # type: ignore[arg-type]
+    metrics.MyappTaskPayload(meter).record(1, context=1)  # type: ignore[arg-type]
+    metrics.MyappTaskStarted(meter).add(
+        1,
+        task_id=1,  # type: ignore[arg-type]
+        context=Context(),
+    )
+    metrics.MyappQueueDepthObservable.observation(  # type: ignore[call-arg]
+        1, context=Context()
+    )
 
 
 def test_scope_carries_the_schema_url() -> None:

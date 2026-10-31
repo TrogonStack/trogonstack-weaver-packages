@@ -1,0 +1,11 @@
+file_format: definition/2
+attributes:
+  - key: demo.mode
+    stability: stable
+    brief: Synthetic mode.
+    type:
+      members:
+        - id: below_minimum
+          value: -9223372036854775809
+          stability: stable
+          brief: An integer below the signed 64-bit minimum.

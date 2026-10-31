@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import CallbackT, Meter, MeterProvider, Observation
 from opentelemetry.util.types import AttributeValue
 
@@ -43,6 +44,7 @@ class DemoWork:
         *,
         mode: attributes.DemoMode | None = None,
         text: str | None = None,
+        context: Context | None = None,
     ) -> None:
         """Add to the counter.
 
@@ -55,7 +57,7 @@ class DemoWork:
             _attributes[attributes.DEMO_MODE_KEY] = mode.value
         if text is not None:
             _attributes[attributes.DEMO_TEXT_KEY] = text
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class DemoWorkObservable:

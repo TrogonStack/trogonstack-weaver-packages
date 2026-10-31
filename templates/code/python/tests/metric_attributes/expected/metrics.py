@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import CallbackT, Meter, MeterProvider, Observation
 from opentelemetry.util.types import AttributeValue
 
@@ -43,6 +44,7 @@ class MyappTaskArraysOptional:
         task_shard_ids: Sequence[int] | None = None,
         task_tags: Sequence[str] | None = None,
         task_weights: Sequence[float] | None = None,
+        context: Context | None = None,
     ) -> None:
         """Set the gauge.
 
@@ -62,7 +64,7 @@ class MyappTaskArraysOptional:
             _attributes[attributes.MYAPP_TASK_TAGS_KEY] = [*task_tags]
         if task_weights is not None:
             _attributes[attributes.MYAPP_TASK_WEIGHTS_KEY] = [*task_weights]
-        self._instrument.set(amount, _attributes)
+        self._instrument.set(amount, _attributes, context=context)
 
 
 class MyappTaskArraysOptionalObservable:
@@ -138,6 +140,7 @@ class MyappTaskArraysRequired:
         task_shard_ids: Sequence[int],
         task_tags: Sequence[str],
         task_weights: Sequence[float],
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.MYAPP_TASK_FLAGS_KEY: [*task_flags],
@@ -145,7 +148,7 @@ class MyappTaskArraysRequired:
             attributes.MYAPP_TASK_TAGS_KEY: [*task_tags],
             attributes.MYAPP_TASK_WEIGHTS_KEY: [*task_weights],
         }
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskArraysRequiredObservable:
@@ -210,6 +213,7 @@ class MyappTaskEnumsOptional:
         task_preemptible: attributes.MyappTaskPreemptible | None = None,
         task_sample_rate: attributes.MyappTaskSampleRate | None = None,
         task_state: attributes.MyappTaskState | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {}
         if auth_level is not None:
@@ -222,7 +226,7 @@ class MyappTaskEnumsOptional:
             _attributes[attributes.MYAPP_TASK_SAMPLE_RATE_KEY] = task_sample_rate.value
         if task_state is not None:
             _attributes[attributes.MYAPP_TASK_STATE_KEY] = task_state.value
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskEnumsOptionalObservable:
@@ -293,6 +297,7 @@ class MyappTaskEnumsRequired:
         task_preemptible: attributes.MyappTaskPreemptible,
         task_sample_rate: attributes.MyappTaskSampleRate,
         task_state: attributes.MyappTaskState,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.AUTH_LEVEL_KEY: auth_level.value,
@@ -301,7 +306,7 @@ class MyappTaskEnumsRequired:
             attributes.MYAPP_TASK_SAMPLE_RATE_KEY: task_sample_rate.value,
             attributes.MYAPP_TASK_STATE_KEY: task_state.value,
         }
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskEnumsRequiredObservable:
@@ -384,6 +389,7 @@ class MyappTaskMixed:
         auth_level: attributes.AuthLevel | None = None,
         task_retries: int | None = None,
         task_tags: Sequence[str] | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.AUTH_METHOD_KEY: auth_method.value,
@@ -395,7 +401,7 @@ class MyappTaskMixed:
             _attributes[attributes.MYAPP_TASK_RETRIES_KEY] = task_retries
         if task_tags is not None:
             _attributes[attributes.MYAPP_TASK_TAGS_KEY] = [*task_tags]
-        self._instrument.record(amount, _attributes)
+        self._instrument.record(amount, _attributes, context=context)
 
 
 class MyappTaskScalarsOptional:
@@ -421,6 +427,7 @@ class MyappTaskScalarsOptional:
         task_id: str | None = None,
         task_progress: float | None = None,
         task_retries: int | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {}
         if task_cancelled is not None:
@@ -431,7 +438,7 @@ class MyappTaskScalarsOptional:
             _attributes[attributes.MYAPP_TASK_PROGRESS_KEY] = task_progress
         if task_retries is not None:
             _attributes[attributes.MYAPP_TASK_RETRIES_KEY] = task_retries
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskScalarsOptionalObservable:
@@ -498,6 +505,7 @@ class MyappTaskScalarsRequired:
         task_id: str,
         task_progress: float,
         task_retries: int,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.MYAPP_TASK_CANCELLED_KEY: task_cancelled,
@@ -505,7 +513,7 @@ class MyappTaskScalarsRequired:
             attributes.MYAPP_TASK_PROGRESS_KEY: task_progress,
             attributes.MYAPP_TASK_RETRIES_KEY: task_retries,
         }
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskScalarsRequiredObservable:

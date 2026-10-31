@@ -107,8 +107,10 @@ def test_only_the_expected_enum_members_exist() -> None:
 def test_metric_signatures_follow_the_filters() -> None:
     parameters = inspect.signature(metrics.MyappTaskStarted.add).parameters
     assert [key for key in parameters if key not in ("self", "amount")] == (
-        STARTED_PARAMETERS
+        [*STARTED_PARAMETERS, "context"]
     )
+    assert parameters["context"].kind is inspect.Parameter.KEYWORD_ONLY
+    assert parameters["context"].default is None
     assert parameters["task_id"].default is inspect.Parameter.empty
     for key in STARTED_PARAMETERS[1:]:
         assert parameters[key].default is None

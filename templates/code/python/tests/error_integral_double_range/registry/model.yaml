@@ -1,0 +1,11 @@
+file_format: definition/2
+attributes:
+  - key: demo.mode
+    stability: stable
+    brief: Synthetic mode.
+    type:
+      members:
+        - id: large
+          value: 1.0e+20
+          stability: stable
+          brief: A whole-number floating-point value outside the integer range.

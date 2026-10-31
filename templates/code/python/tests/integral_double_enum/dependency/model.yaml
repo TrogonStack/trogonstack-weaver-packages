@@ -1,0 +1,15 @@
+file_format: definition/2
+attributes:
+  - key: upstream.sample
+    stability: stable
+    brief: Synthetic imported floating-point values.
+    type:
+      members:
+        - id: single
+          value: 1.0
+          stability: stable
+          brief: A floating-point value with no fractional part.
+        - id: large
+          value: 1.0e+3
+          stability: stable
+          brief: A floating-point value in scientific notation.

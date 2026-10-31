@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import CallbackT, Meter, MeterProvider, Observation
 from opentelemetry.util.types import AttributeValue
 
@@ -40,11 +41,12 @@ class MyappTaskStarted:
         /,
         *,
         task_id: str,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.MYAPP_TASK_ID_KEY: task_id,
         }
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskStartedObservable:

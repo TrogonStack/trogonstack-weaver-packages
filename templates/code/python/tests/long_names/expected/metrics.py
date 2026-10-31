@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import CallbackT, Meter, MeterProvider, Observation
 from opentelemetry.util.types import AttributeValue
 
@@ -44,6 +45,7 @@ class MyappTaskLong:
         task_environment: attributes.MyappTaskEnvironment,
         task_tags: Sequence[str],
         task_config_profile_revision: Sequence[str] | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.MYAPP_TASK_CONFIG_ENV_KIND_KEY: task_config_env_kind.value,
@@ -57,7 +59,7 @@ class MyappTaskLong:
             _attributes[attributes.MYAPP_TASK_CONFIG_PROFILE_REVISION_KEY] = [
                 *task_config_profile_revision
             ]
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskLongObservable:
@@ -128,6 +130,7 @@ class MyappTaskLongOptional:
         task_config_profile_identifier: Sequence[str] | None = None,
         task_environment: attributes.MyappTaskEnvironment | None = None,
         task_tags: Sequence[str] | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {}
         if task_config_env_kind is not None:
@@ -142,7 +145,7 @@ class MyappTaskLongOptional:
             _attributes[attributes.MYAPP_TASK_ENVIRONMENT_KEY] = task_environment.value
         if task_tags is not None:
             _attributes[attributes.MYAPP_TASK_TAGS_KEY] = [*task_tags]
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskLongOptionalObservable:

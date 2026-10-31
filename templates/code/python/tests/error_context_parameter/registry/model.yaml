@@ -1,0 +1,19 @@
+file_format: definition/2
+attributes:
+  - key: demo.context
+    type: string
+    stability: stable
+    brief: Synthetic context label.
+    examples: [example]
+metrics:
+  - name: demo.recorded
+    instrument: counter
+    unit: "{record}"
+    stability: stable
+    brief: Synthetic records.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: demo.context
+        requirement_level: required

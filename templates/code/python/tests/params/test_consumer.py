@@ -105,6 +105,7 @@ def test_parameters_drop_the_vendor_prefix_and_the_namespace() -> None:
         "invoice_id",
         "invoice_currency",
         "invoice_paid",
+        "context",
     ]
 
 

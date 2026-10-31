@@ -1,0 +1,46 @@
+file_format: definition/2
+attributes:
+  - key: demo.limit
+    stability: stable
+    brief: Synthetic integer limits.
+    type:
+      members:
+        - id: minimum
+          value: -9223372036854775808
+          stability: stable
+          brief: Minimum signed 64-bit value.
+        - id: near_minimum
+          value: -9223372036854775807
+          stability: stable
+          brief: An integer adjacent to the minimum.
+        - id: below_float_precision
+          value: -9007199254740993
+          stability: stable
+          brief: A negative integer outside exact double precision.
+        - id: above_float_precision
+          value: 9007199254740993
+          stability: stable
+          brief: An integer above exact double precision.
+        - id: near_maximum
+          value: 9223372036854775806
+          stability: stable
+          brief: An integer adjacent to the maximum.
+        - id: maximum
+          value: 9223372036854775807
+          stability: stable
+          brief: Maximum signed 64-bit value.
+metrics:
+  - name: demo.recorded
+    requirement_level: recommended
+    instrument: counter
+    unit: "{record}"
+    stability: stable
+    brief: Synthetic records by integer enum.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: demo.limit
+        requirement_level: required
+      - ref: upstream.limit
+        requirement_level: required

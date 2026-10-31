@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import CallbackT, Meter, MeterProvider, Observation
 from opentelemetry.util.types import AttributeValue
 
@@ -56,11 +57,12 @@ class MyappTaskDuration:
         /,
         *,
         task_id: str,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.MYAPP_TASK_ID_KEY: task_id,
         }
-        self._instrument.record(amount, _attributes)
+        self._instrument.record(amount, _attributes, context=context)
 
 
 class MyappTaskLegacyDuration:
@@ -101,11 +103,12 @@ class MyappTaskLegacyDuration:
         /,
         *,
         task_id: str,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.MYAPP_TASK_ID_KEY: task_id,
         }
-        self._instrument.record(amount, _attributes)
+        self._instrument.record(amount, _attributes, context=context)
 
 
 class MyappTaskPreviewDuration:
@@ -144,11 +147,12 @@ class MyappTaskPreviewDuration:
         /,
         *,
         task_id: str,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.MYAPP_TASK_ID_KEY: task_id,
         }
-        self._instrument.record(amount, _attributes)
+        self._instrument.record(amount, _attributes, context=context)
 
 
 class MyappTaskQueued:
@@ -165,8 +169,8 @@ class MyappTaskQueued:
             description="Number of tasks waiting to run.",
         )
 
-    def add(self, amount: int, /) -> None:
-        self._instrument.add(amount)
+    def add(self, amount: int, /, *, context: Context | None = None) -> None:
+        self._instrument.add(amount, context=context)
 
 
 class MyappTaskQueuedObservable:
@@ -209,8 +213,8 @@ class MyappTaskRetired:
             description="Number of tasks retired.",
         )
 
-    def add(self, amount: int, /) -> None:
-        self._instrument.add(amount)
+    def add(self, amount: int, /, *, context: Context | None = None) -> None:
+        self._instrument.add(amount, context=context)
 
 
 class MyappTaskRetiredObservable:
@@ -273,11 +277,12 @@ class MyappTaskRetryDuration:
         /,
         *,
         task_id: str,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.MYAPP_TASK_ID_KEY: task_id,
         }
-        self._instrument.record(amount, _attributes)
+        self._instrument.record(amount, _attributes, context=context)
 
 
 class MyappTaskStarted:
@@ -304,6 +309,7 @@ class MyappTaskStarted:
         task_owner: str | None = None,
         task_priority: int | None = None,
         task_state: attributes.MyappTaskState | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.MYAPP_TASK_ID_KEY: task_id,
@@ -316,7 +322,7 @@ class MyappTaskStarted:
             _attributes[attributes.MYAPP_TASK_PRIORITY_KEY] = task_priority
         if task_state is not None:
             _attributes[attributes.MYAPP_TASK_STATE_KEY] = task_state.value
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class MyappTaskStartedObservable:

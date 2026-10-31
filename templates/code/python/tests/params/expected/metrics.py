@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import CallbackT, Meter, MeterProvider, Observation
 from opentelemetry.util.types import AttributeValue
 
@@ -43,6 +44,7 @@ class BillingInvoiceCreated:
         invoice_id: str,
         invoice_currency: attributes.BillingInvoiceCurrency | None = None,
         invoice_paid: bool | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.BILLING_INVOICE_ID_KEY: invoice_id,
@@ -53,7 +55,7 @@ class BillingInvoiceCreated:
             )
         if invoice_paid is not None:
             _attributes[attributes.BILLING_INVOICE_PAID_KEY] = invoice_paid
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class BillingInvoiceCreatedObservable:

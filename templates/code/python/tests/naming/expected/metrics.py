@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import CallbackT, Meter, MeterProvider, Observation
 from opentelemetry.util.types import AttributeValue
 
@@ -42,6 +43,7 @@ class HttpServerRequestCount:
         request_method_original: str,
         response_status_code: int,
         k8s_pod_uid: str | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.HTTP_REQUEST_METHOD_ORIGINAL_KEY: request_method_original,
@@ -49,7 +51,7 @@ class HttpServerRequestCount:
         }
         if k8s_pod_uid is not None:
             _attributes[attributes.K8S_POD_UID_KEY] = k8s_pod_uid
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class HttpServerRequestCountObservable:
@@ -103,8 +105,8 @@ class K8sPodCpuTime:
             description="Metric name with a digit.",
         )
 
-    def add(self, amount: float, /) -> None:
-        self._instrument.add(amount)
+    def add(self, amount: float, /, *, context: Context | None = None) -> None:
+        self._instrument.add(amount, context=context)
 
 
 class K8sPodCpuTimeObservable:
@@ -152,13 +154,14 @@ class Requests:
         *,
         host: str,
         http_route: attributes.HttpRoute | None = None,
+        context: Context | None = None,
     ) -> None:
         _attributes: dict[str, AttributeValue] = {
             attributes.HOST_KEY: host,
         }
         if http_route is not None:
             _attributes[attributes.HTTP_ROUTE_KEY] = http_route.value
-        self._instrument.add(amount, _attributes)
+        self._instrument.add(amount, _attributes, context=context)
 
 
 class RequestsObservable:

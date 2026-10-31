@@ -76,8 +76,8 @@ templates:
         elif (.members | length) == 0 then error("attribute \($key) has no enum members left after exclude_deprecated or stable_only, so no value of it could be built")
         elif (.members | all(.value | type == "string")) then "string"
         elif (.members | all(.value | type == "boolean")) then "boolean"
-        elif (.members | all(.value | type == "number" and . == floor)) then "int"
-        elif (.members | all(.value | type == "number")) then "double"
+        elif (.members | all(.value | type == "number" and (tostring | test("^-?[0-9]+$")))) then "int"
+        elif (.members | all(.value | type == "number" and (tostring | test("^-?[0-9]+$") | not))) then "double"
         else error("attribute \($key) has enum members of more than one value type, which no single Python type can hold") end;
       def member_literal($type): if $type == "string" then .value | literal elif $type == "boolean" then (if .value then "True" else "False" end) elif $type == "int" then .value | tostring else .value | float_literal end;
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
@@ -89,8 +89,9 @@ templates:
       | map(. + {value_type: (.key as $key | .type | value_type($key)), key_literal: (.key | literal), deprecation: (.deprecated | deprecation_text)})
       | map(if (.value_type as $t | ["string", "int", "double", "boolean", "string[]", "int[]", "double[]", "boolean[]"] | any(. == $t) | not)
             then error("attribute \(.key) has an unsupported Python value type") else . end)
-      | map(if .value_type == "int" and (.type | type) == "object"
-            and (.type.members | any(.value >= 9223372036854775808 or .value < -9223372036854775808 or (.value | tostring | test("^-?[0-9]+$") | not)))
+      | map(if (.value_type == "int" or .value_type == "double") and (.type | type) == "object"
+            and (.type.members | all(.value == (.value | floor)))
+            and (.type.members | any(.value >= 9223372036854775808 or .value < -9223372036854775808))
           then error("attribute \(.key) has an enum value that cannot be represented by a 64-bit integer") else . end)
       | map(. + {doc: doc(.deprecation)})
       | map(if (.type | type) == "object" then
@@ -133,8 +134,8 @@ templates:
           then error("attribute \($key) has no enum members left after exclude_deprecated or stable_only, so no value of it could be built")
           elif ($members | all(.value | type == "string")) then "string"
           elif ($members | all(.value | type == "boolean")) then "boolean"
-          elif ($members | all(.value | type == "number" and . == floor)) then "int"
-          elif ($members | all(.value | type == "number")) then "double"
+          elif ($members | all(.value | type == "number" and (tostring | test("^-?[0-9]+$")))) then "int"
+          elif ($members | all(.value | type == "number" and (tostring | test("^-?[0-9]+$") | not))) then "double"
           else error("attribute \($key) has enum members of more than one value type, which no single Python type can hold")
           end;
       def python_type: {"string": "str", "int": "int", "double": "float", "boolean": "bool", "string[]": "Sequence[str]", "int[]": "Sequence[int]", "double[]": "Sequence[float]", "boolean[]": "Sequence[bool]"}[.];
@@ -231,7 +232,7 @@ templates:
                        assign_wrap: ((24 + (.key_expression | length) + 4 + (.value_expression | length)) > 88)}
                 | if (.field | test("^[a-z][a-z0-9_]*$") | not)
                   then error("metric \($metric) has attribute \(.key), which cannot become a Python parameter") else . end
-                | if (.field as $field | ["False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield", "self", "amount", "attributes"] | any(. == $field))
+                | if (.field as $field | ["False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield", "self", "amount", "attributes", "context"] | any(. == $field))
                   then error("metric \($metric) has attribute \(.key), which becomes the reserved Python parameter \(.field)") else . end)))
       | map(.name as $metric
             | (.attributes | group_by(.field) | map(select(length > 1) | map(.key) | join(" and "))) as $collisions
@@ -244,7 +245,7 @@ templates:
           ([.[] | .name as $metric | .class_name as $class | .instrument as $kind
             | ([$class] + (if $kind == "histogram" then [] else [$class + "Observable"] end))[]
             | {symbol: ., name: $metric}]
-           + (["Final", "Sequence", "Meter", "MeterProvider", "CallbackT", "Observation", "AttributeValue", "SCHEMA_URL", "INSTRUMENTATION_NAME", "INSTRUMENTATION_VERSION", "None", "True", "False", "attributes", "get_meter", "otel_metrics"]
+           + (["Final", "Sequence", "Meter", "MeterProvider", "Context", "CallbackT", "Observation", "AttributeValue", "SCHEMA_URL", "INSTRUMENTATION_NAME", "INSTRUMENTATION_VERSION", "None", "True", "False", "attributes", "get_meter", "otel_metrics"]
               | map({symbol: ., name: "a reserved Python symbol"}))
            | group_by(.symbol)
            | map(select(length > 1) | map(.name) | unique | join(" and "))

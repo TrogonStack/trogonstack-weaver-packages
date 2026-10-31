@@ -1,0 +1,11 @@
+file_format: definition/2
+attributes:
+  - key: upstream.limit
+    stability: stable
+    brief: Synthetic imported integer limits.
+    type:
+      members:
+        - id: maximum
+          value: 9223372036854775807
+          stability: stable
+          brief: Maximum signed 64-bit value.

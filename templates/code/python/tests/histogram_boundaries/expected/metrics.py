@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Final
 
 from opentelemetry import metrics as otel_metrics
+from opentelemetry.context import Context
 from opentelemetry.metrics import CallbackT, Meter, MeterProvider, Observation
 
 from . import INSTRUMENTATION_NAME, INSTRUMENTATION_VERSION, SCHEMA_URL
@@ -49,8 +50,8 @@ class MyappTaskDuration:
             ),
         )
 
-    def record(self, amount: float, /) -> None:
-        self._instrument.record(amount)
+    def record(self, amount: float, /, *, context: Context | None = None) -> None:
+        self._instrument.record(amount, context=context)
 
 
 class MyappTaskPayload:
@@ -67,8 +68,8 @@ class MyappTaskPayload:
             description="Task payload size.",
         )
 
-    def record(self, amount: int, /) -> None:
-        self._instrument.record(amount)
+    def record(self, amount: int, /, *, context: Context | None = None) -> None:
+        self._instrument.record(amount, context=context)
 
 
 class MyappTaskQueueWait:
@@ -85,8 +86,8 @@ class MyappTaskQueueWait:
             description="Time a task waited in the queue.",
         )
 
-    def record(self, amount: float, /) -> None:
-        self._instrument.record(amount)
+    def record(self, amount: float, /, *, context: Context | None = None) -> None:
+        self._instrument.record(amount, context=context)
 
 
 class MyappTaskRetries:
@@ -103,8 +104,8 @@ class MyappTaskRetries:
             description="A counter never receives boundaries.",
         )
 
-    def add(self, amount: int, /) -> None:
-        self._instrument.add(amount)
+    def add(self, amount: int, /, *, context: Context | None = None) -> None:
+        self._instrument.add(amount, context=context)
 
 
 class MyappTaskRetriesObservable:
@@ -151,5 +152,5 @@ class MyappTaskStep:
             ),
         )
 
-    def record(self, amount: float, /) -> None:
-        self._instrument.record(amount)
+    def record(self, amount: float, /, *, context: Context | None = None) -> None:
+        self._instrument.record(amount, context=context)

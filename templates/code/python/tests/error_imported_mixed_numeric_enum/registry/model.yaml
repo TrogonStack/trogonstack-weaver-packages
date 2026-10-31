@@ -1,0 +1,14 @@
+file_format: definition/2
+metrics:
+  - name: demo.recorded
+    requirement_level: recommended
+    instrument: counter
+    unit: "{record}"
+    stability: stable
+    brief: Synthetic records.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: upstream.mode
+        requirement_level: required

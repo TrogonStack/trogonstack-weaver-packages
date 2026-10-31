@@ -1,0 +1,15 @@
+file_format: definition/2
+attributes:
+  - key: upstream.mode
+    stability: stable
+    brief: Synthetic imported numeric values.
+    type:
+      members:
+        - id: fractional
+          value: 0.5
+          stability: stable
+          brief: A floating-point value.
+        - id: maximum
+          value: 9223372036854775807
+          stability: stable
+          brief: An integer that cannot be converted to float exactly.
