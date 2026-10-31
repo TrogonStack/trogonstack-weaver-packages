@@ -116,15 +116,19 @@ type-only brand, so an instrument does not accept a meter of another scope.
 Each metric becomes a `METRIC_` constant that holds the name it records under,
 and a class that records it. The constant is a separate export, so code that
 needs only the name, such as an SDK view, does not bundle the class. A histogram
-has `record(value, attributes)`. A counter and an up-down counter have
-`add(value, attributes)`. A gauge has `record(value, attributes)`.
+has `record(value, attributes, context?)`. A counter and an up-down counter have
+`add(value, attributes, context?)`. A gauge has `record(value, attributes, context?)`.
 
 ```ts
 export const METRIC_AUTH_ATTEMPTS = "auth.attempts";
 
 export class AuthAttempts {
   constructor(meter: Meter);
-  add(value: number, attributes: AuthAttemptsAttributes): void;
+  add(
+    value: number,
+    attributes: AuthAttemptsAttributes,
+    context?: Context,
+  ): void;
 }
 ```
 
@@ -134,6 +138,13 @@ property, and any other attribute is an optional property, which also accepts
 `{}`, so `queueDepth.record(3)` is valid. Attributes are copied into a plain
 object, including array values, so later changes by the caller do not reach the
 SDK.
+
+The optional final argument is an OpenTelemetry `Context`. It passes unchanged
+to the SDK. Without it, the SDK uses the active context. A metric without
+attributes accepts only `undefined` in the attribute position, so
+`queueDepth.record(3, undefined, context)` supplies an explicit context without
+adding undeclared attributes. Required attributes remain required when a
+context is supplied.
 
 Every metric except a histogram also gets an observable form: a class named
 like the metric with an `Observable` suffix. Its constructor takes the `Meter`

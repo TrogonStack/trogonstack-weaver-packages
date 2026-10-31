@@ -57,8 +57,8 @@ export class SampleImported {
     });
   }
 
-  add(value: number, attributes: SampleImportedAttributes): void {
-    this.#instrument.add(value, toSampleImportedAttributes(attributes));
+  add(value: number, attributes: SampleImportedAttributes, context?: api.Context): void {
+    this.#instrument.add(value, toSampleImportedAttributes(attributes), context);
   }
 }
 

@@ -33,8 +33,8 @@ export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeter
 {% set method = "add" if metric.instrument in ["counter", "updowncounter"] else "record" %}
 {% set has_attributes = metric.attributes | length > 0 %}
 {% set optional_only = has_attributes and not metric.has_required %}
-{% set parameters = ", attributes: " ~ type ~ "Attributes" ~ (" = {}" if optional_only else "") if has_attributes else "" %}
-{% set arguments = ", to" ~ type ~ "Attributes(attributes)" if has_attributes else "" %}
+{% set parameters = ", attributes: " ~ type ~ "Attributes" ~ (" = {}" if optional_only else "") if has_attributes else ", attributes?: undefined" %}
+{% set arguments = ", to" ~ type ~ "Attributes(attributes)" if has_attributes else ", attributes" %}
 {% if has_attributes %}
 
 export type {{ type }}Attributes = {
@@ -90,8 +90,8 @@ export const {{ metric.name_constant }} = {{ metric.instrument_name | tojson }};
     });
   }
 
-  {{ method }}(value: number{{ parameters }}): void {
-    this.#instrument.{{ method }}(value{{ arguments }});
+  {{ method }}(value: number{{ parameters }}, context?: api.Context): void {
+    this.#instrument.{{ method }}(value{{ arguments }}, context);
   }
 }
 {% if metric.instrument != "histogram" %}

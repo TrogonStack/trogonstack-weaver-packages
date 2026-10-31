@@ -54,8 +54,8 @@ export class MyappTaskStarted {
     });
   }
 
-  add(value: number, attributes: MyappTaskStartedAttributes): void {
-    this.#instrument.add(value, toMyappTaskStartedAttributes(attributes));
+  add(value: number, attributes: MyappTaskStartedAttributes, context?: api.Context): void {
+    this.#instrument.add(value, toMyappTaskStartedAttributes(attributes), context);
   }
 }
 

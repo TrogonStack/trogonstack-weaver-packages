@@ -37,8 +37,8 @@ export class SampleDuration {
     });
   }
 
-  record(value: number): void {
-    this.#instrument.record(value);
+  record(value: number, attributes?: undefined, context?: api.Context): void {
+    this.#instrument.record(value, attributes, context);
   }
 }
 
@@ -58,7 +58,7 @@ export class SampleSize {
     });
   }
 
-  record(value: number): void {
-    this.#instrument.record(value);
+  record(value: number, attributes?: undefined, context?: api.Context): void {
+    this.#instrument.record(value, attributes, context);
   }
 }

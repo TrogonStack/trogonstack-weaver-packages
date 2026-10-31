@@ -86,8 +86,8 @@ export class MyappJobPending {
     });
   }
 
-  add(value: number, attributes: MyappJobPendingAttributes): void {
-    this.#instrument.add(value, toMyappJobPendingAttributes(attributes));
+  add(value: number, attributes: MyappJobPendingAttributes, context?: api.Context): void {
+    this.#instrument.add(value, toMyappJobPendingAttributes(attributes), context);
   }
 }
 
@@ -199,8 +199,8 @@ export class MyappJobRuns {
     });
   }
 
-  add(value: number, attributes: MyappJobRunsAttributes): void {
-    this.#instrument.add(value, toMyappJobRunsAttributes(attributes));
+  add(value: number, attributes: MyappJobRunsAttributes, context?: api.Context): void {
+    this.#instrument.add(value, toMyappJobRunsAttributes(attributes), context);
   }
 }
 

@@ -80,8 +80,8 @@ export class SampleRecorded {
     });
   }
 
-  add(value: number, attributes: SampleRecordedAttributes): void {
-    this.#instrument.add(value, toSampleRecordedAttributes(attributes));
+  add(value: number, attributes: SampleRecordedAttributes, context?: api.Context): void {
+    this.#instrument.add(value, toSampleRecordedAttributes(attributes), context);
   }
 }
 

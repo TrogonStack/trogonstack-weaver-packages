@@ -51,8 +51,8 @@ export class AuthAttempts {
     });
   }
 
-  add(value: number, attributes: AuthAttemptsAttributes): void {
-    this.#instrument.add(value, toAuthAttemptsAttributes(attributes));
+  add(value: number, attributes: AuthAttemptsAttributes, context?: api.Context): void {
+    this.#instrument.add(value, toAuthAttemptsAttributes(attributes), context);
   }
 }
 
@@ -116,8 +116,8 @@ export class Myapp {
     });
   }
 
-  add(value: number, attributes: MyappAttributes = {}): void {
-    this.#instrument.add(value, toMyappAttributes(attributes));
+  add(value: number, attributes: MyappAttributes = {}, context?: api.Context): void {
+    this.#instrument.add(value, toMyappAttributes(attributes), context);
   }
 }
 
@@ -195,7 +195,7 @@ export class TaskDuration {
     });
   }
 
-  record(value: number, attributes: TaskDurationAttributes): void {
-    this.#instrument.record(value, toTaskDurationAttributes(attributes));
+  record(value: number, attributes: TaskDurationAttributes, context?: api.Context): void {
+    this.#instrument.record(value, toTaskDurationAttributes(attributes), context);
   }
 }

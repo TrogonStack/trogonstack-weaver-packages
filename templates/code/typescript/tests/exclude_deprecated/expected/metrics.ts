@@ -58,8 +58,8 @@ export class SampleKept {
     });
   }
 
-  add(value: number, attributes: SampleKeptAttributes): void {
-    this.#instrument.add(value, toSampleKeptAttributes(attributes));
+  add(value: number, attributes: SampleKeptAttributes, context?: api.Context): void {
+    this.#instrument.add(value, toSampleKeptAttributes(attributes), context);
   }
 }
 
@@ -106,8 +106,8 @@ export class SampleUnstable {
     });
   }
 
-  record(value: number): void {
-    this.#instrument.record(value);
+  record(value: number, attributes?: undefined, context?: api.Context): void {
+    this.#instrument.record(value, attributes, context);
   }
 }
 

@@ -52,8 +52,8 @@ export class MyappTaskDuration {
     });
   }
 
-  record(value: number, attributes: MyappTaskDurationAttributes): void {
-    this.#instrument.record(value, toMyappTaskDurationAttributes(attributes));
+  record(value: number, attributes: MyappTaskDurationAttributes, context?: api.Context): void {
+    this.#instrument.record(value, toMyappTaskDurationAttributes(attributes), context);
   }
 }
 
@@ -87,8 +87,8 @@ export class MyappTaskLatency {
     });
   }
 
-  record(value: number, attributes: MyappTaskLatencyAttributes): void {
-    this.#instrument.record(value, toMyappTaskLatencyAttributes(attributes));
+  record(value: number, attributes: MyappTaskLatencyAttributes, context?: api.Context): void {
+    this.#instrument.record(value, toMyappTaskLatencyAttributes(attributes), context);
   }
 }
 
@@ -122,8 +122,8 @@ export class MyappTaskRetryDuration {
     });
   }
 
-  record(value: number, attributes: MyappTaskRetryDurationAttributes): void {
-    this.#instrument.record(value, toMyappTaskRetryDurationAttributes(attributes));
+  record(value: number, attributes: MyappTaskRetryDurationAttributes, context?: api.Context): void {
+    this.#instrument.record(value, toMyappTaskRetryDurationAttributes(attributes), context);
   }
 }
 
@@ -156,7 +156,7 @@ export class MyappTaskSize {
     });
   }
 
-  record(value: number, attributes: MyappTaskSizeAttributes): void {
-    this.#instrument.record(value, toMyappTaskSizeAttributes(attributes));
+  record(value: number, attributes: MyappTaskSizeAttributes, context?: api.Context): void {
+    this.#instrument.record(value, toMyappTaskSizeAttributes(attributes), context);
   }
 }

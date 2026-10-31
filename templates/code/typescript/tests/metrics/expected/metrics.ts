@@ -56,8 +56,8 @@ export class AuthAttempts {
     });
   }
 
-  add(value: number, attributes: AuthAttemptsAttributes): void {
-    this.#instrument.add(value, toAuthAttemptsAttributes(attributes));
+  add(value: number, attributes: AuthAttemptsAttributes, context?: api.Context): void {
+    this.#instrument.add(value, toAuthAttemptsAttributes(attributes), context);
   }
 }
 
@@ -108,8 +108,8 @@ export class MyappQueueDepth {
     });
   }
 
-  record(value: number): void {
-    this.#instrument.record(value);
+  record(value: number, attributes?: undefined, context?: api.Context): void {
+    this.#instrument.record(value, attributes, context);
   }
 }
 
@@ -173,8 +173,8 @@ export class MyappTaskActive {
     });
   }
 
-  add(value: number, attributes: MyappTaskActiveAttributes): void {
-    this.#instrument.add(value, toMyappTaskActiveAttributes(attributes));
+  add(value: number, attributes: MyappTaskActiveAttributes, context?: api.Context): void {
+    this.#instrument.add(value, toMyappTaskActiveAttributes(attributes), context);
   }
 }
 
@@ -258,8 +258,8 @@ export class MyappTaskDuration {
     });
   }
 
-  record(value: number, attributes: MyappTaskDurationAttributes): void {
-    this.#instrument.record(value, toMyappTaskDurationAttributes(attributes));
+  record(value: number, attributes: MyappTaskDurationAttributes, context?: api.Context): void {
+    this.#instrument.record(value, toMyappTaskDurationAttributes(attributes), context);
   }
 }
 
@@ -279,8 +279,8 @@ export class MyappTaskFloatActive {
     });
   }
 
-  add(value: number): void {
-    this.#instrument.add(value);
+  add(value: number, attributes?: undefined, context?: api.Context): void {
+    this.#instrument.add(value, attributes, context);
   }
 }
 
@@ -329,8 +329,8 @@ export class MyappTaskFloatDepth {
     });
   }
 
-  record(value: number): void {
-    this.#instrument.record(value);
+  record(value: number, attributes?: undefined, context?: api.Context): void {
+    this.#instrument.record(value, attributes, context);
   }
 }
 
@@ -379,8 +379,8 @@ export class MyappTaskFloatStarted {
     });
   }
 
-  add(value: number): void {
-    this.#instrument.add(value);
+  add(value: number, attributes?: undefined, context?: api.Context): void {
+    this.#instrument.add(value, attributes, context);
   }
 }
 
@@ -430,8 +430,8 @@ export class MyappTaskPayload {
     });
   }
 
-  record(value: number): void {
-    this.#instrument.record(value);
+  record(value: number, attributes?: undefined, context?: api.Context): void {
+    this.#instrument.record(value, attributes, context);
   }
 }
 
@@ -470,8 +470,8 @@ export class MyappTaskStarted {
     });
   }
 
-  add(value: number, attributes: MyappTaskStartedAttributes = {}): void {
-    this.#instrument.add(value, toMyappTaskStartedAttributes(attributes));
+  add(value: number, attributes: MyappTaskStartedAttributes = {}, context?: api.Context): void {
+    this.#instrument.add(value, toMyappTaskStartedAttributes(attributes), context);
   }
 }
 
