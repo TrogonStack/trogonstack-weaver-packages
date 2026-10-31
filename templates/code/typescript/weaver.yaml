@@ -130,8 +130,8 @@ templates:
         then scalar_type[.type]
         else error("metric \($metric) references attribute \(.key) of type \(.type | tostring), which the TypeScript template does not render") end;
       def boundaries($metric; $what):
-        if type != "array" or length == 0 or any(type != "number")
-        then error("metric \($metric) must set \($what) to a non-empty list of numbers")
+        if type != "array" or length == 0 or any(type != "number" or isinfinite or isnan)
+        then error("metric \($metric) must set \($what) to a non-empty list of finite numbers")
         elif ([range(1; length) as $i | select(.[$i] <= .[$i - 1])] | length) > 0
         then error("metric \($metric) must list \($what) in strictly increasing order")
         else . end;

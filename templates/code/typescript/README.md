@@ -170,7 +170,7 @@ annotations:
       boundaries: [0.1, 1, 10]
 ```
 
-Boundaries must be a non-empty list of numbers in strictly increasing order.
+Boundaries must be a non-empty list of finite numbers in strictly increasing order.
 The annotation is valid only on a histogram, and `method` and `parameters` are
 the only fields it accepts. A histogram without the annotation takes the
 boundaries that `histogram_boundaries_by_unit` lists for its unit. A unit
