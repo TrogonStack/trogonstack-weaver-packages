@@ -35,18 +35,16 @@ function toAuthAttemptsAttributes(attributes: AuthAttemptsAttributes): api.Attri
   };
 }
 
+export const METRIC_AUTH_ATTEMPTS = "auth.attempts";
+
 /**
  * Number of authentication attempts.
  */
 export class AuthAttempts {
-  static getName(): "auth.attempts" {
-    return "auth.attempts";
-  }
-
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createCounter("auth.attempts", {
+    this.#instrument = meter.createCounter(METRIC_AUTH_ATTEMPTS, {
       description: "Number of authentication attempts.",
       unit: "{attempt}",
       valueType: api.ValueType.INT,
@@ -66,15 +64,11 @@ export type AuthAttemptsCallback = (observe: AuthAttemptsObserve) => void | Prom
  * Observes auth.attempts when the SDK collects.
  */
 export class AuthAttemptsObservable {
-  static getName(): "auth.attempts" {
-    return "auth.attempts";
-  }
-
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: AuthAttemptsCallback) {
-    this.#instrument = meter.createObservableCounter("auth.attempts", {
+    this.#instrument = meter.createObservableCounter(METRIC_AUTH_ATTEMPTS, {
       description: "Number of authentication attempts.",
       unit: "{attempt}",
       valueType: api.ValueType.INT,
@@ -106,18 +100,16 @@ function toMyappAttributes(attributes: MyappAttributes): api.Attributes {
   return result;
 }
 
+export const METRIC_MYAPP = "myapp";
+
 /**
  * Metric named like the vendor prefix.
  */
 export class Myapp {
-  static getName(): "myapp" {
-    return "myapp";
-  }
-
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createCounter("myapp", {
+    this.#instrument = meter.createCounter(METRIC_MYAPP, {
       description: "Metric named like the vendor prefix.",
       unit: "{item}",
       valueType: api.ValueType.INT,
@@ -137,15 +129,11 @@ export type MyappCallback = (observe: MyappObserve) => void | Promise<void>;
  * Observes myapp when the SDK collects.
  */
 export class MyappObservable {
-  static getName(): "myapp" {
-    return "myapp";
-  }
-
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappCallback) {
-    this.#instrument = meter.createObservableCounter("myapp", {
+    this.#instrument = meter.createObservableCounter(METRIC_MYAPP, {
       description: "Metric named like the vendor prefix.",
       unit: "{item}",
       valueType: api.ValueType.INT,
@@ -190,18 +178,16 @@ function toTaskDurationAttributes(attributes: TaskDurationAttributes): api.Attri
   return result;
 }
 
+export const METRIC_TASK_DURATION = "myapp.task.duration";
+
 /**
  * Time a task took.
  */
 export class TaskDuration {
-  static getName(): "myapp.task.duration" {
-    return "myapp.task.duration";
-  }
-
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createHistogram("myapp.task.duration", {
+    this.#instrument = meter.createHistogram(METRIC_TASK_DURATION, {
       description: "Time a task took.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,

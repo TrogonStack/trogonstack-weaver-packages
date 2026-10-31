@@ -72,15 +72,13 @@ function to{{ type }}Attributes(attributes: {{ type }}Attributes): api.Attribute
 }
 {% endif %}
 
-{{ m.doc(metric.brief, metric.note, "Opt-in: record it only when the user asks for it." if metric.requirement_level == "opt_in" else none, metric.deprecation, 0) }}export class {{ type }} {
-  static getName(): {{ metric.instrument_name | tojson }} {
-    return {{ metric.instrument_name | tojson }};
-  }
+export const {{ metric.name_constant }} = {{ metric.instrument_name | tojson }};
 
+{{ m.doc(metric.brief, metric.note, "Opt-in: record it only when the user asks for it." if metric.requirement_level == "opt_in" else none, metric.deprecation, 0) }}export class {{ type }} {
   readonly #instrument: api.{{ kind }};
 
   constructor(meter: Meter) {
-    this.#instrument = meter.create{{ kind }}({{ metric.instrument_name | tojson }}, {
+    this.#instrument = meter.create{{ kind }}({{ metric.name_constant }}, {
       description: {{ (metric.description or "") | trim | tojson }},
       unit: {{ metric.unit | tojson }},
 {% if metric.value_type %}
@@ -103,15 +101,11 @@ export type {{ type }}Observe = (value: number{{ ", attributes" ~ ("?" if option
 export type {{ type }}Callback = (observe: {{ type }}Observe) => void | Promise<void>;
 
 {{ m.doc("Observes " ~ metric.instrument_name ~ " when the SDK collects.", none, none, metric.deprecation, 0) }}export class {{ type }}Observable {
-  static getName(): {{ metric.instrument_name | tojson }} {
-    return {{ metric.instrument_name | tojson }};
-  }
-
   readonly #instrument: api.Observable{{ kind }};
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: {{ type }}Callback) {
-    this.#instrument = meter.createObservable{{ kind }}({{ metric.instrument_name | tojson }}, {
+    this.#instrument = meter.createObservable{{ kind }}({{ metric.name_constant }}, {
       description: {{ (metric.description or "") | trim | tojson }},
       unit: {{ metric.unit | tojson }},
 {% if metric.value_type %}

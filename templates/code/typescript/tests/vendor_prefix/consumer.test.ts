@@ -21,6 +21,6 @@ test("the vendor prefix leaves the TypeScript names but not the wire keys", asyn
     "auth.method": "password",
   });
   assert.equal(Attributes.TaskId.KEY, "myapp.task.id");
-  assert.equal(Metrics.TaskDuration.getName(), "myapp.task.duration");
+  assert.equal(Metrics.METRIC_TASK_DURATION, "myapp.task.duration");
   assert.deepEqual((await recorder.metric("myapp")).dataPoints[0]?.attributes, { myapp: "a" });
 });

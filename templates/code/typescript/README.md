@@ -113,14 +113,16 @@ Enums from a dependency become literal unions.
 defaults to the global meter provider. `Meter` is an OpenTelemetry meter with a
 type-only brand, so an instrument does not accept a meter of another scope.
 
-Each metric becomes a class with a static `getName()`, the name it records under. A
-histogram has `record(value, attributes)`. A counter and an up-down counter have
+Each metric becomes a `METRIC_` constant that holds the name it records under,
+and a class that records it. The constant is a separate export, so code that
+needs only the name, such as an SDK view, does not bundle the class. A histogram
+has `record(value, attributes)`. A counter and an up-down counter have
 `add(value, attributes)`. A gauge has `record(value, attributes)`.
 
 ```ts
-export class AuthAttempts {
-  static getName(): "auth.attempts";
+export const METRIC_AUTH_ATTEMPTS = "auth.attempts";
 
+export class AuthAttempts {
   constructor(meter: Meter);
   add(value: number, attributes: AuthAttemptsAttributes): void;
 }

@@ -42,18 +42,16 @@ function toSampleImportedAttributes(attributes: SampleImportedAttributes): api.A
   return result;
 }
 
+export const METRIC_SAMPLE_IMPORTED = "sample.imported";
+
 /**
  * Synthetic metric.
  */
 export class SampleImported {
-  static getName(): "sample.imported" {
-    return "sample.imported";
-  }
-
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createCounter("sample.imported", {
+    this.#instrument = meter.createCounter(METRIC_SAMPLE_IMPORTED, {
       description: "Synthetic metric.",
       unit: "{item}",
     });
@@ -72,15 +70,11 @@ export type SampleImportedCallback = (observe: SampleImportedObserve) => void | 
  * Observes sample.imported when the SDK collects.
  */
 export class SampleImportedObservable {
-  static getName(): "sample.imported" {
-    return "sample.imported";
-  }
-
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleImportedCallback) {
-    this.#instrument = meter.createObservableCounter("sample.imported", {
+    this.#instrument = meter.createObservableCounter(METRIC_SAMPLE_IMPORTED, {
       description: "Synthetic metric.",
       unit: "{item}",
     });

@@ -38,18 +38,16 @@ function toMyappTaskStartedAttributes(attributes: MyappTaskStartedAttributes): a
   };
 }
 
+export const METRIC_MYAPP_TASK_STARTED = "myapp.task.started";
+
 /**
  * Number of tasks started.
  */
 export class MyappTaskStarted {
-  static getName(): "myapp.task.started" {
-    return "myapp.task.started";
-  }
-
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createCounter("myapp.task.started", {
+    this.#instrument = meter.createCounter(METRIC_MYAPP_TASK_STARTED, {
       description: "Number of tasks started.",
       unit: "{task}",
       valueType: api.ValueType.INT,
@@ -69,15 +67,11 @@ export type MyappTaskStartedCallback = (observe: MyappTaskStartedObserve) => voi
  * Observes myapp.task.started when the SDK collects.
  */
 export class MyappTaskStartedObservable {
-  static getName(): "myapp.task.started" {
-    return "myapp.task.started";
-  }
-
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappTaskStartedCallback) {
-    this.#instrument = meter.createObservableCounter("myapp.task.started", {
+    this.#instrument = meter.createObservableCounter(METRIC_MYAPP_TASK_STARTED, {
       description: "Number of tasks started.",
       unit: "{task}",
       valueType: api.ValueType.INT,

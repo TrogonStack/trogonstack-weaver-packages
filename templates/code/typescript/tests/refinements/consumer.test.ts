@@ -14,7 +14,7 @@ test("a refinement has its own attribute type and records into the base instrume
 
   const duration = await recorder.metric("myapp.task.duration");
   assert.equal(duration.descriptor.unit, "s");
-  assert.equal(Metrics.MyappTaskRetryDuration.getName(), Metrics.MyappTaskDuration.getName());
+  assert.equal(Metrics.METRIC_MYAPP_TASK_RETRY_DURATION, Metrics.METRIC_MYAPP_TASK_DURATION);
   assert.deepEqual(
     duration.dataPoints.map((point) => point.attributes),
     [

@@ -35,18 +35,16 @@ function toMyappTaskDurationAttributes(attributes: MyappTaskDurationAttributes):
   };
 }
 
+export const METRIC_MYAPP_TASK_DURATION = "myapp.task.duration";
+
 /**
  * Time a task took from start to finish.
  */
 export class MyappTaskDuration {
-  static getName(): "myapp.task.duration" {
-    return "myapp.task.duration";
-  }
-
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createHistogram("myapp.task.duration", {
+    this.#instrument = meter.createHistogram(METRIC_MYAPP_TASK_DURATION, {
       description: "Time a task took from start to finish.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -72,18 +70,16 @@ function toMyappTaskLatencyAttributes(attributes: MyappTaskLatencyAttributes): a
   };
 }
 
+export const METRIC_MYAPP_TASK_LATENCY = "myapp.task.latency";
+
 /**
  * Time between a task being queued and started.
  */
 export class MyappTaskLatency {
-  static getName(): "myapp.task.latency" {
-    return "myapp.task.latency";
-  }
-
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createHistogram("myapp.task.latency", {
+    this.#instrument = meter.createHistogram(METRIC_MYAPP_TASK_LATENCY, {
       description: "Time between a task being queued and started.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -109,18 +105,16 @@ function toMyappTaskRetryDurationAttributes(attributes: MyappTaskRetryDurationAt
   };
 }
 
+export const METRIC_MYAPP_TASK_RETRY_DURATION = "myapp.task.duration";
+
 /**
  * Time a retried task took from start to finish.
  */
 export class MyappTaskRetryDuration {
-  static getName(): "myapp.task.duration" {
-    return "myapp.task.duration";
-  }
-
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createHistogram("myapp.task.duration", {
+    this.#instrument = meter.createHistogram(METRIC_MYAPP_TASK_RETRY_DURATION, {
       description: "Time a task took from start to finish.",
       unit: "s",
       valueType: api.ValueType.DOUBLE,
@@ -146,18 +140,16 @@ function toMyappTaskSizeAttributes(attributes: MyappTaskSizeAttributes): api.Att
   };
 }
 
+export const METRIC_MYAPP_TASK_SIZE = "myapp.task.size";
+
 /**
  * Size of a task's payload.
  */
 export class MyappTaskSize {
-  static getName(): "myapp.task.size" {
-    return "myapp.task.size";
-  }
-
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createHistogram("myapp.task.size", {
+    this.#instrument = meter.createHistogram(METRIC_MYAPP_TASK_SIZE, {
       description: "Size of a task\u0027s payload.",
       unit: "By",
       valueType: api.ValueType.DOUBLE,

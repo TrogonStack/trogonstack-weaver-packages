@@ -184,6 +184,7 @@ templates:
               . + {bucket_boundaries: ($histogram_boundaries_by_unit[$unit] | boundaries($metric; "histogram_boundaries_by_unit for unit \($unit)"))}
             else . end)
       | map(.type_name = (.name | unprefixed | pascal)
+          | .name_constant = ("METRIC_" + (.name | unprefixed | gsub("[.]"; "_") | ascii_upcase))
           | .value_type = (.annotations.code_generation.metric_value_type // null)
           | .deprecation = (.deprecated | deprecation)
           | (.instrument_name | unprefixed | split(".") | .[0]) as $namespace
@@ -218,7 +219,7 @@ templates:
       | if length == 0 then [] else [.] end
       | map(
           ([.[] | .name as $metric | .type_name as $type | .instrument as $kind
-            | ([$type] + (if (.attributes | length) > 0 then [$type + "Attributes"] else [] end)
+            | ([$type, .name_constant] + (if (.attributes | length) > 0 then [$type + "Attributes"] else [] end)
                + (if $kind == "histogram" then [] else [$type + "Observable", $type + "Observe", $type + "Callback"] end))[]
             | {identifier: ., name: $metric}]
            + [["Meter", "WeakMap", "Promise"][] | {identifier: ., name: "the reserved name \(.)"}]

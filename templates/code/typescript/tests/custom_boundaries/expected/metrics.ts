@@ -21,18 +21,16 @@ export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeter
   return meterProvider.getMeter(INSTRUMENTATION_NAME, undefined, { schemaUrl: SCHEMA_URL }) as Meter;
 }
 
+export const METRIC_SAMPLE_DURATION = "sample.duration";
+
 /**
  * Synthetic metric.
  */
 export class SampleDuration {
-  static getName(): "sample.duration" {
-    return "sample.duration";
-  }
-
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createHistogram("sample.duration", {
+    this.#instrument = meter.createHistogram(METRIC_SAMPLE_DURATION, {
       description: "Synthetic metric.",
       unit: "s",
       advice: { explicitBucketBoundaries: [0.1, 0.5, 1] },
@@ -44,18 +42,16 @@ export class SampleDuration {
   }
 }
 
+export const METRIC_SAMPLE_SIZE = "sample.size";
+
 /**
  * Synthetic metric.
  */
 export class SampleSize {
-  static getName(): "sample.size" {
-    return "sample.size";
-  }
-
   readonly #instrument: api.Histogram;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createHistogram("sample.size", {
+    this.#instrument = meter.createHistogram(METRIC_SAMPLE_SIZE, {
       description: "Synthetic metric.",
       unit: "By",
       advice: { explicitBucketBoundaries: [1, 2, 4] },

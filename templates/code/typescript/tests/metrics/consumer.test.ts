@@ -12,7 +12,7 @@ test("instruments carry the registry name, unit, description, scope and schema U
   new Metrics.MyappTaskDuration(meter).record(1.5, { taskId: "task_0001" });
 
   const metric = await recorder.metric("myapp.task.duration");
-  assert.equal(Metrics.MyappTaskDuration.getName(), "myapp.task.duration");
+  assert.equal(Metrics.METRIC_MYAPP_TASK_DURATION, "myapp.task.duration");
   assert.equal(metric.descriptor.unit, "s");
   assert.equal(metric.descriptor.description, "Time a task took from start to finish.");
   assert.equal(metric.descriptor.valueType, 1);
@@ -99,7 +99,6 @@ test("an observable instrument reports when the SDK collects and stops on reques
   assert.equal((await recorder.metric("myapp.queue.depth")).dataPoints[0]?.value, 7);
   observable.stop();
   depth.stop();
-  assert.equal(Metrics.MyappTaskActiveObservable.getName(), Metrics.MyappTaskActive.getName());
 });
 
 test("a meter without a provider is harmless until a global provider is set", async () => {
@@ -115,9 +114,8 @@ test("a meter without a provider is harmless until a global provider is set", as
   metrics.disable();
 });
 
-test("getName() returns the name the metric records under", () => {
-  assert.equal(Metrics.AuthAttempts.getName(), "auth.attempts");
-  assert.equal(Metrics.AuthAttemptsObservable.getName(), "auth.attempts");
+test("METRIC_ constants hold the name the metric records under", () => {
+  assert.equal(Metrics.METRIC_AUTH_ATTEMPTS, "auth.attempts");
 });
 
 function invalidConsumers() {
@@ -142,7 +140,7 @@ function invalidConsumers() {
   // @ts-expect-error A meter without the registry scope is rejected.
   new Metrics.AuthAttempts(metrics.getMeter("other"));
   // @ts-expect-error The name is the literal registry name.
-  const other: "other" = Metrics.AuthAttempts.getName();
+  const other: "other" = Metrics.METRIC_AUTH_ATTEMPTS;
   void other;
 }
 void invalidConsumers;

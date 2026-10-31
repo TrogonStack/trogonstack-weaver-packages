@@ -35,18 +35,16 @@ function toSampleKeptAttributes(attributes: SampleKeptAttributes): api.Attribute
   };
 }
 
+export const METRIC_SAMPLE_KEPT = "sample.kept";
+
 /**
  * Kept metric.
  */
 export class SampleKept {
-  static getName(): "sample.kept" {
-    return "sample.kept";
-  }
-
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createCounter("sample.kept", {
+    this.#instrument = meter.createCounter(METRIC_SAMPLE_KEPT, {
       description: "Kept metric.",
       unit: "{item}",
     });
@@ -65,15 +63,11 @@ export type SampleKeptCallback = (observe: SampleKeptObserve) => void | Promise<
  * Observes sample.kept when the SDK collects.
  */
 export class SampleKeptObservable {
-  static getName(): "sample.kept" {
-    return "sample.kept";
-  }
-
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleKeptCallback) {
-    this.#instrument = meter.createObservableCounter("sample.kept", {
+    this.#instrument = meter.createObservableCounter(METRIC_SAMPLE_KEPT, {
       description: "Kept metric.",
       unit: "{item}",
     });

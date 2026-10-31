@@ -65,18 +65,16 @@ function toSampleRecordedAttributes(attributes: SampleRecordedAttributes): api.A
   };
 }
 
+export const METRIC_SAMPLE_RECORDED = "sample.recorded";
+
 /**
  * Synthetic metric.
  */
 export class SampleRecorded {
-  static getName(): "sample.recorded" {
-    return "sample.recorded";
-  }
-
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createCounter("sample.recorded", {
+    this.#instrument = meter.createCounter(METRIC_SAMPLE_RECORDED, {
       description: "Synthetic metric.",
       unit: "{item}",
     });
@@ -95,15 +93,11 @@ export type SampleRecordedCallback = (observe: SampleRecordedObserve) => void | 
  * Observes sample.recorded when the SDK collects.
  */
 export class SampleRecordedObservable {
-  static getName(): "sample.recorded" {
-    return "sample.recorded";
-  }
-
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: SampleRecordedCallback) {
-    this.#instrument = meter.createObservableCounter("sample.recorded", {
+    this.#instrument = meter.createObservableCounter(METRIC_SAMPLE_RECORDED, {
       description: "Synthetic metric.",
       unit: "{item}",
     });

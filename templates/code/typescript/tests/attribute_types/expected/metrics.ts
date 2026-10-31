@@ -70,18 +70,16 @@ function toMyappJobPendingAttributes(attributes: MyappJobPendingAttributes): api
   return result;
 }
 
+export const METRIC_MYAPP_JOB_PENDING = "myapp.job.pending";
+
 /**
  * Number of pending jobs.
  */
 export class MyappJobPending {
-  static getName(): "myapp.job.pending" {
-    return "myapp.job.pending";
-  }
-
   readonly #instrument: api.UpDownCounter;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createUpDownCounter("myapp.job.pending", {
+    this.#instrument = meter.createUpDownCounter(METRIC_MYAPP_JOB_PENDING, {
       description: "Number of pending jobs.",
       unit: "{job}",
       valueType: api.ValueType.INT,
@@ -101,15 +99,11 @@ export type MyappJobPendingCallback = (observe: MyappJobPendingObserve) => void 
  * Observes myapp.job.pending when the SDK collects.
  */
 export class MyappJobPendingObservable {
-  static getName(): "myapp.job.pending" {
-    return "myapp.job.pending";
-  }
-
   readonly #instrument: api.ObservableUpDownCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappJobPendingCallback) {
-    this.#instrument = meter.createObservableUpDownCounter("myapp.job.pending", {
+    this.#instrument = meter.createObservableUpDownCounter(METRIC_MYAPP_JOB_PENDING, {
       description: "Number of pending jobs.",
       unit: "{job}",
       valueType: api.ValueType.INT,
@@ -189,18 +183,16 @@ function toMyappJobRunsAttributes(attributes: MyappJobRunsAttributes): api.Attri
   };
 }
 
+export const METRIC_MYAPP_JOB_RUNS = "myapp.job.runs";
+
 /**
  * Number of job runs.
  */
 export class MyappJobRuns {
-  static getName(): "myapp.job.runs" {
-    return "myapp.job.runs";
-  }
-
   readonly #instrument: api.Counter;
 
   constructor(meter: Meter) {
-    this.#instrument = meter.createCounter("myapp.job.runs", {
+    this.#instrument = meter.createCounter(METRIC_MYAPP_JOB_RUNS, {
       description: "Number of job runs.",
       unit: "{run}",
       valueType: api.ValueType.INT,
@@ -220,15 +212,11 @@ export type MyappJobRunsCallback = (observe: MyappJobRunsObserve) => void | Prom
  * Observes myapp.job.runs when the SDK collects.
  */
 export class MyappJobRunsObservable {
-  static getName(): "myapp.job.runs" {
-    return "myapp.job.runs";
-  }
-
   readonly #instrument: api.ObservableCounter;
   readonly #callback: api.ObservableCallback;
 
   constructor(meter: Meter, callback: MyappJobRunsCallback) {
-    this.#instrument = meter.createObservableCounter("myapp.job.runs", {
+    this.#instrument = meter.createObservableCounter(METRIC_MYAPP_JOB_RUNS, {
       description: "Number of job runs.",
       unit: "{run}",
       valueType: api.ValueType.INT,
