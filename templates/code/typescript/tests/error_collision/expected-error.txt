@@ -1,0 +1,1 @@
+failed: "metrics render to the same TypeScript identifier: sample.test.count and sample.test_count"

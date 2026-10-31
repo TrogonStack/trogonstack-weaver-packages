@@ -1,0 +1,18 @@
+file_format: definition/2
+attributes:
+- key: __proto__
+  type: string
+  stability: stable
+  brief: Synthetic label with a prototype-sensitive key.
+  examples:
+  - sample
+metrics:
+- name: sample.prototype
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  requirement_level: recommended
+  brief: Synthetic metric with unusual label keys.
+  attributes:
+  - ref: __proto__
+    requirement_level: required

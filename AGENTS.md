@@ -42,6 +42,10 @@ Generated Rust must pass formatting, consumer tests, and Clippy, which
 `mise run weaver:test:rust` checks against the pinned OpenTelemetry Rust API
 and SDK.
 
+Generated TypeScript must type-check and pass consumer tests against the
+pinned OpenTelemetry JavaScript API and SDK, which `mise run
+weaver:test:typescript` checks.
+
 Generated Effect TypeScript must type-check and pass consumer tests against the
 pinned Effect API, which `mise run weaver:test:typescript_effect` checks.
 

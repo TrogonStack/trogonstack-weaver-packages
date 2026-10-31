@@ -1,0 +1,15 @@
+file_format: definition/2
+metrics:
+- name: sample.total
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  annotations:
+    aggregation:
+      method: explicithistogram
+      parameters:
+        boundaries:
+        - 1
+        - 2
+  requirement_level: recommended

@@ -1,0 +1,127 @@
+{% import "macros.j2" as m %}
+{% set synchronous = {"counter": "Counter", "updowncounter": "UpDownCounter", "histogram": "Histogram", "gauge": "Gauge"} %}
+{{ m.header() }}
+import * as api from "@opentelemetry/api";
+{% if ctx.uses_attribute_types %}
+import type * as attributes from "./attributes.ts";
+{% endif %}
+import { SCHEMA_URL } from "./schema.ts";
+
+export const INSTRUMENTATION_NAME = {{ params.instrumentation_name | tojson }};
+{% if params.instrumentation_version %}
+export const INSTRUMENTATION_VERSION = {{ params.instrumentation_version | tojson }};
+{% endif %}
+
+declare const registryMeter: unique symbol;
+
+/**
+ * A meter with the instrumentation scope and schema URL of the registry. Only
+ * `getMeter` returns one, so every generated instrument reports under that scope.
+ */
+export type Meter = api.Meter & { readonly [registryMeter]: true };
+
+/**
+ * Returns the meter of the registry. Without a provider, it uses the global
+ * meter provider.
+ */
+export function getMeter(meterProvider: api.MeterProvider = api.metrics.getMeterProvider()): Meter {
+  return meterProvider.getMeter(INSTRUMENTATION_NAME, {{ "INSTRUMENTATION_VERSION" if params.instrumentation_version else "undefined" }}, { schemaUrl: SCHEMA_URL }) as Meter;
+}
+{% for metric in ctx.metrics %}
+{% set type = metric.type_name %}
+{% set kind = synchronous[metric.instrument] %}
+{% set method = "add" if metric.instrument in ["counter", "updowncounter"] else "record" %}
+{% set has_attributes = metric.attributes | length > 0 %}
+{% set optional_only = has_attributes and not metric.has_required %}
+{% set parameters = ", attributes: " ~ type ~ "Attributes" ~ (" = {}" if optional_only else "") if has_attributes else ", attributes?: undefined" %}
+{% set arguments = ", to" ~ type ~ "Attributes(attributes)" if has_attributes else ", attributes" %}
+{% if has_attributes %}
+
+export type {{ type }}Attributes = {
+{% for attribute in metric.attributes %}
+  {{ m.doc(attribute.brief, attribute.note, attribute.requirement_doc, attribute.deprecation, 2) }}readonly {{ attribute.field }}{{ "?" if attribute.optional }}: {{ attribute.ts_type }}{{ " | undefined" if attribute.optional }};
+{% endfor %}
+};
+
+function to{{ type }}Attributes(attributes: {{ type }}Attributes): api.Attributes {
+{% set optionals = metric.attributes | selectattr("optional") | list %}
+{% if optionals | length > 0 %}
+{% set required = metric.attributes | rejectattr("optional") | list %}
+{% if required | length > 0 %}
+  const result: api.Attributes = {
+{% for attribute in required %}
+    {{ attribute.key | tojson }}: {{ m.attribute_value(attribute) }},
+{% endfor %}
+  };
+{% else %}
+  const result: api.Attributes = {};
+{% endif %}
+{% for attribute in optionals %}
+  if (attributes.{{ attribute.field }} !== undefined) {
+    result[{{ attribute.key | tojson }}] = {{ m.attribute_value(attribute) }};
+  }
+{% endfor %}
+  return result;
+{% else %}
+  return {
+{% for attribute in metric.attributes %}
+    {{ attribute.key | tojson }}: {{ m.attribute_value(attribute) }},
+{% endfor %}
+  };
+{% endif %}
+}
+{% endif %}
+
+export const {{ metric.name_constant }} = {{ metric.instrument_name | tojson }};
+
+{{ m.doc(metric.brief, metric.note, "Opt-in: record it only when the user asks for it." if metric.requirement_level == "opt_in" else none, metric.deprecation, 0) }}export class {{ type }} {
+  readonly #instrument: api.{{ kind }};
+
+  constructor(meter: Meter) {
+    this.#instrument = meter.create{{ kind }}({{ metric.name_constant }}, {
+      description: {{ (metric.description or "") | trim | tojson }},
+      unit: {{ metric.unit | tojson }},
+{% if metric.value_type %}
+      valueType: api.ValueType.{{ metric.value_type | upper }},
+{% endif %}
+{% if metric.bucket_boundaries %}
+      advice: { explicitBucketBoundaries: [{% for boundary in metric.bucket_boundaries %}{{ boundary | tojson }}{{ ", " if not loop.last }}{% endfor %}] },
+{% endif %}
+    });
+  }
+
+  {{ method }}(value: number{{ parameters }}, context?: api.Context): void {
+    this.#instrument.{{ method }}(value{{ arguments }}, context);
+  }
+}
+{% if metric.instrument != "histogram" %}
+
+export type {{ type }}Observe = (value: number{{ ", attributes" ~ ("?" if optional_only) ~ ": " ~ type ~ "Attributes" if has_attributes }}) => void;
+
+export type {{ type }}Callback = (observe: {{ type }}Observe) => void | Promise<void>;
+
+{{ m.doc("Observes " ~ metric.instrument_name ~ " when the SDK collects.", none, none, metric.deprecation, 0) }}export class {{ type }}Observable {
+  readonly #instrument: api.Observable{{ kind }};
+  readonly #callback: api.ObservableCallback;
+
+  constructor(meter: Meter, callback: {{ type }}Callback) {
+    this.#instrument = meter.createObservable{{ kind }}({{ metric.name_constant }}, {
+      description: {{ (metric.description or "") | trim | tojson }},
+      unit: {{ metric.unit | tojson }},
+{% if metric.value_type %}
+      valueType: api.ValueType.{{ metric.value_type | upper }},
+{% endif %}
+    });
+    this.#callback = (result) =>
+      callback((value{{ ", attributes" if has_attributes }}) => {
+        result.observe(value{{ ", to" ~ type ~ "Attributes(attributes" ~ (" ?? {}" if optional_only) ~ ")" if has_attributes }});
+      });
+    this.#instrument.addCallback(this.#callback);
+  }
+
+  stop(): void {
+    this.#instrument.removeCallback(this.#callback);
+  }
+}
+{% endif %}
+{% endfor %}

@@ -1,0 +1,245 @@
+# TypeScript attributes and metrics on the OpenTelemetry JavaScript API.
+# See README.md for what this package generates and the full parameter docs.
+# Override params per registry via `--param key=value` or `--params <file>`.
+whitespace_control:
+  trim_blocks: true
+  lstrip_blocks: true
+
+params:
+  # Instrumentation scope baked into the generated `Meter`. An empty version
+  # passes no version to `getMeter`.
+  instrumentation_name: generated-semconv
+  instrumentation_version: ""
+
+  # Generated file header. `header_source` names what the code was generated
+  # from and `regenerate_command` tells readers how to refresh it. Both are
+  # omitted from the header when empty.
+  header_source: ""
+  regenerate_command: ""
+
+  # Leading name segments that are a vendor prefix rather than a namespace.
+  # With `[acme]`, `acme.billing.invoice.id` renders as `BillingInvoiceId`.
+  vendor_prefixes: []
+
+  # Signal and attribute selection, forwarded to the semconv_grouped_* helpers.
+  exclude_deprecated: false
+  stable_only: false
+
+  # Default `explicitBucketBoundaries` advice for a histogram whose unit matches
+  # and sets no `annotations.aggregation` of its own. Validated the same way as
+  # explicit boundaries: non-empty, numbers, strictly increasing. The default
+  # covers `s` with the boundaries the OpenTelemetry semantic conventions advise
+  # for a duration histogram in seconds. A unit missing from the map gets no
+  # advice, so the SDK default boundaries apply. Set to `{}` to opt out.
+  histogram_boundaries_by_unit:
+    s: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]
+
+templates:
+  - template: schema.ts.j2
+    application_mode: single
+    file_name: schema.ts
+    filter: |-
+      if ($instrumentation_name | type) != "string" or ($instrumentation_name | length) == 0
+      then error("instrumentation_name must be a nonempty string")
+      elif ($instrumentation_version | type) != "string"
+      then error("instrumentation_version must be a string")
+      elif ($vendor_prefixes | type) != "array" or ($vendor_prefixes | any(type != "string"))
+      then error("vendor_prefixes must be a list of strings")
+      else . end
+      | .schema_url as $schema
+      | if $schema == null or $schema == "https://unknown/unknown" or ($schema | test("^https?://[^/]+(/[^/]+)*/[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$") | not)
+        then error("the registry schema_url must name a schema version") else . end
+      | {schema_url: $schema}
+
+  - template: attributes.ts.j2
+    application_mode: each
+    file_name: attributes.ts
+    filter: |-
+      def pascal: gsub("[._]"; " ") | split(" ") | map(.[0:1] |= ascii_upcase) | join("");
+      def unprefixed: split(".") as $s
+        | if ($s | length) > 1 and (($vendor_prefixes | if type == "array" then . else [] end) | any(. == $s[0])) then $s[1:] else $s end
+        | join(".");
+      def valid_name: test("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*$");
+      def kept_members($o): stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o);
+      def deprecation: if . == null then null else (.note // .renamed_to // .reason) end;
+      def scalar_type: {
+        "string": "string", "int": "number", "double": "number", "boolean": "boolean",
+        "string[]": "readonly string[]", "int[]": "readonly number[]",
+        "double[]": "readonly number[]", "boolean[]": "readonly boolean[]"
+      };
+      def supported: (.type | type) == "object" or (.type as $t | ["string", "int", "double", "boolean", "string[]", "int[]", "double[]", "boolean[]"] | any(. == $t));
+      def enum_kind($key):
+        if (.members | length) == 0
+        then error("attribute \($key) has no enum members left after exclude_deprecated or stable_only, so no value of it could be built")
+        elif (.members | all(.value | type == "string")) or (.members | all(.value | type == "boolean")) or (.members | all(.value | type == "number"))
+        then .
+        else error("attribute \($key) has enum members of more than one value type, which no single TypeScript type can hold") end;
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
+      | semconv_grouped_attributes($opts)
+      | map(.attributes) | add // []
+      | map(select(supported))
+      | map(if (.key | valid_name | not) then error("attribute \(.key) is not a supported TypeScript attribute name") else . end)
+      | map(.key as $key
+          | . + {identifier: (.key | unprefixed | pascal), deprecation: (.deprecated | deprecation)}
+          | if (.type | type) == "object"
+            then .deprecation as $inherited
+              | .type.members = (.type.members | kept_members($opts) | map(. + {identifier: (.id | pascal), deprecation: ((.deprecated | deprecation) // $inherited)}))
+              | .type |= enum_kind($key)
+              | if (.type.members | any((.identifier | test("^[A-Za-z][A-Za-z0-9]*$") | not) or .identifier == "KEY"))
+                then error("enum member of attribute \($key) cannot become a TypeScript identifier") else . end
+              | if (.type.members | group_by(.identifier) | any(length > 1))
+                then error("attribute \($key) has enum members that render to the same TypeScript identifier") else . end
+              | . + {members: .type.members, type_expression: (.type.members | map(.value | tojson) | join(" | "))}
+            else . + {members: null, type_expression: (scalar_type[.type])} end)
+      | if (group_by(.identifier) | any(length > 1))
+        then error("attributes render to the same TypeScript identifier: \(group_by(.identifier) | map(select(length > 1) | map(.key) | join(" and ")) | join("; "))")
+        elif (any(.identifier == "Object"))
+        then error("attribute \(map(select(.identifier == "Object") | .key) | join(" and ")) renders to Object, which the generated module needs for the global of that name")
+        else . end
+      | if length == 0 then [] else [{attributes: sort_by(.key)}] end
+
+  - template: metrics.ts.j2
+    application_mode: each
+    file_name: metrics.ts
+    filter: |-
+      def pascal: gsub("[._]"; " ") | split(" ") | map(.[0:1] |= ascii_upcase) | join("");
+      def unprefixed: split(".") as $s
+        | if ($s | length) > 1 and (($vendor_prefixes | if type == "array" then . else [] end) | any(. == $s[0])) then $s[1:] else $s end
+        | join(".");
+      def valid_name: test("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*$");
+      def kept_members($o): stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o);
+      def kept($o):
+        kept_members($o)
+        | map(.attributes = (if .attributes == null then .attributes else .attributes | kept_members($o) end));
+      def deprecation: if . == null then null else (.note // .renamed_to // .reason) end;
+      def scalar_type: {
+        "string": "string", "int": "number", "double": "number", "boolean": "boolean",
+        "string[]": "readonly string[]", "int[]": "readonly number[]",
+        "double[]": "readonly number[]", "boolean[]": "readonly boolean[]"
+      };
+      def supported: (.type | type) == "object" or (.type as $t | ["string", "int", "double", "boolean", "string[]", "int[]", "double[]", "boolean[]"] | any(. == $t));
+      def inline_type($metric; $o):
+        if (.type | type) == "object" then
+          (.type.members | kept_members($o)) as $members
+          | if ($members | length) == 0
+            then error("metric \($metric) references imported attribute \(.key) whose enum has no members left after exclude_deprecated or stable_only, so no value of it could be built")
+            elif ($members | all(.value | type == "string")) or ($members | all(.value | type == "boolean")) or ($members | all(.value | type == "number"))
+            then ($members | map(.value | tojson) | join(" | "))
+            else error("attribute \(.key) has enum members of more than one value type, which no single TypeScript type can hold") end
+        elif (.type as $t | ["string", "int", "double", "boolean", "string[]", "int[]", "double[]", "boolean[]"] | any(. == $t))
+        then scalar_type[.type]
+        else error("metric \($metric) references attribute \(.key) of type \(.type | tostring), which the TypeScript template does not render") end;
+      def boundaries($metric; $what):
+        if type != "array" or length == 0 or any(type != "number" or isinfinite or isnan)
+        then error("metric \($metric) must set \($what) to a non-empty list of finite numbers")
+        elif ([range(1; length) as $i | select(.[$i] <= .[$i - 1])] | length) > 0
+        then error("metric \($metric) must list \($what) in strictly increasing order")
+        else . end;
+      def instruments($o):
+        (semconv_grouped_metrics($o) | map(.metrics) | add // []) as $metrics
+        | ($metrics | map(.name)) as $kept_bases
+        | (.registry.metrics // [] | map({key: .name, value: .}) | from_entries) as $bases
+        | $metrics + (.refinements.metrics // [] | map(select(.id != .name)) | kept($o)
+            | map(select(.name as $base | $kept_bases | any(. == $base)))
+            | map(. as $r | $bases[$r.name] as $b
+                  | if ($r.annotations.code_generation.metric_value_type // null) != ($b.annotations.code_generation.metric_value_type // null)
+                    then error("metric refinement \($r.id) sets a different code_generation.metric_value_type than \($r.name), but both record into one instrument")
+                    elif ($r.annotations.aggregation // null) != ($b.annotations.aggregation // null)
+                    then error("metric refinement \($r.id) sets a different annotations.aggregation than \($r.name), but both record into one instrument")
+                    else . + {name: $r.id, refines: $r.name, instrument_name: $r.name, description: $b.brief, unit: $b.unit} end));
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
+      | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(select(supported)) | map(.key)) as $rendered
+      | (instruments({v2: true})
+         | map({key: .name, value: [(.attributes // [])[] | select(.requirement_level == "required") | .key]})
+         | from_entries) as $declared_required
+      | instruments($opts)
+      | map({instrument_name: .name, description: .brief} + .)
+      | map(.name as $metric
+          | if (.name | valid_name | not)
+            then error("metric \($metric) is not a supported TypeScript metric name")
+            elif (.instrument as $kind | ["counter", "updowncounter", "histogram", "gauge"] | any(. == $kind) | not)
+            then error("metric \($metric) has an unsupported TypeScript instrument")
+            elif (.annotations.code_generation.metric_value_type // "double") as $t | ["int", "double"] | any(. == $t) | not
+            then error("metric \($metric) must set code_generation.metric_value_type to int or double")
+            else . end
+          | (($declared_required[$metric] // []) - [(.attributes // [])[] | .key]) as $dropped
+          | if ($dropped | length) > 0
+            then error("metric \($metric) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated attributes could not set them")
+            else . end)
+      | map(.name as $metric
+          | .unit as $unit
+          | (.annotations.aggregation // null) as $aggregation
+          | ($aggregation | if type == "object" and (.parameters | type) == "object" then .parameters.boundaries else null end) as $bounds
+          | if $aggregation != null then
+              if .instrument != "histogram"
+              then error("metric \($metric) sets annotations.aggregation, which the TypeScript template supports only on a histogram")
+              elif ($aggregation | type) != "object" or ($aggregation.parameters // {} | type) != "object"
+              then error("metric \($metric) must set annotations.aggregation to an object with a method and parameters")
+              elif $aggregation.method != "explicithistogram"
+              then error("metric \($metric) sets annotations.aggregation.method to \($aggregation.method | tostring), but the TypeScript template supports only explicithistogram")
+              elif (($aggregation | keys) - ["method", "parameters"] | length) > 0 or (($aggregation.parameters // {} | keys) - ["boundaries"] | length) > 0
+              then error("metric \($metric) sets annotations.aggregation fields other than method and parameters.boundaries, which the OpenTelemetry API cannot express")
+              else . + {bucket_boundaries: ($bounds | boundaries($metric; "annotations.aggregation.parameters.boundaries"))} end
+            elif .instrument == "histogram" and ($unit | type) == "string" and ($histogram_boundaries_by_unit | has($unit)) then
+              . + {bucket_boundaries: ($histogram_boundaries_by_unit[$unit] | boundaries($metric; "histogram_boundaries_by_unit for unit \($unit)"))}
+            else . end)
+      | map(.type_name = (.name | unprefixed | pascal)
+          | .name_constant = ("METRIC_" + (.name | unprefixed | gsub("[.]"; "_") | ascii_upcase))
+          | .value_type = (.annotations.code_generation.metric_value_type // null)
+          | .deprecation = (.deprecated | deprecation)
+          | (.instrument_name | unprefixed | split(".") | .[0]) as $namespace
+          | .name as $metric
+          | .attributes = ((.attributes // []) | sort_by(.key) | map(
+              .key as $key
+              | if (.key | valid_name | not) then error("attribute \($key) is not a supported TypeScript attribute name") else . end
+              | (.key | unprefixed) as $short
+              | ($short | split(".") | if length > 1 and .[0] == $namespace then .[1:] else . end | join(".") | pascal | .[0:1] |= ascii_downcase) as $field
+              | if ($field | test("^[A-Za-z][A-Za-z0-9]*$") | not) then error("attribute \($key) cannot become a TypeScript property of metric \($metric)") else . end
+              | if (["constructor", "toString", "toLocaleString", "valueOf", "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable"] | any(. == $field))
+                then error("attribute \($key) becomes the Object.prototype property \($field) of metric \($metric)") else . end
+              | . + {
+                  field: $field,
+                  optional: (.requirement_level != "required"),
+                  array: (.type as $t | ["string[]", "int[]", "double[]", "boolean[]"] | any(. == $t)),
+                  deprecation: (.deprecated | deprecation),
+                  requirement_doc: (.requirement_level
+                    | if type == "object" and has("conditionally_required") then "Conditionally required: \(.conditionally_required)"
+                      elif type == "object" and has("recommended") then "Recommended: \(.recommended)"
+                      elif . == "opt_in" then "Opt-in: record it only when a user asks for it."
+                      else null end),
+                  ts_type: (if (.key as $k | $rendered | any(. == $k))
+                            then "attributes.\(.key | unprefixed | pascal)"
+                            else inline_type($metric; $opts) end)
+                }))
+          | if (.attributes | group_by(.field) | any(length > 1))
+            then error("metric \($metric) has attributes that render to the same TypeScript property: \(.attributes | group_by(.field) | map(select(length > 1) | map(.key) | join(" and ")) | join("; "))")
+            else . end
+          | .has_required = (.attributes | any(.optional | not))
+          | .uses_attribute_types = (.attributes | any(.ts_type | startswith("attributes."))))
+      | if length == 0 then [] else [.] end
+      | map(
+          ([.[] | .name as $metric | .type_name as $type | .instrument as $kind
+            | ([$type, .name_constant] + (if (.attributes | length) > 0 then [$type + "Attributes"] else [] end)
+               + (if $kind == "histogram" then [] else [$type + "Observable", $type + "Observe", $type + "Callback"] end))[]
+            | {identifier: ., name: $metric}]
+           + [["Meter", "WeakMap", "Promise"][] | {identifier: ., name: "the reserved name \(.)"}]
+           | group_by(.identifier)
+           | map(select(length > 1) | map(.name) | unique | join(" and "))
+           | unique) as $collisions
+          | if ($collisions | length) > 0
+            then error("metrics render to the same TypeScript identifier: \($collisions | join("; "))")
+            else . end
+        )
+      | map({
+          metrics: sort_by(.name),
+          uses_attribute_types: any(.[]; .uses_attribute_types)
+        })
+
+comment_formats:
+  typescript:
+    format: markdown
+    header: "/**"
+    prefix: " * "
+    footer: " */"
+    trim: true
+default_comment_format: typescript

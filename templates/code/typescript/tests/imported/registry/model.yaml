@@ -1,0 +1,12 @@
+file_format: definition/2
+metrics:
+- name: sample.imported
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  attributes:
+  - ref: remote.status
+    requirement_level: required
+  - ref: remote.port
+  requirement_level: recommended

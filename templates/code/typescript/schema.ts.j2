@@ -1,0 +1,4 @@
+{% import "macros.j2" as m %}
+{{ m.header() }}
+export const SCHEMA_URL = {{ ctx.schema_url | tojson }};
+

@@ -1,0 +1,1 @@
+failed: "enum member of attribute sample.state cannot become a TypeScript identifier"

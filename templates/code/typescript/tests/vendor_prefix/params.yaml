@@ -1,0 +1,3 @@
+params:
+  vendor_prefixes:
+  - myapp

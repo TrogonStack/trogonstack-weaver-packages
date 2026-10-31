@@ -1,0 +1,17 @@
+file_format: definition/2
+attributes:
+- key: sample.headers
+  type: template[string]
+  stability: stable
+  brief: Synthetic template.
+  examples: [a]
+metrics:
+- name: sample.total
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+  attributes:
+  - ref: sample.headers
+    requirement_level: required

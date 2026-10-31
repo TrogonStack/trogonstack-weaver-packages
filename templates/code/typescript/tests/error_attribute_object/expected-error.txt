@@ -1,0 +1,1 @@
+failed: "attribute object renders to Object, which the generated module needs for the global of that name"
