@@ -33,6 +33,7 @@ does and the params it accepts.
 - [Go code generation](templates/code/go/README.md)
 - [Python metrics](templates/code/python/README.md)
 - [Rust code generation](templates/code/rust/README.md)
+- [TypeScript metrics](templates/code/typescript/README.md)
 - [Effect TypeScript metrics](templates/code/typescript_effect/README.md)
 
 ## Using a package

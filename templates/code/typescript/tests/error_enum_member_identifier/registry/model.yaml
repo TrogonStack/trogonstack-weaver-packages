@@ -1,0 +1,21 @@
+file_format: definition/2
+attributes:
+- key: sample.state
+  type:
+    members:
+    - id: invalid-member
+      value: a
+      stability: stable
+      brief: Synthetic value.
+  stability: stable
+  brief: Synthetic label.
+metrics:
+- name: sample.recorded
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  requirement_level: recommended
+  brief: Synthetic metric.
+  attributes:
+  - ref: sample.state
+    requirement_level: required

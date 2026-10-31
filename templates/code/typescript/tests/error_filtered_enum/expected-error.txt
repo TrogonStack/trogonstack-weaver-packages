@@ -1,0 +1,1 @@
+failed: "attribute sample.state has no enum members left after exclude_deprecated or stable_only, so no value of it could be built"

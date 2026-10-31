@@ -1,0 +1,1 @@
+failed: "vendor_prefixes must be a list of strings"

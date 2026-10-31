@@ -1,0 +1,1 @@
+failed: "metric refinement sample.specific sets a different code_generation.metric_value_type than sample.total, but both record into one instrument"

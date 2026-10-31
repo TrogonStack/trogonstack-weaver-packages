@@ -1,0 +1,18 @@
+file_format: definition/2
+metrics:
+- name: sample.total
+  instrument: counter
+  unit: '{item}'
+  stability: stable
+  brief: Synthetic metric.
+  requirement_level: recommended
+  annotations:
+    code_generation:
+      metric_value_type: int
+metric_refinements:
+- id: sample.specific
+  ref: sample.total
+  brief: Specific counter.
+  annotations:
+    code_generation:
+      metric_value_type: double

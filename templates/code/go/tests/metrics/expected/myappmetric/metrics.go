@@ -44,9 +44,9 @@ func (QueueDepth) Name() string {
 }
 
 // Record records one `myapp.queue.depth` measurement. The zero QueueDepth
-// records nothing.
+// records nothing, and neither does one whose instrument is disabled.
 func (m QueueDepth) Record(ctx context.Context, value int64) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
 	m.inst.Record(ctx, value)
@@ -112,6 +112,29 @@ func (QueueDepthObservable) Name() string {
 	return QueueDepth{}.Name()
 }
 
+// TaskActiveSet is the attribute set of a `myapp.task.active` measurement,
+// built once with NewTaskActiveSet so that TaskActive.AddSet does not build
+// it on every call. The zero TaskActiveSet holds no attributes.
+type TaskActiveSet struct {
+	add     []metric.AddOption
+	observe []metric.ObserveOption
+}
+
+// NewTaskActiveSet builds the attribute set of a `myapp.task.active`
+// measurement from the attributes TaskActive.Add takes.
+func NewTaskActiveSet(myappTaskState myappattr.TaskState) TaskActiveSet {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskActiveSet{
+		add:     []metric.AddOption{attributes},
+		observe: []metric.ObserveOption{attributes},
+	}
+}
+
 // TaskActive is `myapp.task.active`.
 //
 // Number of tasks currently running.
@@ -137,16 +160,27 @@ func (TaskActive) Name() string {
 }
 
 // Add records one `myapp.task.active` measurement. The zero TaskActive
-// records nothing.
+// records nothing, and neither does one whose instrument is disabled.
 func (m TaskActive) Add(ctx context.Context, incr int64, myappTaskState myappattr.TaskState) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskState.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
+	m.inst.Add(ctx, incr, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// AddSet records one `myapp.task.active` measurement with the attributes in
+// set. The zero TaskActive records nothing, and neither does one whose
+// instrument is disabled.
+func (m TaskActive) AddSet(ctx context.Context, incr int64, set TaskActiveSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Add(ctx, incr, set.add...)
 }
 
 // TaskActiveObserver records `myapp.task.active` observations from the
@@ -161,11 +195,21 @@ func (o TaskActiveObserver) Observe(value int64, myappTaskState myappattr.TaskSt
 	if o.o == nil {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1)
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskState.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
-	o.o.Observe(value, metric.WithAttributes(kvs...))
+	o.o.Observe(value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// ObserveSet records one `myapp.task.active` observation with the attributes
+// in set.
+func (o TaskActiveObserver) ObserveSet(value int64, set TaskActiveSet) {
+	if o.o == nil {
+		return
+	}
+	o.o.Observe(value, set.observe...)
 }
 
 // TaskActiveCallback observes `myapp.task.active` through o on every
@@ -239,6 +283,33 @@ func WithTaskDurationTaskState(v myappattr.TaskState) TaskDurationAttr {
 	return taskDurationTaskState{v: v}
 }
 
+// TaskDurationSet is the attribute set of a `myapp.task.duration`
+// measurement, built once with NewTaskDurationSet so that
+// TaskDuration.RecordSet does not build it on every call. The zero
+// TaskDurationSet holds no attributes.
+type TaskDurationSet struct {
+	record []metric.RecordOption
+}
+
+// NewTaskDurationSet builds the attribute set of a `myapp.task.duration`
+// measurement from the attributes TaskDuration.Record takes.
+func NewTaskDurationSet(myappTaskID myappattr.TaskID, opts ...TaskDurationAttr) TaskDurationSet {
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskDurationAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskDurationSet{
+		record: []metric.RecordOption{attributes},
+	}
+}
+
 // TaskDuration is `myapp.task.duration`.
 //
 // Time a task took from start to finish.
@@ -267,12 +338,14 @@ func (TaskDuration) Name() string {
 }
 
 // Record records one `myapp.task.duration` measurement. The zero
-// TaskDuration records nothing.
+// TaskDuration records nothing, and neither does one whose instrument is
+// disabled.
 func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID, opts ...TaskDurationAttr) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
@@ -281,7 +354,17 @@ func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID mya
 			kvs = append(kvs, kv)
 		}
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// RecordSet records one `myapp.task.duration` measurement with the
+// attributes in set. The zero TaskDuration records nothing, and neither does
+// one whose instrument is disabled.
+func (m TaskDuration) RecordSet(ctx context.Context, value float64, set TaskDurationSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Record(ctx, value, set.record...)
 }
 
 // TaskRetryDurationAttr is an attribute `myapp.task.retry.duration` accepts
@@ -301,6 +384,37 @@ func (o taskRetryDurationMethod) taskRetryDurationAttr() attribute.KeyValue {
 // Opt-in: the convention records it only when a user asks for it.
 func WithTaskRetryDurationMethod(v authattr.Method) TaskRetryDurationAttr {
 	return taskRetryDurationMethod{v: v}
+}
+
+// TaskRetryDurationSet is the attribute set of a `myapp.task.retry.duration`
+// measurement, built once with NewTaskRetryDurationSet so that
+// TaskRetryDuration.RecordSet does not build it on every call. The zero
+// TaskRetryDurationSet holds no attributes.
+type TaskRetryDurationSet struct {
+	record []metric.RecordOption
+}
+
+// NewTaskRetryDurationSet builds the attribute set of a
+// `myapp.task.retry.duration` measurement from the attributes
+// TaskRetryDuration.Record takes.
+func NewTaskRetryDurationSet(myappTaskID myappattr.TaskID, myappTaskState myappattr.TaskState, opts ...TaskRetryDurationAttr) TaskRetryDurationSet {
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskRetryDurationAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskRetryDurationSet{
+		record: []metric.RecordOption{attributes},
+	}
 }
 
 // TaskRetryDuration is `myapp.task.retry.duration`, a refinement of
@@ -333,12 +447,14 @@ func (TaskRetryDuration) Name() string {
 }
 
 // Record records one `myapp.task.retry.duration` measurement. The zero
-// TaskRetryDuration records nothing.
+// TaskRetryDuration records nothing, and neither does one whose instrument
+// is disabled.
 func (m TaskRetryDuration) Record(ctx context.Context, value float64, myappTaskID myappattr.TaskID, myappTaskState myappattr.TaskState, opts ...TaskRetryDurationAttr) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
@@ -350,7 +466,17 @@ func (m TaskRetryDuration) Record(ctx context.Context, value float64, myappTaskI
 			kvs = append(kvs, kv)
 		}
 	}
-	m.inst.Record(ctx, value, metric.WithAttributes(kvs...))
+	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// RecordSet records one `myapp.task.retry.duration` measurement with the
+// attributes in set. The zero TaskRetryDuration records nothing, and neither
+// does one whose instrument is disabled.
+func (m TaskRetryDuration) RecordSet(ctx context.Context, value float64, set TaskRetryDurationSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Record(ctx, value, set.record...)
 }
 
 // TaskStartedAttr is an attribute `myapp.task.started` accepts in addition
@@ -370,6 +496,31 @@ func (o taskStartedTaskID) taskStartedAttr() attribute.KeyValue {
 // Recommended: When the scheduler assigned an id before the task started.
 func WithTaskStartedTaskID(v myappattr.TaskID) TaskStartedAttr {
 	return taskStartedTaskID{v: v}
+}
+
+// TaskStartedSet is the attribute set of a `myapp.task.started` measurement,
+// built once with NewTaskStartedSet so that TaskStarted.AddSet does not
+// build it on every call. The zero TaskStartedSet holds no attributes.
+type TaskStartedSet struct {
+	add     []metric.AddOption
+	observe []metric.ObserveOption
+}
+
+// NewTaskStartedSet builds the attribute set of a `myapp.task.started`
+// measurement from the attributes TaskStarted.Add takes.
+func NewTaskStartedSet(opts ...TaskStartedAttr) TaskStartedSet {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	for _, opt := range opts {
+		if kv := opt.taskStartedAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskStartedSet{
+		add:     []metric.AddOption{attributes},
+		observe: []metric.ObserveOption{attributes},
+	}
 }
 
 // TaskStarted is `myapp.task.started`.
@@ -403,18 +554,29 @@ func (TaskStarted) Name() string {
 }
 
 // Add records one `myapp.task.started` measurement. The zero TaskStarted
-// records nothing.
+// records nothing, and neither does one whose instrument is disabled.
 func (m TaskStarted) Add(ctx context.Context, incr int64, opts ...TaskStartedAttr) {
-	if m.inst == nil {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	for _, opt := range opts {
 		if kv := opt.taskStartedAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
 		}
 	}
-	m.inst.Add(ctx, incr, metric.WithAttributes(kvs...))
+	m.inst.Add(ctx, incr, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// AddSet records one `myapp.task.started` measurement with the attributes in
+// set. The zero TaskStarted records nothing, and neither does one whose
+// instrument is disabled.
+func (m TaskStarted) AddSet(ctx context.Context, incr int64, set TaskStartedSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Add(ctx, incr, set.add...)
 }
 
 // TaskStartedObserver records `myapp.task.started` observations from the
@@ -429,13 +591,23 @@ func (o TaskStartedObserver) Observe(value int64, opts ...TaskStartedAttr) {
 	if o.o == nil {
 		return
 	}
-	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
 	for _, opt := range opts {
 		if kv := opt.taskStartedAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
 		}
 	}
-	o.o.Observe(value, metric.WithAttributes(kvs...))
+	o.o.Observe(value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// ObserveSet records one `myapp.task.started` observation with the
+// attributes in set.
+func (o TaskStartedObserver) ObserveSet(value int64, set TaskStartedSet) {
+	if o.o == nil {
+		return
+	}
+	o.o.Observe(value, set.observe...)
 }
 
 // TaskStartedCallback observes `myapp.task.started` through o on every

@@ -1,0 +1,5 @@
+params:
+  instrumentation_name: myapp-metrics
+  instrumentation_version: 1.2.3
+  header_source: myapp semantic conventions 1.0.0
+  regenerate_command: mise run semconv:generate

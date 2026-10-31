@@ -1,0 +1,142 @@
+file_format: definition/2
+attributes:
+  - key: myapp.job.name
+    type: string
+    stability: stable
+    brief: Name of the job.
+    examples: ["sync"]
+  - key: myapp.job.attempt
+    type: int
+    stability: stable
+    brief: Attempt number of the job.
+    examples: 1
+  - key: myapp.job.load
+    type: double
+    stability: stable
+    brief: Load the job puts on the worker.
+    examples: 0.5
+  - key: myapp.job.retried
+    type: boolean
+    stability: stable
+    brief: Whether the job ran before.
+    examples: true
+  - key: myapp.job.tags
+    type: string[]
+    stability: stable
+    brief: Tags of the job.
+    examples: [["nightly", "reports"]]
+  - key: myapp.job.attempt_numbers
+    type: int[]
+    stability: stable
+    brief: Attempt numbers the job has seen.
+    examples: [[1, 2]]
+  - key: myapp.job.loads
+    type: double[]
+    stability: stable
+    brief: Loads the job had on each attempt.
+    examples: [[0.5, 1.5]]
+  - key: myapp.job.flags
+    type: boolean[]
+    stability: stable
+    brief: Flags the job had on each attempt.
+    examples: [[true, false]]
+  - key: myapp.job.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The job is waiting to run.
+        - id: running
+          value: running
+          stability: stable
+          brief: The job is running.
+        - id: legacy
+          value: legacy
+          stability: development
+          brief: The job uses a retired state.
+          deprecated:
+            reason: obsoleted
+            note: Use `running` instead.
+    stability: stable
+    brief: State of the job.
+  - key: myapp.job.priority
+    type:
+      members:
+        - id: low
+          value: 1
+          stability: stable
+          brief: Low priority.
+        - id: high
+          value: 2
+          stability: stable
+          brief: High priority.
+    stability: stable
+    brief: Priority of the job.
+  - key: myapp.job.dry_run
+    type:
+      members:
+        - id: "on"
+          value: true
+          stability: stable
+          brief: Dry run.
+        - id: "off"
+          value: false
+          stability: stable
+          brief: Real run.
+    stability: stable
+    brief: Whether the job only simulates its work.
+metrics:
+  - name: myapp.job.runs
+    instrument: counter
+    unit: "{run}"
+    stability: stable
+    requirement_level: recommended
+    brief: Number of job runs.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.job.name
+        requirement_level: required
+      - ref: myapp.job.attempt
+        requirement_level: required
+      - ref: myapp.job.load
+        requirement_level: required
+      - ref: myapp.job.retried
+        requirement_level: required
+      - ref: myapp.job.tags
+        requirement_level: required
+      - ref: myapp.job.attempt_numbers
+        requirement_level: required
+      - ref: myapp.job.loads
+        requirement_level: required
+      - ref: myapp.job.flags
+        requirement_level: required
+      - ref: myapp.job.state
+        requirement_level: required
+      - ref: myapp.job.priority
+        requirement_level: required
+      - ref: myapp.job.dry_run
+        requirement_level: required
+  - name: myapp.job.pending
+    instrument: updowncounter
+    unit: "{job}"
+    stability: stable
+    requirement_level: recommended
+    brief: Number of pending jobs.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.job.name
+        requirement_level: required
+      - ref: myapp.job.tags
+      - ref: myapp.job.attempt_numbers
+        requirement_level:
+          recommended: When the job ran before.
+      - ref: myapp.job.state
+        requirement_level:
+          conditionally_required: If the job has a state.
+      - ref: myapp.job.attempt
+        requirement_level: opt_in

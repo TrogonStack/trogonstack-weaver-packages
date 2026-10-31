@@ -1,0 +1,1 @@
+failed: "attribute sample.state has enum members that render to the same TypeScript identifier"

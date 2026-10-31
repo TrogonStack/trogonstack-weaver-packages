@@ -1,0 +1,68 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Identifier of the task.
+    examples: ["task_0001"]
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The task is waiting to run.
+        - id: done
+          value: done
+          stability: stable
+          brief: The task finished.
+    stability: stable
+    brief: State of the task.
+  - key: auth.method
+    type: string
+    stability: stable
+    brief: How the user was authenticated.
+    examples: ["password"]
+  - key: myapp
+    type: string
+    stability: stable
+    brief: Attribute named like the vendor prefix.
+    examples: ["a"]
+metrics:
+  - name: myapp.task.duration
+    instrument: histogram
+    unit: s
+    stability: stable
+    requirement_level: recommended
+    brief: Time a task took.
+    annotations:
+      code_generation:
+        metric_value_type: double
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+      - ref: myapp.task.state
+      - ref: auth.method
+  - name: auth.attempts
+    instrument: counter
+    unit: "{attempt}"
+    stability: stable
+    requirement_level: recommended
+    brief: Number of authentication attempts.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: auth.method
+        requirement_level: required
+  - name: myapp
+    instrument: counter
+    unit: "{item}"
+    stability: stable
+    requirement_level: recommended
+    brief: Metric named like the vendor prefix.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp

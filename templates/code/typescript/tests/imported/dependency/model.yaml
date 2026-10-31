@@ -1,0 +1,21 @@
+file_format: definition/2
+attributes:
+- key: remote.status
+  type:
+    members:
+    - id: ready
+      value: ready
+      stability: stable
+      brief: Ready.
+    - id: done
+      value: done
+      stability: stable
+      brief: Done.
+  stability: stable
+  brief: Remote status.
+- key: remote.port
+  type: int
+  stability: stable
+  brief: Remote port.
+  examples:
+  - 443

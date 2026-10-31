@@ -522,6 +522,7 @@ templates:
           ([.[] | . as $def | .name as $metric | (.short_name | gsub("[._]"; "") | ascii_downcase) as $short
             | (["P:" + $short, "P:new" + $short]
                + (if ($def.optional | length) > 0 then ["P:" + $short + "attr"] else [] end)
+               + (if ($def.attributes | length) > 0 then ["P:" + $short + "set", "P:new" + $short + "set"] else [] end)
                + (if $def.instrument == "histogram" then [] else ["P:" + $short + "observer", "P:" + $short + "callback", "P:" + $short + "observable", "P:new" + $short + "observable"] end)
                + ($def.optional | map(.attr_short_name | gsub("[._]"; "") | ascii_downcase) | map("P:with" + $short + ., "p:" + $short + .)))[]
             | {identifier: ., name: $metric}]
