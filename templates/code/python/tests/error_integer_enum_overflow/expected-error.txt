@@ -1,0 +1,1 @@
+attribute demo.mode has an enum value that cannot be represented by a 64-bit integer

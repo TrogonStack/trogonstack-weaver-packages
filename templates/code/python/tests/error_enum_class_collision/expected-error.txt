@@ -1,0 +1,1 @@
+module attributes has attributes that render to the same Python identifier: final and a reserved Python symbol

@@ -1,0 +1,1 @@
+metric myapp.task.started has attributes that render to the same Python parameter: myapp.task.id and task.id

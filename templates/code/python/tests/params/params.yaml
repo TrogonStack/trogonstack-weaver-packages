@@ -1,0 +1,7 @@
+params:
+  vendor_prefixes: [acme]
+  header_source: the synthetic billing registry
+  regenerate_command: mise run semconv:generate
+  module_description: Typed instruments for the synthetic billing registry.
+  instrumentation_name: acme-billing
+  instrumentation_version: 1.2.3

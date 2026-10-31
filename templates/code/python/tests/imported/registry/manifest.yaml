@@ -1,0 +1,6 @@
+name: myapp
+schema_url: https://example.com/schemas/myapp/1.0.0
+dependencies:
+  - name: upstream
+    registry_path: dependency
+    schema_url: https://example.com/schemas/upstream/1.0.0

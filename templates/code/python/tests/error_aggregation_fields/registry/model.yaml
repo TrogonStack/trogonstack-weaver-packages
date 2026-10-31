@@ -1,0 +1,16 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.duration
+    requirement_level: recommended
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Synthetic metric.
+    annotations:
+      code_generation:
+        metric_value_type: int
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [1, 2]
+          record_min_max: true

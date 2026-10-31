@@ -1,0 +1,3 @@
+params:
+  histogram_boundaries_by_unit:
+    min: [10, 5, 1]

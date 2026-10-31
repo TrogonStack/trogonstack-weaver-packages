@@ -1,0 +1,75 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.config_profile_identifier
+    type: string[]
+    stability: stable
+    brief: Long array.
+  - key: myapp.task.config_profile_revision
+    type: string[]
+    stability: stable
+    brief: Long array.
+  - key: myapp.task.tags
+    type: string[]
+    stability: stable
+    brief: Short array.
+  - key: myapp.task.config_env_kind
+    type:
+      members:
+        - id: production
+          value: production
+          stability: stable
+          brief: Production.
+        - id: staging
+          value: staging
+          stability: stable
+          brief: Staging.
+    stability: stable
+    brief: Long enum.
+  - key: myapp.task.environment
+    type:
+      members:
+        - id: production
+          value: production
+          stability: stable
+          brief: Production.
+    stability: stable
+    brief: Short enum.
+metrics:
+  - name: myapp.task.long
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: A metric whose parameters make long lines.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.task.config_profile_identifier
+        requirement_level: required
+      - ref: myapp.task.config_env_kind
+        requirement_level: required
+      - ref: myapp.task.tags
+        requirement_level: required
+      - ref: myapp.task.environment
+        requirement_level: required
+      - ref: myapp.task.config_profile_revision
+        requirement_level: recommended
+  - name: myapp.task.long.optional
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: A metric whose optional parameters make long lines.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.task.config_profile_identifier
+        requirement_level: recommended
+      - ref: myapp.task.config_env_kind
+        requirement_level: recommended
+      - ref: myapp.task.tags
+        requirement_level: recommended
+      - ref: myapp.task.environment
+        requirement_level: recommended

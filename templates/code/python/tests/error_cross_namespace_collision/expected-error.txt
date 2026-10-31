@@ -1,0 +1,1 @@
+module attributes has attributes that render to the same Python identifier: my.app_task and my_app.task

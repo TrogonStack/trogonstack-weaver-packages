@@ -1,0 +1,34 @@
+{%- filter trim %}
+{% import "header.j2" as h %}
+{{ h.header() }}
+
+{% if ctx.has_enums %}
+import enum
+{% endif %}
+from typing import Final
+{% for attribute in ctx.attributes %}
+{% if attribute.is_enum %}
+
+
+class {{ attribute.class_name }}({% if attribute.value_type == "string" %}enum.StrEnum{% elif attribute.value_type == "int" %}enum.IntEnum{% elif attribute.value_type == "double" %}float, enum.Enum{% else %}enum.Enum{% endif %}):
+    """Values of the `{{ attribute.key }}` attribute."""
+
+{% for member in attribute.type.members %}
+    {{ member.constant }} = {{ member.literal }}
+{% if member.doc %}
+    """{{ member.doc | indent(4) }}"""
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if loop.first and not attribute.is_enum %}
+
+{% else %}
+
+
+{% endif %}
+{{ attribute.constant }}: Final = {{ attribute.key_literal }}
+{% if attribute.doc %}
+"""{{ attribute.doc }}"""
+{% endif %}
+{% endfor %}
+{% endfilter -%}{{ "\n" -}}

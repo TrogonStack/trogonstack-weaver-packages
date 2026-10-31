@@ -1,0 +1,1 @@
+metric myapp.task.duration must list annotations.aggregation.parameters.boundaries in strictly increasing order
