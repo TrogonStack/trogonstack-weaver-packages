@@ -32,6 +32,20 @@ func BenchmarkTaskDurationRecord(b *testing.B) {
 	}
 }
 
+func BenchmarkTaskDurationRecordSet(b *testing.B) {
+	taskDuration, err := myappmetric.NewTaskDuration(benchmarkMeter(b))
+	if err != nil {
+		b.Fatal(err)
+	}
+	ctx := context.Background()
+	set := myappmetric.NewTaskDurationSet(myappattr.NewTaskID("t-1"), myappmetric.WithTaskDurationMethod(authattr.MethodToken))
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		taskDuration.RecordSet(ctx, 0.25, set)
+	}
+}
+
 func BenchmarkTaskDurationRecordDisabled(b *testing.B) {
 	taskDuration, err := myappmetric.NewTaskDuration(benchmarkMeter(b,
 		sdkmetric.WithView(dropView(myappmetric.TaskDuration{}.Name()))))
@@ -57,6 +71,20 @@ func BenchmarkTaskActiveAdd(b *testing.B) {
 	b.ResetTimer()
 	for range b.N {
 		taskActive.Add(ctx, 1, myappattr.TaskStateDone)
+	}
+}
+
+func BenchmarkTaskActiveAddSet(b *testing.B) {
+	taskActive, err := myappmetric.NewTaskActive(benchmarkMeter(b))
+	if err != nil {
+		b.Fatal(err)
+	}
+	ctx := context.Background()
+	set := myappmetric.NewTaskActiveSet(myappattr.TaskStateDone)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		taskActive.AddSet(ctx, 1, set)
 	}
 }
 

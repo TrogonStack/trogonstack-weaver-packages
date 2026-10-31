@@ -32,6 +32,7 @@ func TestDisabledInstrumentRecordsNothing(t *testing.T) {
 	}
 
 	taskDuration.Record(context.Background(), 0.25, myappattr.NewTaskID("t-1"))
+	taskDuration.RecordSet(context.Background(), 0.25, myappmetric.NewTaskDurationSet(myappattr.NewTaskID("t-1")))
 
 	if m, ok := findMetric(collect(t, reader), "myapp.task.duration"); ok {
 		t.Fatalf("the dropped TaskDuration recorded %v, want nothing", m.Data)

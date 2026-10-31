@@ -30,6 +30,32 @@ func WithUpstreamDurationServerPort(v int) UpstreamDurationAttr {
 	return upstreamDurationServerPort{v: v}
 }
 
+// UpstreamDurationSet is the attribute set of a `edge.upstream.duration`
+// measurement, built once with NewUpstreamDurationSet so that
+// UpstreamDuration.RecordSet does not build it on every call. The zero
+// UpstreamDurationSet holds no attributes.
+type UpstreamDurationSet struct {
+	record []metric.RecordOption
+}
+
+// NewUpstreamDurationSet builds the attribute set of a
+// `edge.upstream.duration` measurement from the attributes
+// UpstreamDuration.Record takes.
+func NewUpstreamDurationSet(serverAddress string, opts ...UpstreamDurationAttr) UpstreamDurationSet {
+	var buffer [2]attribute.KeyValue
+	kvs := buffer[:0]
+	kvs = append(kvs, attribute.String("server.address", serverAddress))
+	for _, opt := range opts {
+		if kv := opt.upstreamDurationAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return UpstreamDurationSet{
+		record: []metric.RecordOption{attributes},
+	}
+}
+
 // UpstreamDuration is `edge.upstream.duration`.
 //
 // Time spent waiting on an upstream server.
@@ -72,4 +98,14 @@ func (m UpstreamDuration) Record(ctx context.Context, value float64, serverAddre
 		}
 	}
 	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// RecordSet records one `edge.upstream.duration` measurement with the
+// attributes in set. The zero UpstreamDuration records nothing, and neither
+// does one whose instrument is disabled.
+func (m UpstreamDuration) RecordSet(ctx context.Context, value float64, set UpstreamDurationSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Record(ctx, value, set.record...)
 }

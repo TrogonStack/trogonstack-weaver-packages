@@ -14,6 +14,28 @@ import (
 	"example.com/semconv/semconvmeter"
 )
 
+// TaskDurationSet is the attribute set of a `myapp.task.duration`
+// measurement, built once with NewTaskDurationSet so that
+// TaskDuration.RecordSet does not build it on every call. The zero
+// TaskDurationSet holds no attributes.
+type TaskDurationSet struct {
+	record []metric.RecordOption
+}
+
+// NewTaskDurationSet builds the attribute set of a `myapp.task.duration`
+// measurement from the attributes TaskDuration.Record takes.
+func NewTaskDurationSet(myappTaskID myappattr.TaskID) TaskDurationSet {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskDurationSet{
+		record: []metric.RecordOption{attributes},
+	}
+}
+
 // TaskDuration is `myapp.task.duration`.
 //
 // Time a task took from start to finish.
@@ -54,6 +76,37 @@ func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID mya
 	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
+// RecordSet records one `myapp.task.duration` measurement with the
+// attributes in set. The zero TaskDuration records nothing, and neither does
+// one whose instrument is disabled.
+func (m TaskDuration) RecordSet(ctx context.Context, value float64, set TaskDurationSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Record(ctx, value, set.record...)
+}
+
+// TaskLatencySet is the attribute set of a `myapp.task.latency` measurement,
+// built once with NewTaskLatencySet so that TaskLatency.RecordSet does not
+// build it on every call. The zero TaskLatencySet holds no attributes.
+type TaskLatencySet struct {
+	record []metric.RecordOption
+}
+
+// NewTaskLatencySet builds the attribute set of a `myapp.task.latency`
+// measurement from the attributes TaskLatency.Record takes.
+func NewTaskLatencySet(myappTaskID myappattr.TaskID) TaskLatencySet {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskLatencySet{
+		record: []metric.RecordOption{attributes},
+	}
+}
+
 // TaskLatency is `myapp.task.latency`.
 //
 // Time between a task being queued and started.
@@ -91,6 +144,39 @@ func (m TaskLatency) Record(ctx context.Context, value float64, myappTaskID myap
 		kvs = append(kvs, kv)
 	}
 	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// RecordSet records one `myapp.task.latency` measurement with the attributes
+// in set. The zero TaskLatency records nothing, and neither does one whose
+// instrument is disabled.
+func (m TaskLatency) RecordSet(ctx context.Context, value float64, set TaskLatencySet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Record(ctx, value, set.record...)
+}
+
+// TaskRetryDurationSet is the attribute set of a `myapp.task.retry.duration`
+// measurement, built once with NewTaskRetryDurationSet so that
+// TaskRetryDuration.RecordSet does not build it on every call. The zero
+// TaskRetryDurationSet holds no attributes.
+type TaskRetryDurationSet struct {
+	record []metric.RecordOption
+}
+
+// NewTaskRetryDurationSet builds the attribute set of a
+// `myapp.task.retry.duration` measurement from the attributes
+// TaskRetryDuration.Record takes.
+func NewTaskRetryDurationSet(myappTaskID myappattr.TaskID) TaskRetryDurationSet {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskRetryDurationSet{
+		record: []metric.RecordOption{attributes},
+	}
 }
 
 // TaskRetryDuration is `myapp.task.retry.duration`, a refinement of
@@ -135,6 +221,37 @@ func (m TaskRetryDuration) Record(ctx context.Context, value float64, myappTaskI
 	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
+// RecordSet records one `myapp.task.retry.duration` measurement with the
+// attributes in set. The zero TaskRetryDuration records nothing, and neither
+// does one whose instrument is disabled.
+func (m TaskRetryDuration) RecordSet(ctx context.Context, value float64, set TaskRetryDurationSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Record(ctx, value, set.record...)
+}
+
+// TaskSizeSet is the attribute set of a `myapp.task.size` measurement, built
+// once with NewTaskSizeSet so that TaskSize.RecordSet does not build it on
+// every call. The zero TaskSizeSet holds no attributes.
+type TaskSizeSet struct {
+	record []metric.RecordOption
+}
+
+// NewTaskSizeSet builds the attribute set of a `myapp.task.size` measurement
+// from the attributes TaskSize.Record takes.
+func NewTaskSizeSet(myappTaskID myappattr.TaskID) TaskSizeSet {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskSizeSet{
+		record: []metric.RecordOption{attributes},
+	}
+}
+
 // TaskSize is `myapp.task.size`.
 //
 // Size of a task's payload.
@@ -171,4 +288,14 @@ func (m TaskSize) Record(ctx context.Context, value float64, myappTaskID myappat
 		kvs = append(kvs, kv)
 	}
 	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// RecordSet records one `myapp.task.size` measurement with the attributes in
+// set. The zero TaskSize records nothing, and neither does one whose
+// instrument is disabled.
+func (m TaskSize) RecordSet(ctx context.Context, value float64, set TaskSizeSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Record(ctx, value, set.record...)
 }

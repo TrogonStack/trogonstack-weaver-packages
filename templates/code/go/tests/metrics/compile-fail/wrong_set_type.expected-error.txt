@@ -1,0 +1,1 @@
+cannot use set (variable of struct type myappmetric.TaskRetryDurationSet) as myappmetric.TaskDurationSet value
