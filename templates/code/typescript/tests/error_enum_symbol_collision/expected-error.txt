@@ -1,0 +1,1 @@
+failed: "attributes render to the same TypeScript identifier: sample.state and sample_state"

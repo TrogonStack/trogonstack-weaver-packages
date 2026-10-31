@@ -1,0 +1,1 @@
+failed: "metric sample.size sets annotations.aggregation fields other than method and parameters.boundaries, which the OpenTelemetry API cannot express"

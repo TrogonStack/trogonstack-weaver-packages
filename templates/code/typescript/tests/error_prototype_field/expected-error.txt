@@ -1,0 +1,1 @@
+failed: "attribute sample.constructor becomes the Object.prototype property constructor of metric sample.recorded"

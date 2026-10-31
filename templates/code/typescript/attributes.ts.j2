@@ -1,0 +1,14 @@
+{% import "macros.j2" as m %}
+{{ m.header() }}{% for attribute in ctx.attributes %}
+
+{{ m.doc(attribute.brief, attribute.note, none, attribute.deprecation, 0) }}export const {{ attribute.identifier }} = {
+  KEY: {{ attribute.key | tojson }},
+{% if attribute.members %}
+{% for member in attribute.members %}
+  {{ m.doc(member.brief, member.note, none, member.deprecation, 2) }}{{ member.identifier }}: {{ member.value | tojson }},
+{% endfor %}
+{% endif %}
+} as const;
+
+{{ m.doc(attribute.brief, attribute.note, none, attribute.deprecation, 0) }}export type {{ attribute.identifier }} = {{ attribute.type_expression }};
+{% endfor %}

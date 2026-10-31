@@ -1,0 +1,1 @@
+failed: "metric sample.recorded has attributes that render to the same TypeScript property: sample.task.id and task.id"

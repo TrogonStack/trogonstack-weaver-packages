@@ -1,0 +1,5 @@
+params:
+  histogram_boundaries_by_unit:
+    By:
+    - 1
+    - bad

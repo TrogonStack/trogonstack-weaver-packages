@@ -1,0 +1,1 @@
+failed: "metric sample.total must set code_generation.metric_value_type to int or double"

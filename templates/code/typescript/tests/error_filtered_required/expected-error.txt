@@ -1,0 +1,1 @@
+failed: "metric sample.total requires sample.required, which exclude_deprecated or stable_only leaves out, so its generated attributes could not set them"

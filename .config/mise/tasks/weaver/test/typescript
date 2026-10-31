@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Type-check generated TypeScript and run consumer tests"
+set -euo pipefail
+exec ./buildscripts/check_typescript_output.sh

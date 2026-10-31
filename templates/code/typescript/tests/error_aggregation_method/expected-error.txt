@@ -1,0 +1,1 @@
+failed: "metric sample.size sets annotations.aggregation.method to base2exponentialhistogram, but the TypeScript template supports only explicithistogram"
