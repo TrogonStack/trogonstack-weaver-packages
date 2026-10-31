@@ -67,6 +67,9 @@ import (
 {%- set instrument = value_type ~ suffix %}
 {%- set deprecated = d.notice(def) %}
 {%- set has_attributes = def.required or def.optional %}
+{%- set set_type = name ~ "Set" %}
+{%- set sync_field = method | lower %}
+{%- set field_padding = " " * (7 - (sync_field | length)) if def.instrument != "histogram" else "" %}
 {%- set opt_in = "Opt-in: the convention records `" ~ def.name ~ "` only when a user asks for it." if def.requirement_level == "opt_in" else none -%}
 {% if def.optional %}
 {{ [name ~ "Attr is an attribute `" ~ def.name ~ "` accepts in addition to the ones " ~ name ~ "." ~ method ~ " requires."] | join | comment }}
@@ -87,6 +90,27 @@ func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
 }
 {% endfor %}
 {%- endif %}
+{%- if has_attributes %}
+{{ [set_type ~ " is the attribute set of a `" ~ def.name ~ "` measurement, built once with New" ~ set_type ~ " so that " ~ name ~ "." ~ method ~ "Set does not build it on every call. The zero " ~ set_type ~ " holds no attributes."] | join | comment }}
+type {{ set_type }} struct {
+	{{ sync_field }}{{ field_padding }} []metric.{{ method }}Option
+{%- if def.instrument != "histogram" %}
+	observe []metric.ObserveOption
+{%- endif %}
+}
+
+{{ ["New" ~ set_type ~ " builds the attribute set of a `" ~ def.name ~ "` measurement from the attributes " ~ name ~ "." ~ method ~ " takes."] | join | comment }}
+func New{{ set_type }}({{ attr_params(def) | trim(", ") }}) {{ set_type }} {
+{{- attr_set(def) }}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return {{ set_type }}{
+		{{ sync_field }}:{{ field_padding }} []metric.{{ method }}Option{attributes},
+{%- if def.instrument != "histogram" %}
+		observe: []metric.ObserveOption{attributes},
+{%- endif %}
+	}
+}
+{% endif %}
 {{ [name ~ " is `" ~ def.name ~ "`" ~ (", a refinement of `" ~ def.refines ~ "` that records under that metric's name" if def.refines else "") ~ ".", def.brief, def.note, opt_in, deprecated] | select | join("\n\n") | comment }}
 type {{ name }} struct{ inst metric.{{ instrument }} }
 
@@ -124,6 +148,16 @@ func (m {{ name }}) {{ method }}(ctx context.Context, {{ arg }} {{ gotype }}{{ a
 	m.inst.{{ method }}(ctx, {{ arg }})
 {%- endif %}
 }
+{%- if has_attributes %}
+
+{{ [method ~ "Set records one `" ~ def.name ~ "` measurement with the attributes in set. The zero " ~ name ~ " records nothing, and neither does one whose instrument is disabled."] | join | comment }}
+func (m {{ name }}) {{ method }}Set(ctx context.Context, {{ arg }} {{ gotype }}, set {{ set_type }}) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.{{ method }}(ctx, {{ arg }}, set.{{ sync_field }}...)
+}
+{%- endif %}
 {%- if def.instrument != "histogram" %}
 {%- set observable = name ~ "Observable" %}
 {%- set observer = name ~ "Observer" %}
@@ -146,6 +180,16 @@ func (o {{ observer }}) Observe(value {{ gotype }}{{ attr_params(def) }}) {
 	o.o.Observe(value)
 {%- endif %}
 }
+{%- if has_attributes %}
+
+{{ ["ObserveSet records one `" ~ def.name ~ "` observation with the attributes in set."] | join | comment }}
+func (o {{ observer }}) ObserveSet(value {{ gotype }}, set {{ set_type }}) {
+	if o.o == nil {
+		return
+	}
+	o.o.Observe(value, set.observe...)
+}
+{%- endif %}
 
 {{ [callback ~ " observes `" ~ def.name ~ "` through o on every collection of a " ~ observable ~ ".", "An error it returns is returned by the collection that ran it, and the observations made before it returned are still recorded.", deprecated] | select | join("\n\n") | comment }}
 type {{ callback }} func(ctx context.Context, o {{ observer }}) error

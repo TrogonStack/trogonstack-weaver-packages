@@ -47,6 +47,33 @@ func WithTaskDurationTaskState(v myappattr.TaskState) TaskDurationAttr {
 	return taskDurationTaskState{v: v}
 }
 
+// TaskDurationSet is the attribute set of a `worker.task.duration`
+// measurement, built once with NewTaskDurationSet so that
+// TaskDuration.RecordSet does not build it on every call. The zero
+// TaskDurationSet holds no attributes.
+type TaskDurationSet struct {
+	record []metric.RecordOption
+}
+
+// NewTaskDurationSet builds the attribute set of a `worker.task.duration`
+// measurement from the attributes TaskDuration.Record takes.
+func NewTaskDurationSet(myappTaskID myappattr.TaskID, opts ...TaskDurationAttr) TaskDurationSet {
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskDurationAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskDurationSet{
+		record: []metric.RecordOption{attributes},
+	}
+}
+
 // TaskDuration is `worker.task.duration`, a refinement of
 // `myapp.task.duration` that records under that metric's name.
 //
@@ -93,4 +120,14 @@ func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID mya
 		}
 	}
 	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// RecordSet records one `worker.task.duration` measurement with the
+// attributes in set. The zero TaskDuration records nothing, and neither does
+// one whose instrument is disabled.
+func (m TaskDuration) RecordSet(ctx context.Context, value float64, set TaskDurationSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Record(ctx, value, set.record...)
 }

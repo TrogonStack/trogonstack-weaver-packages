@@ -14,6 +14,32 @@ import (
 	"example.com/semconv/semconvmeter"
 )
 
+// AttemptsSet is the attribute set of a `auth.attempts` measurement, built
+// once with NewAttemptsSet so that Attempts.AddSet does not build it on
+// every call. The zero AttemptsSet holds no attributes.
+type AttemptsSet struct {
+	add     []metric.AddOption
+	observe []metric.ObserveOption
+}
+
+// NewAttemptsSet builds the attribute set of a `auth.attempts` measurement
+// from the attributes Attempts.Add takes.
+func NewAttemptsSet(authMethod authattr.Method, authSuccess authattr.Success) AttemptsSet {
+	var buffer [2]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := authMethod.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := authSuccess.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return AttemptsSet{
+		add:     []metric.AddOption{attributes},
+		observe: []metric.ObserveOption{attributes},
+	}
+}
+
 // Attempts is `auth.attempts`.
 //
 // Number of authentication attempts.
@@ -55,6 +81,16 @@ func (m Attempts) Add(ctx context.Context, incr int64, authMethod authattr.Metho
 	m.inst.Add(ctx, incr, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
+// AddSet records one `auth.attempts` measurement with the attributes in set.
+// The zero Attempts records nothing, and neither does one whose instrument
+// is disabled.
+func (m Attempts) AddSet(ctx context.Context, incr int64, set AttemptsSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Add(ctx, incr, set.add...)
+}
+
 // AttemptsObserver records `auth.attempts` observations from the callback of
 // a AttemptsObservable. The zero AttemptsObserver records nothing.
 type AttemptsObserver struct {
@@ -75,6 +111,15 @@ func (o AttemptsObserver) Observe(value int64, authMethod authattr.Method, authS
 		kvs = append(kvs, kv)
 	}
 	o.o.Observe(value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// ObserveSet records one `auth.attempts` observation with the attributes in
+// set.
+func (o AttemptsObserver) ObserveSet(value int64, set AttemptsSet) {
+	if o.o == nil {
+		return
+	}
+	o.o.Observe(value, set.observe...)
 }
 
 // AttemptsCallback observes `auth.attempts` through o on every collection of

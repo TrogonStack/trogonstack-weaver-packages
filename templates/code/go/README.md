@@ -186,6 +186,24 @@ have no asynchronous form in OpenTelemetry, so they get none.
 disabled the instrument, such as through a view that drops it, so a call on a
 disabled instrument costs one `Enabled` check.
 
+A hot path that records the same attributes many times can build them once.
+`New<Name>Set` takes the parameters and options of `Add` or `Record` and
+returns a `<Name>Set` that holds the attribute set ready to record. `AddSet` or
+`RecordSet` records with it, so the call builds, sorts, and deduplicates
+nothing and allocates nothing:
+
+```go
+set := myappmetric.NewTaskDurationSet(myappattr.NewTaskID("task_0001"),
+	myappmetric.WithTaskDurationTaskState(myappattr.TaskStateRunning))
+duration.RecordSet(ctx, 1.5, set)
+```
+
+A set belongs to the metric that built it: a `TaskDurationSet` cannot be passed
+to another metric's `RecordSet`, and a refinement has a set of its own, since
+its parameters differ from those of the metric it refines. The zero set holds
+no attributes. The typed observer takes one through `ObserveSet`. A metric
+without attributes has no set type.
+
 Each instrument type, synchronous or observable, reports the name it records
 under through `Name`, which works on the zero value, so SDK views and tests can
 refer to it. The underlying OpenTelemetry instrument, the unit, and the
@@ -674,8 +692,9 @@ or is tied to no schema, when:
   increasing order.
 - Two metrics or refinements in one package render to the same Go
   identifier, such as `myapp.task.started` and `myapp.task_started`, or the
-  observable form of one is named like the other, such as
-  `myapp.task.started` and `myapp.task.started.observable`.
+  observable form or attribute set of one is named like the other, such as
+  `myapp.task.started` and `myapp.task.started.observable`, or
+  `myapp.task.duration` and `myapp.task.duration.set`.
 - A metric refinement sets a different `code_generation.metric_value_type` or
   `annotations.aggregation` than the metric it refines.
 - Two spans or refinements in one package render to the same Go identifier,
@@ -696,7 +715,7 @@ or is tied to no schema, when:
 | Case                                  | Covers                                                                                                                                                                                        |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `attributes`                          | Every supported type, enums of every member type, notes, deprecated attributes and members.                                                                                                   |
-| `metrics`                             | Every instrument, every requirement level, cross-namespace references, bucket boundaries, and a disabled instrument.                                                                          |
+| `metrics`                             | Every instrument, every requirement level, cross-namespace references, bucket boundaries, precomputed attribute sets, and a disabled instrument.                                              |
 | `imported`                            | Required and optional attributes imported from a dependency registry, including an enum, a span named from them, and an event.                                                                |
 | `imported_typed`                      | An imported namespace mapped with `imported_import_paths`, taken as a typed value alongside a local attribute and an unmapped raw one, across a metric, a span named from them, and an event. |
 | `params`                              | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`.                                                                                      |

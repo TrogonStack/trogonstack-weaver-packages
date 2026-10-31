@@ -14,6 +14,28 @@ import (
 	"example.com/semconv/semconvmeter"
 )
 
+// TaskDurationSet is the attribute set of a `myapp.task.duration`
+// measurement, built once with NewTaskDurationSet so that
+// TaskDuration.RecordSet does not build it on every call. The zero
+// TaskDurationSet holds no attributes.
+type TaskDurationSet struct {
+	record []metric.RecordOption
+}
+
+// NewTaskDurationSet builds the attribute set of a `myapp.task.duration`
+// measurement from the attributes TaskDuration.Record takes.
+func NewTaskDurationSet(myappTaskID myappattr.TaskID) TaskDurationSet {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskDurationSet{
+		record: []metric.RecordOption{attributes},
+	}
+}
+
 // TaskDuration is `myapp.task.duration`.
 //
 // Time a task took from start to finish.
@@ -51,6 +73,38 @@ func (m TaskDuration) Record(ctx context.Context, value float64, myappTaskID mya
 		kvs = append(kvs, kv)
 	}
 	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// RecordSet records one `myapp.task.duration` measurement with the
+// attributes in set. The zero TaskDuration records nothing, and neither does
+// one whose instrument is disabled.
+func (m TaskDuration) RecordSet(ctx context.Context, value float64, set TaskDurationSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Record(ctx, value, set.record...)
+}
+
+// TaskQueueWaitSet is the attribute set of a `myapp.task.queue_wait`
+// measurement, built once with NewTaskQueueWaitSet so that
+// TaskQueueWait.RecordSet does not build it on every call. The zero
+// TaskQueueWaitSet holds no attributes.
+type TaskQueueWaitSet struct {
+	record []metric.RecordOption
+}
+
+// NewTaskQueueWaitSet builds the attribute set of a `myapp.task.queue_wait`
+// measurement from the attributes TaskQueueWait.Record takes.
+func NewTaskQueueWaitSet(myappTaskID myappattr.TaskID) TaskQueueWaitSet {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskQueueWaitSet{
+		record: []metric.RecordOption{attributes},
+	}
 }
 
 // TaskQueueWait is `myapp.task.queue_wait`.
@@ -92,4 +146,14 @@ func (m TaskQueueWait) Record(ctx context.Context, value float64, myappTaskID my
 		kvs = append(kvs, kv)
 	}
 	m.inst.Record(ctx, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// RecordSet records one `myapp.task.queue_wait` measurement with the
+// attributes in set. The zero TaskQueueWait records nothing, and neither
+// does one whose instrument is disabled.
+func (m TaskQueueWait) RecordSet(ctx context.Context, value float64, set TaskQueueWaitSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Record(ctx, value, set.record...)
 }

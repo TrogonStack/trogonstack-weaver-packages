@@ -14,6 +14,29 @@ import (
 	"example.com/acme/acmeconv/v1.2.0/myappattr"
 )
 
+// TaskStartedSet is the attribute set of a `myapp.task.started` measurement,
+// built once with NewTaskStartedSet so that TaskStarted.AddSet does not
+// build it on every call. The zero TaskStartedSet holds no attributes.
+type TaskStartedSet struct {
+	add     []metric.AddOption
+	observe []metric.ObserveOption
+}
+
+// NewTaskStartedSet builds the attribute set of a `myapp.task.started`
+// measurement from the attributes TaskStarted.Add takes.
+func NewTaskStartedSet(myappTaskState myappattr.TaskState) TaskStartedSet {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	attributes := metric.WithAttributeSet(attribute.NewSet(kvs...))
+	return TaskStartedSet{
+		add:     []metric.AddOption{attributes},
+		observe: []metric.ObserveOption{attributes},
+	}
+}
+
 // TaskStarted is `myapp.task.started`.
 //
 // Number of tasks started.
@@ -52,6 +75,16 @@ func (m TaskStarted) Add(ctx context.Context, incr int64, myappTaskState myappat
 	m.inst.Add(ctx, incr, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 }
 
+// AddSet records one `myapp.task.started` measurement with the attributes in
+// set. The zero TaskStarted records nothing, and neither does one whose
+// instrument is disabled.
+func (m TaskStarted) AddSet(ctx context.Context, incr int64, set TaskStartedSet) {
+	if m.inst == nil || !m.inst.Enabled(ctx) {
+		return
+	}
+	m.inst.Add(ctx, incr, set.add...)
+}
+
 // TaskStartedObserver records `myapp.task.started` observations from the
 // callback of a TaskStartedObservable. The zero TaskStartedObserver records
 // nothing.
@@ -70,6 +103,15 @@ func (o TaskStartedObserver) Observe(value int64, myappTaskState myappattr.TaskS
 		kvs = append(kvs, kv)
 	}
 	o.o.Observe(value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// ObserveSet records one `myapp.task.started` observation with the
+// attributes in set.
+func (o TaskStartedObserver) ObserveSet(value int64, set TaskStartedSet) {
+	if o.o == nil {
+		return
+	}
+	o.o.Observe(value, set.observe...)
 }
 
 // TaskStartedCallback observes `myapp.task.started` through o on every
