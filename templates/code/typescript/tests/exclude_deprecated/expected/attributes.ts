@@ -3,9 +3,9 @@
 /**
  * Optional label.
  */
-export const SampleOptional = /* @__PURE__ */ Object.freeze({
+export const SampleOptional = {
   KEY: "sample.optional",
-} as const);
+} as const;
 
 /**
  * Optional label.
@@ -15,7 +15,7 @@ export type SampleOptional = string;
 /**
  * State.
  */
-export const SampleState = /* @__PURE__ */ Object.freeze({
+export const SampleState = {
   KEY: "sample.state",
   /**
    * Ready.
@@ -25,7 +25,7 @@ export const SampleState = /* @__PURE__ */ Object.freeze({
    * Pending.
    */
   Pending: "pending",
-} as const);
+} as const;
 
 /**
  * State.

@@ -131,7 +131,7 @@ function invalidConsumers() {
   attempts.add(1, { method: "password", success: true, extra: 1 });
   // @ts-expect-error A required attribute list cannot be omitted.
   attempts.add(1);
-  // @ts-expect-error The generated frozen members cannot be reassigned.
+  // @ts-expect-error The generated members are read-only.
   MyappTaskState.Done = "queued";
   // @ts-expect-error A gauge has no add method.
   new Metrics.MyappTaskFloatDepth(meter).add(1);

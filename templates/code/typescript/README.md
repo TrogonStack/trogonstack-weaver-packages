@@ -82,17 +82,17 @@ prefix in `vendor_prefixes` is removed. For example, `myapp.task.id` becomes
 
 ### Attributes
 
-Each attribute becomes a frozen object and a type of the same name. The type is
+Each attribute becomes a read-only object and a type of the same name. The type is
 the value type of the attribute, a literal union for an enum, or `readonly T[]`
 for an array. The object carries `KEY`, the wire name, and one member per enum
 value:
 
 ```ts
-export const AuthMethod = /* @__PURE__ */ Object.freeze({
+export const AuthMethod = {
   KEY: "auth.method",
   Password: "password",
   Token: "token",
-} as const);
+} as const;
 
 export type AuthMethod = "password" | "token";
 ```

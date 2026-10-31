@@ -60,7 +60,6 @@ test("enum constants carry the wire values and the key", () => {
     "running",
     "legacy",
   ]);
-  assert.equal(Object.isFrozen(Attributes.MyappJobState), true);
   assert.equal(Attributes.MyappJobPriority.Low, 1);
   assert.equal(Attributes.MyappJobDryRun.On, true);
 });

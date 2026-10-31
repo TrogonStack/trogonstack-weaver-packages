@@ -3,9 +3,9 @@
 /**
  * Unique identifier of the task.
  */
-export const MyappTaskId = /* @__PURE__ */ Object.freeze({
+export const MyappTaskId = {
   KEY: "myapp.task.id",
-} as const);
+} as const;
 
 /**
  * Unique identifier of the task.

@@ -3,7 +3,7 @@
 /**
  * How the user was authenticated.
  */
-export const AuthMethod = /* @__PURE__ */ Object.freeze({
+export const AuthMethod = {
   KEY: "auth.method",
   /**
    * A password was checked.
@@ -13,7 +13,7 @@ export const AuthMethod = /* @__PURE__ */ Object.freeze({
    * A bearer token was checked.
    */
   Token: "token",
-} as const);
+} as const;
 
 /**
  * How the user was authenticated.
@@ -23,9 +23,9 @@ export type AuthMethod = "password" | "token";
 /**
  * Whether the attempt succeeded.
  */
-export const AuthSuccess = /* @__PURE__ */ Object.freeze({
+export const AuthSuccess = {
   KEY: "auth.success",
-} as const);
+} as const;
 
 /**
  * Whether the attempt succeeded.
@@ -35,9 +35,9 @@ export type AuthSuccess = boolean;
 /**
  * Unique identifier of the task.
  */
-export const MyappTaskId = /* @__PURE__ */ Object.freeze({
+export const MyappTaskId = {
   KEY: "myapp.task.id",
-} as const);
+} as const;
 
 /**
  * Unique identifier of the task.
@@ -47,7 +47,7 @@ export type MyappTaskId = string;
 /**
  * Current state of the task.
  */
-export const MyappTaskState = /* @__PURE__ */ Object.freeze({
+export const MyappTaskState = {
   KEY: "myapp.task.state",
   /**
    * The task is waiting to run.
@@ -57,7 +57,7 @@ export const MyappTaskState = /* @__PURE__ */ Object.freeze({
    * The task finished.
    */
   Done: "done",
-} as const);
+} as const;
 
 /**
  * Current state of the task.

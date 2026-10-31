@@ -3,13 +3,13 @@
 /**
  * State.
  */
-export const SampleState = /* @__PURE__ */ Object.freeze({
+export const SampleState = {
   KEY: "sample.state",
   /**
    * Ready.
    */
   Ready: "ready",
-} as const);
+} as const;
 
 /**
  * State.

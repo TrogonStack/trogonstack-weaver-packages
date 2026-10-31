@@ -3,9 +3,9 @@
 /**
  * Synthetic label.
  */
-export const RemoteTaskState = /* @__PURE__ */ Object.freeze({
+export const RemoteTaskState = {
   KEY: "remote.task.state",
-} as const);
+} as const;
 
 /**
  * Synthetic label.
@@ -15,9 +15,9 @@ export type RemoteTaskState = string;
 /**
  * Synthetic label.
  */
-export const SampleClass = /* @__PURE__ */ Object.freeze({
+export const SampleClass = {
   KEY: "sample.class",
-} as const);
+} as const;
 
 /**
  * Synthetic label.
@@ -27,7 +27,7 @@ export type SampleClass = string;
 /**
  * Synthetic label.
  */
-export const SampleEnabled = /* @__PURE__ */ Object.freeze({
+export const SampleEnabled = {
   KEY: "sample.enabled",
   /**
    * Synthetic value.
@@ -37,7 +37,7 @@ export const SampleEnabled = /* @__PURE__ */ Object.freeze({
    * Synthetic value.
    */
   No: false,
-} as const);
+} as const;
 
 /**
  * Synthetic label.
@@ -47,7 +47,7 @@ export type SampleEnabled = true | false;
 /**
  * Synthetic label.
  */
-export const SampleNumericCode = /* @__PURE__ */ Object.freeze({
+export const SampleNumericCode = {
   KEY: "sample.numeric_code",
   /**
    * Synthetic value.
@@ -57,7 +57,7 @@ export const SampleNumericCode = /* @__PURE__ */ Object.freeze({
    * Synthetic value.
    */
   Two: 2,
-} as const);
+} as const;
 
 /**
  * Synthetic label.
@@ -67,9 +67,9 @@ export type SampleNumericCode = 1 | 2;
 /**
  * Synthetic label.
  */
-export const SampleOtherName = /* @__PURE__ */ Object.freeze({
+export const SampleOtherName = {
   KEY: "sample.other_name",
-} as const);
+} as const;
 
 /**
  * Synthetic label.
@@ -79,7 +79,7 @@ export type SampleOtherName = string;
 /**
  * Synthetic label.
  */
-export const SampleQuoteState = /* @__PURE__ */ Object.freeze({
+export const SampleQuoteState = {
   KEY: "sample.quote_state",
   /**
    * Synthetic value.
@@ -93,7 +93,7 @@ export const SampleQuoteState = /* @__PURE__ */ Object.freeze({
    * Synthetic value.
    */
   Newline: "a\nb",
-} as const);
+} as const;
 
 /**
  * Synthetic label.
@@ -103,9 +103,9 @@ export type SampleQuoteState = "a\"b" | "a\\b" | "a\nb";
 /**
  * Synthetic label.
  */
-export const SampleTaskId = /* @__PURE__ */ Object.freeze({
+export const SampleTaskId = {
   KEY: "sample.task.id",
-} as const);
+} as const;
 
 /**
  * Synthetic label.
