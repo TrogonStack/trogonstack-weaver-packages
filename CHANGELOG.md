@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.7...v0.2.0) (2026-10-31)
+
+
+### Features
+
+* **go:** Let hot paths record a precomputed attribute set ([#63](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/63)) ([22ee649](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/22ee6493c199ade9415960c599683d1aec375808))
+* **typescript_effect:** Track time histograms and fill error.type from the Effect exit ([#58](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/58)) ([2b5f430](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/2b5f430bb4c4c0ae65711eda58435a2979c24dc7))
+
+
+### Bug Fixes
+
+* **go:** Skip attribute work when the SDK disabled the instrument ([#62](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/62)) ([58c615a](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/58c615a2a6237c901688b97e3175e228b4ab9e48))
+
 ## [0.1.7](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.6...v0.1.7) (2026-10-26)
 
 
