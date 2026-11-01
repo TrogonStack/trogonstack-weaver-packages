@@ -118,11 +118,10 @@ only code that records metrics imports the metric API through it.
 A schema URL passed in the options is replaced. The zero `Meter` creates
 instruments that record nothing.
 
-A `Meter` has no exported methods or fields, and the raw `metric.Meter` is not
-reachable from it. Only the generated instruments use it, so every metric that
-is recorded goes through the typed API. The raw handles of the meter, tracer,
-and logger live in `internal/scope`, which Go lets only code below the output
-directory import.
+A `Meter` exposes batch callback registration and keeps the raw `metric.Meter`
+hidden. Instruments record through the typed API. The raw handles of the meter,
+tracer, and logger live in `internal/scope`, which Go lets only code below the
+output directory import.
 
 ### Tracer
 
@@ -182,6 +181,41 @@ created and runs on every collection. An error it returns is returned by that
 collection, and the observations made before it are still recorded. Histograms
 have no asynchronous form in OpenTelemetry, so they get none.
 
+When related instruments share a data source, create them with
+`New<Name>BatchObservable(meter)` and register one callback for the group:
+
+```go
+active, err := myappmetric.NewTaskActiveBatchObservable(meter)
+started, err := myappmetric.NewTaskStartedBatchObservable(meter)
+registration, err := meter.RegisterCallback(
+	func(ctx context.Context, observer semconvmeter.Observer) error {
+		snapshot := queue.Snapshot()
+		active.Observe(observer, snapshot.Active, myappattr.TaskStateQueued)
+		started.Observe(observer, snapshot.Started)
+		return nil
+	}, active.Observable(), started.Observable())
+```
+
+`Observable()` returns an opaque registration handle. It exposes no native
+instrument. A batch can combine integer and floating-point instruments from
+different namespaces. Its `Observe` methods require the same typed attributes
+and options as the corresponding single-instrument observers.
+
+Register the handles with the exact same `Meter` value that created them.
+Copies of that value share ownership. Calling `New` again creates a separate
+owner, even for the same provider and scope name. A nil callback, a zero handle,
+or a handle from another owner returns an error before registration. Duplicate
+handles are registered once. An empty list registers nothing and returns a
+harmless registration.
+
+An observer records only handles supplied to its callback registration. An
+attempt to observe another handle records nothing. Keep the observer within its
+callback invocation. Callbacks must be safe for concurrent collections and
+should return promptly. The context and callback error pass through to the SDK.
+Call `registration.Unregister()` to stop future invocations. A zero registration
+can be unregistered safely. Batch instruments created from a zero `Meter`
+record nothing.
+
 `Add` and `Record` return before building any attribute when the SDK has
 disabled the instrument, such as through a view that drops it, so a call on a
 disabled instrument costs one `Enabled` check.
@@ -201,8 +235,8 @@ duration.RecordSet(ctx, 1.5, set)
 A set belongs to the metric that built it: a `TaskDurationSet` cannot be passed
 to another metric's `RecordSet`, and a refinement has a set of its own, since
 its parameters differ from those of the metric it refines. The zero set holds
-no attributes. The typed observer takes one through `ObserveSet`. A metric
-without attributes has no set type.
+no attributes. Both the typed observer and the batch instrument take one through
+`ObserveSet`. A metric without attributes has no set type.
 
 Each instrument type, synchronous or observable, reports the name it records
 under through `Name`, which works on the zero value, so SDK views and tests can
@@ -692,7 +726,7 @@ or is tied to no schema, when:
   increasing order.
 - Two metrics or refinements in one package render to the same Go
   identifier, such as `myapp.task.started` and `myapp.task_started`, or the
-  observable form or attribute set of one is named like the other, such as
+  observable forms or attribute set of one is named like the other, such as
   `myapp.task.started` and `myapp.task.started.observable`, or
   `myapp.task.duration` and `myapp.task.duration.set`.
 - A metric refinement sets a different `code_generation.metric_value_type` or
@@ -716,6 +750,7 @@ or is tied to no schema, when:
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `attributes`                          | Every supported type, enums of every member type, notes, deprecated attributes and members.                                                                                                   |
 | `metrics`                             | Every instrument, every requirement level, cross-namespace references, bucket boundaries, precomputed attribute sets, and a disabled instrument.                                              |
+| `batch_observables`                   | Mixed numeric kinds and namespaces, shared snapshots, typed sets, schema identity, ownership, callback lifetime, concurrent collection, and rejected raw access.                              |
 | `imported`                            | Required and optional attributes imported from a dependency registry, including an enum, a span named from them, and an event.                                                                |
 | `imported_typed`                      | An imported namespace mapped with `imported_import_paths`, taken as a typed value alongside a local attribute and an unmapped raw one, across a metric, a span named from them, and an event. |
 | `params`                              | Custom root package, root description, import path, header, `vendor_prefixes`, and `exclude_deprecated`.                                                                                      |

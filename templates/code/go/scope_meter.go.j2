@@ -6,23 +6,127 @@
 package scope
 
 import (
+	"context"
+	"errors"
+	"fmt"
+
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
 )
 
 {{ ["Meter is a metric.Meter whose instrumentation scope carries the registry's schema URL. Every instrument in the registry is created from one, so everything it records is tied to the registry's schema.", "The zero Meter creates instruments that record nothing."] | join("\n\n") | comment }}
-type Meter struct{ meter metric.Meter }
+type Meter struct{ state *meterState }
+
+type meterState struct{ meter metric.Meter }
 
 {{ ["NewMeter returns a Meter that creates instruments from m."] | join | comment }}
 func NewMeter(m metric.Meter) Meter {
-	return Meter{meter: m}
+	return Meter{state: &meterState{meter: m}}
 }
 
 {{ ["MetricMeter returns the metric.Meter inside m, or a no-op one for the zero Meter."] | join | comment }}
 func MetricMeter(m Meter) metric.Meter {
-	if m.meter == nil {
+	if m.state == nil || m.state.meter == nil {
 		return noop.Meter{}
 	}
-	return m.meter
+	return m.state.meter
+}
+
+{{ ["Observable is an opaque handle for batch callback registration. Its zero value cannot be registered."] | join | comment }}
+type Observable struct{ state *observableState }
+
+type observableState struct {
+	instrument metric.Observable
+	meter      *meterState
+}
+
+{{ ["NewObservable binds instrument to m for batch registration."] | join | comment }}
+func NewObservable(m Meter, instrument metric.Observable) Observable {
+	return Observable{state: &observableState{instrument: instrument, meter: m.state}}
+}
+
+{{ ["Observer records only the instruments registered for its batch callback. Its zero value records nothing."] | join | comment }}
+type Observer struct {
+	observer    metric.Observer
+	instruments map[*observableState]struct{}
+}
+
+{{ ["Callback observes the registered instruments during a collection."] | join | comment }}
+type Callback func(context.Context, Observer) error
+
+{{ ["Registration controls a batch callback. Its zero value can be unregistered safely."] | join | comment }}
+type Registration struct{ registration metric.Registration }
+
+{{ ["Unregister stops future collections from calling the batch callback."] | join | comment }}
+func (r Registration) Unregister() error {
+	if r.registration == nil {
+		return nil
+	}
+	return r.registration.Unregister()
+}
+
+{{ ["RegisterCallback registers callback for this Meter's handles. The callback must be safe for concurrent collections."] | join | comment }}
+func (m Meter) RegisterCallback(callback Callback, instruments ...Observable) (Registration, error) {
+	if callback == nil {
+		return Registration{}, fmt.Errorf("register the batch callback: the callback is nil")
+	}
+	if len(instruments) == 0 {
+		return Registration{}, nil
+	}
+	registered := make(map[*observableState]struct{}, len(instruments))
+	native := make([]metric.Observable, 0, len(instruments))
+	for index, instrument := range instruments {
+		if instrument.state == nil {
+			return Registration{}, fmt.Errorf("register the batch callback: observable %d is zero", index)
+		}
+		if instrument.state.meter != m.state {
+			return Registration{}, fmt.Errorf("register the batch callback: observable %d belongs to another Meter", index)
+		}
+		if _, exists := registered[instrument.state]; exists {
+			continue
+		}
+		registered[instrument.state] = struct{}{}
+		native = append(native, instrument.state.instrument)
+	}
+	registration, err := MetricMeter(m).RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
+		return callback(ctx, Observer{observer: observer, instruments: registered})
+	}, native...)
+	if err != nil {
+		if registration != nil {
+			err = errors.Join(err, registration.Unregister())
+		}
+		return Registration{}, err
+	}
+	return Registration{registration: registration}, nil
+}
+
+{{ ["ObserveInt64 records value only if instrument belongs to observer's registered set."] | join | comment }}
+func ObserveInt64(observer Observer, instrument Observable, value int64, options ...metric.ObserveOption) {
+	if observer.observer == nil || instrument.state == nil {
+		return
+	}
+	if _, registered := observer.instruments[instrument.state]; !registered {
+		return
+	}
+	native, ok := instrument.state.instrument.(metric.Int64Observable)
+	if !ok {
+		return
+	}
+	observer.observer.ObserveInt64(native, value, options...)
+}
+
+{{ ["ObserveFloat64 records value only if instrument belongs to observer's registered set."] | join | comment }}
+func ObserveFloat64(observer Observer, instrument Observable, value float64, options ...metric.ObserveOption) {
+	if observer.observer == nil || instrument.state == nil {
+		return
+	}
+	if _, registered := observer.instruments[instrument.state]; !registered {
+		return
+	}
+	native, ok := instrument.state.instrument.(metric.Float64Observable)
+	if !ok {
+		return
+	}
+	observer.observer.ObserveFloat64(native, value, options...)
 }
 {% endfilter %}

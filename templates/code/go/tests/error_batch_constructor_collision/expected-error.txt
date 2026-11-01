@@ -1,0 +1,1 @@
+package myappmetric has metrics that render to the same Go identifier: myapp.new.task.count.batch.observable and myapp.task.count

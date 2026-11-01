@@ -223,5 +223,50 @@ func New{{ observable }}(meter {{ n.root() }}meter.Meter, callback {{ callback }
 func ({{ observable }}) Name() string {
 	return {{ name }}{}.Name()
 }
+{%- set batch_observable = name ~ "BatchObservable" %}
+
+{{ [batch_observable ~ " is the asynchronous form of " ~ name ~ " for a shared batch callback. Its zero value records nothing.", opt_in, deprecated] | select | join("\n\n") | comment }}
+type {{ batch_observable }} struct{ observable scope.Observable }
+
+{{ ["New" ~ batch_observable ~ " creates the `" ~ def.instrument_name ~ "` instrument for batch callback registration.", opt_in, deprecated] | select | join("\n\n") | comment }}
+func New{{ batch_observable }}(meter {{ n.root() }}meter.Meter) ({{ batch_observable }}, error) {
+	var m {{ batch_observable }}
+	inst, err := scope.MetricMeter(meter).{{ value_type }}Observable{{ suffix }}(
+		m.Name(),
+		metric.WithDescription({{ (def.description or "") | trim | tojson }}),
+		metric.WithUnit({{ (def.unit or "") | tojson }}),
+	)
+	if err != nil {
+		return {{ batch_observable }}{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
+	}
+	return {{ batch_observable }}{observable: scope.NewObservable(meter, inst)}, nil
+}
+
+{{ ["Name returns the name `" ~ def.name ~ "` records under."] | join | comment }}
+func ({{ batch_observable }}) Name() string {
+	return {{ name }}{}.Name()
+}
+
+{{ ["Observable returns the opaque handle to pass to " ~ n.root() ~ "meter.Meter.RegisterCallback."] | join | comment }}
+func (m {{ batch_observable }}) Observable() {{ n.root() }}meter.Observable {
+	return m.observable
+}
+
+{{ ["Observe records one `" ~ def.name ~ "` observation if m is registered with observer."] | join | comment }}
+func (m {{ batch_observable }}) Observe(observer {{ n.root() }}meter.Observer, value {{ gotype }}{{ attr_params(def) }}) {
+{%- if has_attributes %}
+{{- attr_set(def) }}
+	scope.Observe{{ value_type }}(observer, m.observable, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+{%- else %}
+	scope.Observe{{ value_type }}(observer, m.observable, value)
+{%- endif %}
+}
+{%- if has_attributes %}
+
+{{ ["ObserveSet records one `" ~ def.name ~ "` observation with set if m is registered with observer."] | join | comment }}
+func (m {{ batch_observable }}) ObserveSet(observer {{ n.root() }}meter.Observer, value {{ gotype }}, set {{ set_type }}) {
+	scope.Observe{{ value_type }}(observer, m.observable, value, set.observe...)
+}
+{%- endif %}
 {%- endif %}
 {% endfor %}{% endfilter %}

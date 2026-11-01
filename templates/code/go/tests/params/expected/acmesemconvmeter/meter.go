@@ -17,6 +17,21 @@ import (
 // The zero Meter creates instruments that record nothing.
 type Meter = scope.Meter
 
+// Observable is an opaque instrument handle accepted by
+// Meter.RegisterCallback.
+type Observable = scope.Observable
+
+// Observer records typed observations for the instruments registered with
+// its callback.
+type Observer = scope.Observer
+
+// Callback observes registered instruments during a collection.
+type Callback = scope.Callback
+
+// Registration can unregister a batch callback. The zero Registration is
+// harmless.
+type Registration = scope.Registration
+
 // New returns the meter named name from provider, with acmesemconv.SchemaURL
 // set on its instrumentation scope. A schema URL in opts is replaced.
 func New(provider metric.MeterProvider, name string, opts ...metric.MeterOption) Meter {
