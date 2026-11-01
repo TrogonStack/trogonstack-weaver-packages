@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.2.0...v0.3.0) (2026-11-01)
+
+
+### Features
+
+* **go:** Support typed batch observations ([#65](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/65)) ([c2f0b99](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/c2f0b9922e3c5342c448d047c11013a3003866f0))
+
 ## [0.2.0](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.7...v0.2.0) (2026-11-01)
 
 
