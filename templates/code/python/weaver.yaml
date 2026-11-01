@@ -1,0 +1,263 @@
+# Python code generation for a semantic convention registry.
+# See README.md for what this package generates and full parameter docs.
+# Override params per registry via `--param key=value` or `--params <file>`.
+whitespace_control:
+  trim_blocks: true
+  lstrip_blocks: true
+
+params:
+  # Scope name and version passed to `get_meter`. An empty version leaves the
+  # scope unversioned.
+  instrumentation_name: generated-semconv
+  instrumentation_version: ""
+
+  # Extra paragraph for the package docstring. Omitted when empty.
+  module_description: ""
+
+  # Generated file header. `header_source` names what the code was generated
+  # from and `regenerate_command` tells readers how to refresh it. Both are
+  # omitted from the header when empty.
+  header_source: ""
+  regenerate_command: ""
+
+  # Leading name segments that are a vendor prefix rather than a namespace.
+  # With `[acme]`, `acme.billing.invoice.id` renders as `BILLING_INVOICE_ID_KEY`,
+  # exactly like `billing.invoice.id`.
+  vendor_prefixes: []
+
+  # Signal and attribute selection, forwarded to the semconv_grouped_* helpers.
+  exclude_deprecated: false
+  stable_only: false
+
+  # Default explicit bucket boundaries by unit, for a histogram that sets no
+  # `annotations.aggregation`. A unit missing from the map uses the SDK default.
+  histogram_boundaries_by_unit:
+    s: [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]
+
+templates:
+  - template: __init__.py.j2
+    application_mode: single
+    file_name: __init__.py
+    filter: |-
+      def literal: tojson as $double | ([match("\""; "g")] | length) as $double_quotes | ([match("'"; "g")] | length) as $single_quotes
+        | if $double_quotes > $single_quotes then "'" + ($double[1:-1] | gsub("\\\\\""; "\"") | gsub("'"; "\\'")) + "'" else $double end;
+      if ($instrumentation_name | type) != "string" or ($instrumentation_name | length) == 0
+      then error("instrumentation_name must be a nonempty string")
+      elif ($instrumentation_version | type) != "string"
+      then error("instrumentation_version must be a string")
+      elif ($vendor_prefixes | type) != "array" or ($vendor_prefixes | any(type != "string"))
+      then error("vendor_prefixes must be a list of strings")
+      elif ($histogram_boundaries_by_unit | type) != "object"
+      then error("histogram_boundaries_by_unit must be a map from unit to boundaries")
+      else . end
+      | .schema_url as $schema
+      | if $schema == null or $schema == "https://unknown/unknown" or ($schema | test("^https?://[^/]+(/[^/]+)*/[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$") | not)
+        then error("the registry schema_url must name a schema version") else . end
+      | {schema_literal: ($schema | literal), name_literal: ($instrumentation_name | literal), version_literal: ($instrumentation_version | literal)}
+
+  - template: attributes.py.j2
+    application_mode: each
+    file_name: attributes.py
+    filter: |-
+      def literal: tojson as $double | ([match("\""; "g")] | length) as $double_quotes | ([match("'"; "g")] | length) as $single_quotes
+        | if $double_quotes > $single_quotes then "'" + ($double[1:-1] | gsub("\\\\\""; "\"") | gsub("'"; "\\'")) + "'" else $double end;
+      def float_literal: tostring | if test("^-?[0-9]+$") then . + ".0" else . end;
+      def docstring: gsub("\r"; "") | gsub("[\u0000-\u0008\u000b-\u001f\u007f]"; "") | gsub("\t"; "    ") | gsub("\\\\"; "\\\\") | gsub("\""; "\\\"") | split("\n") | map(sub("[ ]+$"; "")) | join("\n") | sub("^\\s+"; "") | sub("\\s+$"; "");
+      def deprecation_text: if . == null then null else (.note // .renamed_to // .reason) end;
+      def doc($deprecated): [.brief, .note] | map(select(. != null and . != "")) | map(docstring) | join("\n\n")
+        | if $deprecated != null then (. + (if . == "" then "" else "\n\n" end) + "Deprecated: " + ($deprecated | docstring)) else . end;
+      def valid_name: test("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*$");
+      def stripped: split(".") as $s | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0])) then $s[1:] else $s end;
+      def parts: stripped | map(split("_")) | flatten | map(select(length > 0));
+      def title: parts | map(.[0:1] as $first | ($first | ascii_upcase) + .[1:]) | join("");
+      def upper: parts | map(ascii_upcase) | join("_");
+      def value_type($key):
+        if type != "object" then .
+        elif (.members | length) == 0 then error("attribute \($key) has no enum members left after exclude_deprecated or stable_only, so no value of it could be built")
+        elif (.members | all(.value | type == "string")) then "string"
+        elif (.members | all(.value | type == "boolean")) then "boolean"
+        elif (.members | all(.value | type == "number" and (tostring | test("^-?[0-9]+$")))) then "int"
+        elif (.members | all(.value | type == "number" and (tostring | test("^-?[0-9]+$") | not))) then "double"
+        else error("attribute \($key) has enum members of more than one value type, which no single Python type can hold") end;
+      def member_literal($type): if $type == "string" then .value | literal elif $type == "boolean" then (if .value then "True" else "False" end) elif $type == "int" then .value | tostring else .value | float_literal end;
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
+      | semconv_grouped_attributes($opts)
+      | map(.attributes) | add // []
+      | map(if (.key | valid_name | not) then error("attribute \(.key) is not a supported Python attribute name") else . end)
+      | map(. + {constant: ((.key | upper) + "_KEY"), class_name: (.key | title)})
+      | map(if (.key | parts | length) == 0 then error("attribute \(.key) has no name") else . end)
+      | map(. + {value_type: (.key as $key | .type | value_type($key)), key_literal: (.key | literal), deprecation: (.deprecated | deprecation_text)})
+      | map(if (.value_type as $t | ["string", "int", "double", "boolean", "string[]", "int[]", "double[]", "boolean[]"] | any(. == $t) | not)
+            then error("attribute \(.key) has an unsupported Python value type") else . end)
+      | map(if (.value_type == "int" or .value_type == "double") and (.type | type) == "object"
+            and (.type.members | all(.value == (.value | floor)))
+            and (.type.members | any(.value >= 9223372036854775808 or .value < -9223372036854775808))
+          then error("attribute \(.key) has an enum value that cannot be represented by a 64-bit integer") else . end)
+      | map(. + {doc: doc(.deprecation)})
+      | map(if (.type | type) == "object" then
+          .key as $key | .value_type as $type | .deprecation as $attribute_deprecation | .type.members |= map(
+            if (.id | valid_name | not) then error("enum member \(.id) of \($key) is not a supported Python identifier") else . end
+            | . + {constant: (.id | upper), literal: member_literal($type), deprecation: (if .deprecated then (.deprecated | deprecation_text) else $attribute_deprecation end)}
+            | . + {doc: doc(.deprecation)})
+          | (.type.members | group_by(.constant) | map(select(length > 1))) as $collisions
+          | if ($collisions | length) > 0 then error("attribute \($key) has enum members that render to the same Python identifier: \($collisions | map(map(.id) | join(" and ")) | join("; "))") else . end
+          | (.type.members | group_by(.literal) | map(select(length > 1))) as $duplicates
+          | if ($duplicates | length) > 0 then error("attribute \($key) has enum members with the same value: \($duplicates | map(map(.id) | join(" and ")) | join("; "))") else . end
+          else . end)
+      | map(. + {is_enum: ((.type | type) == "object")})
+      | (map({symbol: .constant, name: .key}) + (map(select(.is_enum) | {symbol: .class_name, name: .key}))
+         + (["enum", "Final", "None", "True", "False"] | map({symbol: ., name: "a reserved Python symbol"}))
+         | group_by(.symbol) | map(select(length > 1) | map(.name) | join(" and ")) | unique) as $collisions
+      | if ($collisions | length) > 0 then error("module attributes has attributes that render to the same Python identifier: \($collisions | join("; "))") else . end
+      | if length == 0 then [] else [{attributes: sort_by(.key), has_enums: any(.[]; .is_enum)}] end
+
+  - template: metrics.py.j2
+    application_mode: each
+    file_name: metrics.py
+    filter: |-
+      def literal: tojson as $double | ([match("\""; "g")] | length) as $double_quotes | ([match("'"; "g")] | length) as $single_quotes
+        | if $double_quotes > $single_quotes then "'" + ($double[1:-1] | gsub("\\\\\""; "\"") | gsub("'"; "\\'")) + "'" else $double end;
+      def float_literal: tostring | if test("^-?[0-9]+$") then . + ".0" else . end;
+      def docstring: gsub("\r"; "") | gsub("[\u0000-\u0008\u000b-\u001f\u007f]"; "") | gsub("\t"; "    ") | gsub("\\\\"; "\\\\") | gsub("\""; "\\\"") | split("\n") | map(sub("[ ]+$"; "")) | join("\n") | sub("^\\s+"; "") | sub("\\s+$"; "");
+      def deprecation_text: if . == null then null else (.note // .renamed_to // .reason) end;
+      def valid_name: test("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*$");
+      def stripped: split(".") as $s | if ($s | length) > 1 and ($vendor_prefixes | any(. == $s[0])) then $s[1:] else $s end;
+      def parts: stripped | map(split("_")) | flatten | map(select(length > 0));
+      def title: parts | map(.[0:1] as $first | ($first | ascii_upcase) + .[1:]) | join("");
+      def upper: parts | map(ascii_upcase) | join("_");
+      def namespace: stripped | .[0];
+      def field($metric_namespace): stripped | if length > 1 and .[0] == $metric_namespace then .[1:] else . end
+        | map(split("_")) | flatten | map(select(length > 0)) | map(ascii_downcase) | join("_");
+      def enum_value_type($key):
+        .members as $members
+        | if ($members | length) == 0
+          then error("attribute \($key) has no enum members left after exclude_deprecated or stable_only, so no value of it could be built")
+          elif ($members | all(.value | type == "string")) then "string"
+          elif ($members | all(.value | type == "boolean")) then "boolean"
+          elif ($members | all(.value | type == "number" and (tostring | test("^-?[0-9]+$")))) then "int"
+          elif ($members | all(.value | type == "number" and (tostring | test("^-?[0-9]+$") | not))) then "double"
+          else error("attribute \($key) has enum members of more than one value type, which no single Python type can hold")
+          end;
+      def python_type: {"string": "str", "int": "int", "double": "float", "boolean": "bool", "string[]": "Sequence[str]", "int[]": "Sequence[int]", "double[]": "Sequence[float]", "boolean[]": "Sequence[bool]"}[.];
+      def kept($o):
+        stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
+        | map(.attributes = (if .attributes == null then .attributes else .attributes | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) end));
+      def instruments($o):
+        (semconv_grouped_metrics($o) | map(.metrics) | add // []) as $metrics
+        | ($metrics | map(.name)) as $kept_bases
+        | (.registry.metrics // [] | map({key: .name, value: .}) | from_entries) as $bases
+        | $metrics + (.refinements.metrics // [] | map(select(.id != .name)) | kept($o)
+            | map(select(.name as $base | $kept_bases | any(. == $base)))
+            | map(. as $r | $bases[$r.name] as $b
+                  | if ($r.annotations.code_generation.metric_value_type // null) != ($b.annotations.code_generation.metric_value_type // null)
+                    then error("metric refinement \($r.id) sets a different code_generation.metric_value_type than \($r.name), but both record into one instrument")
+                    elif ($r.annotations.aggregation // null) != ($b.annotations.aggregation // null)
+                    then error("metric refinement \($r.id) sets a different annotations.aggregation than \($r.name), but both record into one instrument")
+                    else . + {name: $r.id, refines: $r.name, instrument_name: $r.name, description: $b.brief, unit: $b.unit} end));
+      def boundary_literals($metric; $source):
+        if type != "array" or length == 0 then error("metric \($metric) must set \($source) to a non-empty list of numbers")
+        elif any(type != "number" or isinfinite or isnan) then error("metric \($metric) must set \($source) to a non-empty list of finite numbers")
+        elif . as $b | any(range(1; length); $b[.] <= $b[. - 1]) then error("metric \($metric) must list \($source) in strictly increasing order")
+        else map(float_literal) end;
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
+      | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key)) as $rendered
+      | (instruments({v2: true})
+         | map({key: .name, value: [(.attributes // [])[] | select(.requirement_level == "required") | .key]})
+         | from_entries) as $declared_required
+      | instruments($opts)
+      | map({instrument_name: .name, description: .brief} + .)
+      | map(if (.name | valid_name | not) then error("metric \(.name) is not a supported Python metric name") else . end)
+      | map(if (.name | parts | length) == 0 then error("metric \(.name) has no name") else . end)
+      | map(if (.annotations.code_generation.metric_value_type // "") as $t | ["int", "double"] | any(. == $t) | not
+          then error("metric \(.name) must set code_generation.metric_value_type to int or double")
+          elif (.instrument as $kind | ["counter", "updowncounter", "histogram", "gauge"] | any(. == $kind) | not)
+          then error("metric \(.name) has an unsupported Python instrument") else . end)
+      | map(.name as $metric
+            | (($declared_required[$metric] // []) - [(.attributes // [])[] | .key]) as $dropped
+            | if ($dropped | length) > 0
+              then error("metric \($metric) requires \($dropped | join(", ")), which exclude_deprecated or stable_only leaves out, so its generated method could not set them")
+              else . end)
+      | map(.name as $metric
+            | .unit as $unit
+            | (.annotations.aggregation // null) as $aggregation
+            | ($aggregation | if type == "object" and (.parameters | type) == "object" then .parameters.boundaries else null end) as $bounds
+            | if $aggregation != null then
+                if .instrument != "histogram"
+                then error("metric \($metric) sets annotations.aggregation, which the Python template supports only on a histogram")
+                elif ($aggregation | type) != "object" or ($aggregation.parameters // {} | type) != "object"
+                then error("metric \($metric) must set annotations.aggregation to an object with a method and parameters")
+                elif $aggregation.method != "explicithistogram"
+                then error("metric \($metric) sets annotations.aggregation.method to \($aggregation.method | tostring), but the Python template supports only explicithistogram")
+                elif (($aggregation | keys) - ["method", "parameters"] | length) > 0 or (($aggregation.parameters // {} | keys) - ["boundaries"] | length) > 0
+                then error("metric \($metric) sets annotations.aggregation fields other than method and parameters.boundaries, which the Python API cannot express")
+                else . + {bucket_boundaries: ($bounds | boundary_literals($metric; "annotations.aggregation.parameters.boundaries"))} end
+              elif .instrument == "histogram" and ($unit | type) == "string" and ($histogram_boundaries_by_unit | has($unit)) then
+                . + {bucket_boundaries: ($histogram_boundaries_by_unit[$unit] | boundary_literals($metric; "histogram_boundaries_by_unit for unit \($unit)"))}
+              else . end)
+      | map(. + {class_name: (.name | title), value_type: (if .annotations.code_generation.metric_value_type == "int" then "int" else "float" end),
+                 create_method: ({"counter": "create_counter", "updowncounter": "create_up_down_counter", "histogram": "create_histogram", "gauge": "create_gauge"}[.instrument]),
+                 observable_method: ({"counter": "create_observable_counter", "updowncounter": "create_observable_up_down_counter", "gauge": "create_observable_gauge"}[.instrument]),
+                 record_method: ({"counter": "add", "updowncounter": "add", "histogram": "record", "gauge": "set"}[.instrument]),
+                 description_literal: ((.description // "") | gsub("^\\s+|\\s+$"; "") | literal),
+                 unit_literal: ((.unit // "") | literal),
+                 deprecation: (.deprecated | deprecation_text),
+                 opt_in: (.requirement_level == "opt_in")})
+      | map(. + {doc: ([.brief, .note] | map(select(. != null and . != "")) | map(docstring) | join("\n\n"))})
+      | map(.deprecation as $deprecation | .doc |= (if $deprecation != null then . + (if . == "" then "" else "\n\n" end) + "Deprecated: " + ($deprecation | docstring) else . end))
+      | map(.opt_in as $opt_in | .doc |= (if $opt_in then . + (if . == "" then "" else "\n\n" end) + "Opt-in: the convention records it only when a user asks for it." else . end))
+      | map(.name as $metric
+            | (.name | namespace) as $metric_namespace
+            | .attributes |= ((. // []) | sort_by(.key) | map(
+                . as $attribute
+                | if (.key | valid_name | not) then error("attribute \(.key) is not a supported Python attribute name") else . end
+                | (.key as $k | $rendered | any(. == $k)) as $local
+                | (if (.type | type) == "object" then (.key as $key | .type | enum_value_type($key)) else .type end) as $value_type
+                | if ($value_type | python_type) == null
+                  then error("metric \($metric) references attribute \(.key) of type \(.type | tostring), which the Python template does not render")
+                  else . end
+                | . + {field: (.key | field($metric_namespace)),
+                       local: $local,
+                       is_enum: ($local and (.type | type) == "object"),
+                       is_array: ($value_type | endswith("[]")),
+                       key_expression: (if $local then "attributes." + ((.key | upper) + "_KEY") else (.key | literal) end),
+                       python_type: (if $local and (.type | type) == "object" then "attributes." + (.key | title) else ($value_type | python_type) end),
+                       requirement_doc: (.requirement_level
+                         | if type == "object" and has("conditionally_required") then "Conditionally required: \(.conditionally_required)"
+                           elif type == "object" and has("recommended") then "Recommended: \(.recommended)"
+                           elif . == "opt_in" then "Opt-in: the convention records it only when a user asks for it."
+                           else null end | if . == null then null else docstring end),
+                       required: (.requirement_level == "required")}
+                | . + {value_expression: (if .is_enum then .field + ".value" elif .is_array then "[*" + .field + "]" else .field end)}
+                | . + {dict_wrap: ((12 + (.key_expression | length) + 2 + (.value_expression | length) + 1) > 88),
+                       assign_wrap: ((24 + (.key_expression | length) + 4 + (.value_expression | length)) > 88)}
+                | if (.field | test("^[a-z][a-z0-9_]*$") | not)
+                  then error("metric \($metric) has attribute \(.key), which cannot become a Python parameter") else . end
+                | if (.field as $field | ["False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield", "self", "amount", "attributes", "context"] | any(. == $field))
+                  then error("metric \($metric) has attribute \(.key), which becomes the reserved Python parameter \(.field)") else . end)))
+      | map(.name as $metric
+            | (.attributes | group_by(.field) | map(select(length > 1) | map(.key) | join(" and "))) as $collisions
+            | if ($collisions | length) > 0
+              then error("metric \($metric) has attributes that render to the same Python parameter: \($collisions | join("; "))")
+              else . end)
+      | map(.required_attributes = (.attributes | map(select(.required))) | .optional_attributes = (.attributes | map(select(.required | not))))
+      | if length == 0 then [] else [.] end
+      | map(
+          ([.[] | .name as $metric | .class_name as $class | .instrument as $kind
+            | ([$class] + (if $kind == "histogram" then [] else [$class + "Observable"] end))[]
+            | {symbol: ., name: $metric}]
+           + (["Final", "Sequence", "Meter", "MeterProvider", "Context", "CallbackT", "Observation", "AttributeValue", "SCHEMA_URL", "INSTRUMENTATION_NAME", "INSTRUMENTATION_VERSION", "None", "True", "False", "attributes", "get_meter", "otel_metrics"]
+              | map({symbol: ., name: "a reserved Python symbol"}))
+           | group_by(.symbol)
+           | map(select(length > 1) | map(.name) | unique | join(" and "))
+           | unique) as $collisions
+          | if ($collisions | length) > 0
+            then error("module metrics has metrics that render to the same Python identifier: \($collisions | join("; "))")
+            else . end
+        )
+      | map(. as $metrics | {metrics: sort_by(.name),
+             uses_attributes: any(.[]; .attributes | any(.local)),
+             uses_sequence: (any(.[]; .attributes | any(.is_array or (.python_type | startswith("Sequence")))) or any(.[]; .instrument != "histogram")),
+             has_observable: any(.[]; .instrument != "histogram"),
+             has_attributes: any(.[]; .attributes | length > 0),
+             api_imports: (["CallbackT"] | if any($metrics[]; .instrument != "histogram") then . else [] end) + ["Meter", "MeterProvider"] + (["Observation"] | if any($metrics[]; .instrument != "histogram") then . else [] end),
+             package_imports: ["INSTRUMENTATION_NAME", "INSTRUMENTATION_VERSION", "SCHEMA_URL"] + (["attributes"] | if any($metrics[]; .attributes | any(.local)) then . else [] end)})

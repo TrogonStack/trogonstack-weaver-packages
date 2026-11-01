@@ -1,0 +1,11 @@
+file_format: definition/2
+attributes:
+  - key: demo.status
+    stability: stable
+    brief: Synthetic attribute.
+    type:
+      members:
+        - id: 2xx_ok
+          value: 2xx
+          stability: stable
+          brief: Starts with a digit.

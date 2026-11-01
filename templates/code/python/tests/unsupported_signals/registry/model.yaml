@@ -1,0 +1,97 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The task is waiting to run.
+        - id: done
+          value: done
+          stability: stable
+          brief: The task finished.
+    stability: stable
+    brief: Current state of the task.
+  - key: myapp.queue.name
+    type: string
+    stability: stable
+    brief: Name of the queue.
+  - key: myapp.host.name
+    type: string
+    stability: stable
+    brief: Name of the host.
+  - key: myapp.host.type
+    type: string
+    stability: stable
+    brief: Type of the host.
+metrics:
+  - name: myapp.task.started
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks started.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+spans:
+  - type: myapp.task.run
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: One run of a task.
+    name:
+      note: "`run {myapp.task.id}`"
+    attributes:
+      - ref: myapp.task.state
+        requirement_level: required
+      - ref: myapp.task.id
+        requirement_level: recommended
+events:
+  - name: myapp.task.finished
+    requirement_level: recommended
+    stability: development
+    brief: A task reached a final state.
+    attributes:
+      - ref: myapp.task.state
+        requirement_level: required
+entities:
+  - type: myapp.host
+    requirement_level: recommended
+    stability: stable
+    brief: A host running the application.
+    identity:
+      - ref: myapp.host.name
+        requirement_level: required
+    description:
+      - ref: myapp.host.type
+        requirement_level: recommended
+span_refinements:
+  - id: myapp.task.run.queued
+    ref: myapp.task.run
+    attributes:
+      - ref: myapp.queue.name
+        requirement_level: required
+event_refinements:
+  - id: myapp.task.finished.queued
+    ref: myapp.task.finished
+    brief: A queued task reached a final state.
+    attributes:
+      - ref: myapp.queue.name
+        requirement_level: required
+entity_refinements:
+  - id: myapp.host.worker
+    ref: myapp.host
+    stability: stable
+    brief: A host dedicated to running worker processes.
+    description:
+      - ref: myapp.queue.name
+        requirement_level: required

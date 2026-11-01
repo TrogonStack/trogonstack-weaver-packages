@@ -1,0 +1,40 @@
+file_format: definition/2
+attributes:
+  - key: acme.billing.invoice.id
+    type: string
+    stability: stable
+    brief: Identifier of the invoice.
+  - key: acme.billing.invoice.currency
+    type:
+      members:
+        - id: usd
+          value: USD
+          stability: stable
+          brief: United States dollar.
+        - id: eur
+          value: EUR
+          stability: stable
+          brief: Euro.
+    stability: stable
+    brief: Currency of the invoice.
+  - key: billing.invoice.paid
+    type: boolean
+    stability: stable
+    brief: Whether the invoice was paid.
+metrics:
+  - name: acme.billing.invoice.created
+    requirement_level: recommended
+    instrument: counter
+    unit: "{invoice}"
+    stability: stable
+    brief: Number of invoices created.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: acme.billing.invoice.id
+        requirement_level: required
+      - ref: acme.billing.invoice.currency
+        requirement_level: recommended
+      - ref: billing.invoice.paid
+        requirement_level: recommended

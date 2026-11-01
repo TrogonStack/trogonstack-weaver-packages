@@ -1,0 +1,75 @@
+file_format: definition/2
+attributes:
+  - key: host
+    type: string
+    stability: stable
+    brief: Host name.
+  - key: k8s.pod.uid
+    type: string
+    stability: stable
+    brief: Pod identifier.
+  - key: http.request.method_original
+    type: string
+    stability: stable
+    brief: Original method.
+  - key: http.response.status_code
+    type: int
+    stability: stable
+    brief: Status code.
+  - key: http.route
+    type:
+      members:
+        - id: root
+          value: /
+          stability: stable
+          brief: The root route.
+        - id: two_xx
+          value: 2xx
+          stability: stable
+          brief: Starts with a digit.
+        - id: class
+          value: class
+          stability: stable
+          brief: A Python keyword in lower case.
+    stability: stable
+    brief: Matched route.
+metrics:
+  - name: requests
+    requirement_level: recommended
+    instrument: counter
+    unit: "{request}"
+    stability: stable
+    brief: A metric without a namespace.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: host
+        requirement_level: required
+      - ref: http.route
+        requirement_level: recommended
+  - name: http.server.request_count
+    requirement_level: recommended
+    instrument: counter
+    unit: "{request}"
+    stability: stable
+    brief: Requests with underscores in the name.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: http.request.method_original
+        requirement_level: required
+      - ref: http.response.status_code
+        requirement_level: required
+      - ref: k8s.pod.uid
+        requirement_level: recommended
+  - name: k8s.pod.cpu.time
+    requirement_level: recommended
+    instrument: counter
+    unit: s
+    stability: stable
+    brief: Metric name with a digit.
+    annotations:
+      code_generation:
+        metric_value_type: double

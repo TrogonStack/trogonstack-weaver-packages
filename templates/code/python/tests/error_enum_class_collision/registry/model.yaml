@@ -1,0 +1,11 @@
+file_format: definition/2
+attributes:
+  - key: final
+    stability: stable
+    brief: Synthetic attribute.
+    type:
+      members:
+        - id: first
+          value: a
+          stability: stable
+          brief: First.

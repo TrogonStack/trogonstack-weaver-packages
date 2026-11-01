@@ -1,0 +1,249 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    note: The identifier is assigned by the scheduler and stays stable across retries.
+    examples: ["task_0001"]
+  - key: myapp.task.retries
+    type: int
+    stability: stable
+    brief: Number of times the task was retried.
+    examples: 3
+  - key: myapp.task.progress
+    type: double
+    stability: development
+    brief: Fraction of the task that has completed, between 0 and 1.
+    examples: 0.5
+  - key: myapp.task.cancelled
+    type: boolean
+    stability: stable
+    brief: Whether the task was cancelled.
+    examples: false
+  - key: myapp.task.tags
+    type: string[]
+    stability: stable
+    brief: Tags attached to the task.
+    examples: [["nightly", "batch"]]
+  - key: myapp.task.shard_ids
+    type: int[]
+    stability: stable
+    brief: Shards the task touched.
+    examples: [[1, 2]]
+  - key: myapp.task.weights
+    type: double[]
+    stability: development
+    brief: Scheduling weights applied to the task.
+    examples: [[0.25, 0.75]]
+  - key: myapp.task.flags
+    type: boolean[]
+    stability: development
+    brief: Feature flags evaluated for the task.
+    examples: [[true, false]]
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The task is waiting to run.
+        - id: running
+          value: running
+          stability: stable
+          brief: The task is running.
+          note: A task stays running until it finishes or is cancelled.
+        - id: paused
+          value: paused
+          stability: development
+          brief: The task was paused.
+          deprecated:
+            reason: obsoleted
+            note: Paused tasks are reported as queued.
+    stability: stable
+    brief: Current state of the task.
+  - key: auth.method
+    type:
+      members:
+        - id: password
+          value: password
+          stability: stable
+          brief: A password was checked.
+        - id: token
+          value: token
+          stability: stable
+          brief: A bearer token was checked.
+    stability: stable
+    brief: How the user was authenticated.
+  - key: auth.level
+    type:
+      members:
+        - id: low
+          value: 1
+          stability: stable
+          brief: Single factor.
+        - id: high
+          value: 2
+          stability: stable
+          brief: Multiple factors.
+    stability: development
+    brief: Assurance level of the authentication.
+  - key: myapp.task.preemptible
+    type:
+      members:
+        - id: allowed
+          value: true
+          stability: stable
+          brief: The scheduler may preempt the task.
+        - id: forbidden
+          value: false
+          stability: stable
+          brief: The task runs to completion.
+    stability: stable
+    brief: Whether the scheduler may preempt the task.
+  - key: myapp.task.sample_rate
+    type:
+      members:
+        - id: tenth
+          value: 0.1
+          stability: stable
+          brief: One task in ten is sampled.
+        - id: all
+          value: 1.0
+          stability: stable
+          brief: Every task is sampled.
+    stability: stable
+    brief: Fraction of tasks whose telemetry is sampled.
+metrics:
+  - name: myapp.task.scalars.required
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Every scalar attribute type, all required.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+      - ref: myapp.task.retries
+        requirement_level: required
+      - ref: myapp.task.progress
+        requirement_level: required
+      - ref: myapp.task.cancelled
+        requirement_level: required
+  - name: myapp.task.scalars.optional
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Every scalar attribute type, all optional.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: recommended
+      - ref: myapp.task.retries
+        requirement_level: recommended
+      - ref: myapp.task.progress
+        requirement_level: recommended
+      - ref: myapp.task.cancelled
+        requirement_level: recommended
+  - name: myapp.task.arrays.required
+    requirement_level: recommended
+    instrument: updowncounter
+    unit: "{task}"
+    stability: stable
+    brief: Every array attribute type, all required.
+    annotations:
+      code_generation:
+        metric_value_type: double
+    attributes:
+      - ref: myapp.task.tags
+        requirement_level: required
+      - ref: myapp.task.shard_ids
+        requirement_level: required
+      - ref: myapp.task.weights
+        requirement_level: required
+      - ref: myapp.task.flags
+        requirement_level: required
+  - name: myapp.task.arrays.optional
+    requirement_level: recommended
+    instrument: gauge
+    unit: "{task}"
+    stability: stable
+    brief: Every array attribute type, all optional.
+    annotations:
+      code_generation:
+        metric_value_type: double
+    attributes:
+      - ref: myapp.task.tags
+        requirement_level: opt_in
+      - ref: myapp.task.shard_ids
+        requirement_level: opt_in
+      - ref: myapp.task.weights
+        requirement_level: opt_in
+      - ref: myapp.task.flags
+        requirement_level: opt_in
+  - name: myapp.task.enums.required
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Every enum attribute type, all required.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.task.state
+        requirement_level: required
+      - ref: auth.method
+        requirement_level: required
+      - ref: auth.level
+        requirement_level: required
+      - ref: myapp.task.preemptible
+        requirement_level: required
+      - ref: myapp.task.sample_rate
+        requirement_level: required
+  - name: myapp.task.enums.optional
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Every enum attribute type, all optional.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.task.state
+        requirement_level: recommended
+      - ref: auth.method
+        requirement_level: recommended
+      - ref: auth.level
+        requirement_level: recommended
+      - ref: myapp.task.preemptible
+        requirement_level: recommended
+      - ref: myapp.task.sample_rate
+        requirement_level: recommended
+  - name: myapp.task.mixed
+    requirement_level: recommended
+    instrument: histogram
+    unit: "s"
+    stability: stable
+    brief: Required and optional attributes together.
+    annotations:
+      code_generation:
+        metric_value_type: double
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required
+      - ref: auth.method
+        requirement_level: required
+      - ref: myapp.task.retries
+        requirement_level: recommended
+      - ref: myapp.task.tags
+        requirement_level: recommended
+      - ref: auth.level
+        requirement_level: recommended

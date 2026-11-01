@@ -1,0 +1,11 @@
+file_format: definition/2
+metrics:
+  - name: context
+    requirement_level: recommended
+    instrument: counter
+    unit: "{record}"
+    stability: stable
+    brief: Synthetic metric.
+    annotations:
+      code_generation:
+        metric_value_type: int

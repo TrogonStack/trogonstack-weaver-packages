@@ -1,0 +1,15 @@
+file_format: definition/2
+attributes:
+  - key: demo.mode
+    stability: stable
+    brief: Synthetic mode.
+    type:
+      members:
+        - id: text
+          value: text
+          stability: stable
+          brief: Synthetic enum value.
+        - id: number
+          value: 42
+          stability: stable
+          brief: Synthetic enum value.

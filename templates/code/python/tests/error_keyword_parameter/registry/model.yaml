@@ -1,0 +1,19 @@
+file_format: definition/2
+attributes:
+  - key: myapp.import
+    type: string
+    stability: stable
+    brief: Synthetic attribute.
+metrics:
+  - name: myapp.task.started
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Synthetic metric.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.import
+        requirement_level: required

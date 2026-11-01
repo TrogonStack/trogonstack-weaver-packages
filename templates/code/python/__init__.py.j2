@@ -1,0 +1,19 @@
+{%- filter trim %}
+{% import "header.j2" as h %}
+{{ h.header() }}
+
+{% if params.module_description %}
+"""{{ params.module_description | replace("\\", "\\\\") | replace('"', '\\"') | trim }}"""
+
+{% endif %}
+from typing import Final
+
+SCHEMA_URL: Final = {{ ctx.schema_literal }}
+"""Schema URL of the registry; every generated meter reports it."""
+
+INSTRUMENTATION_NAME: Final = {{ ctx.name_literal }}
+"""Name of the instrumentation scope that `get_meter` creates."""
+
+INSTRUMENTATION_VERSION: Final = {{ ctx.version_literal }}
+"""Version of the instrumentation scope that `get_meter` creates."""
+{% endfilter -%}{{ "\n" -}}

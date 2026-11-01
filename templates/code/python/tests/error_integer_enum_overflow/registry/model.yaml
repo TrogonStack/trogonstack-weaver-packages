@@ -1,0 +1,11 @@
+file_format: definition/2
+attributes:
+  - key: demo.mode
+    stability: stable
+    brief: Synthetic mode.
+    type:
+      members:
+        - id: enormous
+          value: 9223372036854775808
+          stability: stable
+          brief: Synthetic enum value.

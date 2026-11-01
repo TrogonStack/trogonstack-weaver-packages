@@ -60,6 +60,13 @@ temporary crates and runs formatting, consumer tests, and Clippy. Put consumer
 tests in a case's `test.rs`, importing the generated crate as
 `generated_semconv`.
 
+For the Python package, `mise run weaver:test:python` runs formatting, lint,
+and `mypy --strict` over every expected module and runs each case's
+`test_consumer.py` with an SDK `InMemoryMetricReader`. Consumers import the
+generated package as `semconv`. Requirements are locked with hashes in
+`buildscripts/python/` and installed in a disposable virtual environment outside
+the checkout.
+
 For the TypeScript package, `mise run weaver:test:typescript` type-checks every
 expected module and runs each case's `consumer.test.ts` against the pinned
 OpenTelemetry JavaScript API and SDK. Consumers import `./metrics.ts`, may use

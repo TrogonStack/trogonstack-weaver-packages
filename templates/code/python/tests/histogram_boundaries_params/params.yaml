@@ -1,0 +1,4 @@
+params:
+  histogram_boundaries_by_unit:
+    ms: [1, 5, 25, 100]
+    s: [0.5, 1.5]

@@ -1,0 +1,6 @@
+name: imported-mixed-numeric
+schema_url: https://example.com/schemas/imported-mixed-numeric/1.0.0
+dependencies:
+  - name: upstream
+    registry_path: dependency
+    schema_url: https://example.com/schemas/upstream/1.0.0

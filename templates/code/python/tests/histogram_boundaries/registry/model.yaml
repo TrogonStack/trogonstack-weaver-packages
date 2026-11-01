@@ -1,0 +1,51 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.duration
+    requirement_level: recommended
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Time a task took from start to finish, with the default boundaries of its unit.
+    annotations:
+      code_generation:
+        metric_value_type: double
+  - name: myapp.task.queue_wait
+    requirement_level: recommended
+    instrument: histogram
+    unit: ms
+    stability: stable
+    brief: Time a task waited in the queue.
+    annotations:
+      code_generation:
+        metric_value_type: double
+  - name: myapp.task.payload
+    requirement_level: recommended
+    instrument: histogram
+    unit: By
+    stability: stable
+    brief: Task payload size.
+    annotations:
+      code_generation:
+        metric_value_type: int
+  - name: myapp.task.step
+    requirement_level: recommended
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Time one step took, with boundaries from the registry.
+    annotations:
+      code_generation:
+        metric_value_type: double
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [0, 0.5, 1.5, 3]
+  - name: myapp.task.retries
+    requirement_level: recommended
+    instrument: counter
+    unit: "{retry}"
+    stability: stable
+    brief: A counter never receives boundaries.
+    annotations:
+      code_generation:
+        metric_value_type: int
