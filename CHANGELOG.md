@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.0](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.7...v0.2.0) (2026-11-01)
+
+
+### Features
+
+* **go:** Let hot paths record a precomputed attribute set ([#63](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/63)) ([22ee649](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/22ee6493c199ade9415960c599683d1aec375808))
+* **python:** Add typed metrics template package ([#61](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/61)) ([fc667b3](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/fc667b32a229b1f48e763fc50e6f51d6c92218bb))
+* **typescript_effect:** Track time histograms and fill error.type from the Effect exit ([#58](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/58)) ([2b5f430](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/2b5f430bb4c4c0ae65711eda58435a2979c24dc7))
+* **typescript:** Generate typed attributes and metrics on the OpenTelemetry JavaScript API ([#60](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/60)) ([1160f2e](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/1160f2e8331754b361adebb5107de626704b8f28))
+
+
+### Bug Fixes
+
+* **go:** Skip attribute work when the SDK disabled the instrument ([#62](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/62)) ([58c615a](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/58c615a2a6237c901688b97e3175e228b4ab9e48))
+
 ## [0.1.7](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.1.6...v0.1.7) (2026-10-26)
 
 
