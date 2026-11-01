@@ -1,0 +1,18 @@
+file_format: definition/2
+metrics:
+  - name: myapp.task.count
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks.
+    annotations:
+      code_generation:
+        metric_value_type: int
+  - name: myapp.new.task.count.batch.observable
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of task samples.
+    annotations:
+      code_generation:
+        metric_value_type: int

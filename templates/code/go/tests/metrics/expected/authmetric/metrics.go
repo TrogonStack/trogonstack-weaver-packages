@@ -160,3 +160,53 @@ func NewAttemptsObservable(meter semconvmeter.Meter, callback AttemptsCallback) 
 func (AttemptsObservable) Name() string {
 	return Attempts{}.Name()
 }
+
+// AttemptsBatchObservable is the asynchronous form of Attempts for a shared
+// batch callback. Its zero value records nothing.
+type AttemptsBatchObservable struct{ observable scope.Observable }
+
+// NewAttemptsBatchObservable creates the `auth.attempts` instrument for
+// batch callback registration.
+func NewAttemptsBatchObservable(meter semconvmeter.Meter) (AttemptsBatchObservable, error) {
+	var m AttemptsBatchObservable
+	inst, err := scope.MetricMeter(meter).Int64ObservableCounter(
+		m.Name(),
+		metric.WithDescription("Number of authentication attempts."),
+		metric.WithUnit("{attempt}"),
+	)
+	if err != nil {
+		return AttemptsBatchObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
+	}
+	return AttemptsBatchObservable{observable: scope.NewObservable(meter, inst)}, nil
+}
+
+// Name returns the name `auth.attempts` records under.
+func (AttemptsBatchObservable) Name() string {
+	return Attempts{}.Name()
+}
+
+// Observable returns the opaque handle to pass to
+// semconvmeter.Meter.RegisterCallback.
+func (m AttemptsBatchObservable) Observable() semconvmeter.Observable {
+	return m.observable
+}
+
+// Observe records one `auth.attempts` observation if m is registered with
+// observer.
+func (m AttemptsBatchObservable) Observe(observer semconvmeter.Observer, value int64, authMethod authattr.Method, authSuccess authattr.Success) {
+	var buffer [2]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := authMethod.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := authSuccess.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	scope.ObserveInt64(observer, m.observable, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// ObserveSet records one `auth.attempts` observation with set if m is
+// registered with observer.
+func (m AttemptsBatchObservable) ObserveSet(observer semconvmeter.Observer, value int64, set AttemptsSet) {
+	scope.ObserveInt64(observer, m.observable, value, set.observe...)
+}

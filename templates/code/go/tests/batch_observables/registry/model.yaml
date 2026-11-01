@@ -1,0 +1,82 @@
+file_format: definition/2
+attributes:
+  - key: myapp.queue.name
+    type: string
+    stability: stable
+    brief: Name of the queue.
+    examples: [main]
+  - key: myapp.task.state
+    type:
+      members:
+        - id: queued
+          value: queued
+          stability: stable
+          brief: The task is waiting.
+        - id: running
+          value: running
+          stability: stable
+          brief: The task is running.
+    stability: stable
+    brief: State of a task.
+metrics:
+  - name: myapp.queue.depth
+    requirement_level: recommended
+    instrument: gauge
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks waiting in the queue.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.queue.name
+        requirement_level: required
+      - ref: myapp.task.state
+        requirement_level: opt_in
+  - name: worker.queue.ratio
+    requirement_level: recommended
+    instrument: gauge
+    unit: "1"
+    stability: stable
+    brief: Fraction of the queue in use.
+    annotations:
+      code_generation:
+        metric_value_type: double
+    attributes:
+      - ref: myapp.queue.name
+        requirement_level: required
+  - name: myapp.tasks.completed
+    requirement_level: recommended
+    instrument: counter
+    unit: "{task}"
+    stability: stable
+    brief: Number of completed tasks.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.queue.name
+        requirement_level: required
+      - ref: myapp.task.state
+        requirement_level: opt_in
+  - name: myapp.queue.active
+    requirement_level: recommended
+    instrument: updowncounter
+    unit: "{task}"
+    stability: stable
+    brief: Number of tasks running from the queue.
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: myapp.queue.name
+        requirement_level: required
+  - name: myapp.task.duration
+    requirement_level: recommended
+    instrument: histogram
+    unit: s
+    stability: stable
+    brief: Time taken by a task.
+    annotations:
+      code_generation:
+        metric_value_type: double

@@ -112,6 +112,46 @@ func (QueueDepthObservable) Name() string {
 	return QueueDepth{}.Name()
 }
 
+// QueueDepthBatchObservable is the asynchronous form of QueueDepth for a
+// shared batch callback. Its zero value records nothing.
+//
+// Deprecated: Replaced by `myapp.task.active`.
+type QueueDepthBatchObservable struct{ observable scope.Observable }
+
+// NewQueueDepthBatchObservable creates the `myapp.queue.depth` instrument
+// for batch callback registration.
+//
+// Deprecated: Replaced by `myapp.task.active`.
+func NewQueueDepthBatchObservable(meter semconvmeter.Meter) (QueueDepthBatchObservable, error) {
+	var m QueueDepthBatchObservable
+	inst, err := scope.MetricMeter(meter).Int64ObservableGauge(
+		m.Name(),
+		metric.WithDescription("Number of tasks waiting in the queue."),
+		metric.WithUnit("{task}"),
+	)
+	if err != nil {
+		return QueueDepthBatchObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
+	}
+	return QueueDepthBatchObservable{observable: scope.NewObservable(meter, inst)}, nil
+}
+
+// Name returns the name `myapp.queue.depth` records under.
+func (QueueDepthBatchObservable) Name() string {
+	return QueueDepth{}.Name()
+}
+
+// Observable returns the opaque handle to pass to
+// semconvmeter.Meter.RegisterCallback.
+func (m QueueDepthBatchObservable) Observable() semconvmeter.Observable {
+	return m.observable
+}
+
+// Observe records one `myapp.queue.depth` observation if m is registered
+// with observer.
+func (m QueueDepthBatchObservable) Observe(observer semconvmeter.Observer, value int64) {
+	scope.ObserveInt64(observer, m.observable, value)
+}
+
 // TaskActiveSet is the attribute set of a `myapp.task.active` measurement,
 // built once with NewTaskActiveSet so that TaskActive.AddSet does not build
 // it on every call. The zero TaskActiveSet holds no attributes.
@@ -249,6 +289,53 @@ func NewTaskActiveObservable(meter semconvmeter.Meter, callback TaskActiveCallba
 // Name returns the name `myapp.task.active` records under.
 func (TaskActiveObservable) Name() string {
 	return TaskActive{}.Name()
+}
+
+// TaskActiveBatchObservable is the asynchronous form of TaskActive for a
+// shared batch callback. Its zero value records nothing.
+type TaskActiveBatchObservable struct{ observable scope.Observable }
+
+// NewTaskActiveBatchObservable creates the `myapp.task.active` instrument
+// for batch callback registration.
+func NewTaskActiveBatchObservable(meter semconvmeter.Meter) (TaskActiveBatchObservable, error) {
+	var m TaskActiveBatchObservable
+	inst, err := scope.MetricMeter(meter).Int64ObservableUpDownCounter(
+		m.Name(),
+		metric.WithDescription("Number of tasks currently running."),
+		metric.WithUnit("{task}"),
+	)
+	if err != nil {
+		return TaskActiveBatchObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
+	}
+	return TaskActiveBatchObservable{observable: scope.NewObservable(meter, inst)}, nil
+}
+
+// Name returns the name `myapp.task.active` records under.
+func (TaskActiveBatchObservable) Name() string {
+	return TaskActive{}.Name()
+}
+
+// Observable returns the opaque handle to pass to
+// semconvmeter.Meter.RegisterCallback.
+func (m TaskActiveBatchObservable) Observable() semconvmeter.Observable {
+	return m.observable
+}
+
+// Observe records one `myapp.task.active` observation if m is registered
+// with observer.
+func (m TaskActiveBatchObservable) Observe(observer semconvmeter.Observer, value int64, myappTaskState myappattr.TaskState) {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	scope.ObserveInt64(observer, m.observable, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// ObserveSet records one `myapp.task.active` observation with set if m is
+// registered with observer.
+func (m TaskActiveBatchObservable) ObserveSet(observer semconvmeter.Observer, value int64, set TaskActiveSet) {
+	scope.ObserveInt64(observer, m.observable, value, set.observe...)
 }
 
 // TaskDurationAttr is an attribute `myapp.task.duration` accepts in addition
@@ -653,4 +740,59 @@ func NewTaskStartedObservable(meter semconvmeter.Meter, callback TaskStartedCall
 // Name returns the name `myapp.task.started` records under.
 func (TaskStartedObservable) Name() string {
 	return TaskStarted{}.Name()
+}
+
+// TaskStartedBatchObservable is the asynchronous form of TaskStarted for a
+// shared batch callback. Its zero value records nothing.
+//
+// Opt-in: the convention records `myapp.task.started` only when a user asks
+// for it.
+type TaskStartedBatchObservable struct{ observable scope.Observable }
+
+// NewTaskStartedBatchObservable creates the `myapp.task.started` instrument
+// for batch callback registration.
+//
+// Opt-in: the convention records `myapp.task.started` only when a user asks
+// for it.
+func NewTaskStartedBatchObservable(meter semconvmeter.Meter) (TaskStartedBatchObservable, error) {
+	var m TaskStartedBatchObservable
+	inst, err := scope.MetricMeter(meter).Int64ObservableCounter(
+		m.Name(),
+		metric.WithDescription("Number of tasks started."),
+		metric.WithUnit("{task}"),
+	)
+	if err != nil {
+		return TaskStartedBatchObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
+	}
+	return TaskStartedBatchObservable{observable: scope.NewObservable(meter, inst)}, nil
+}
+
+// Name returns the name `myapp.task.started` records under.
+func (TaskStartedBatchObservable) Name() string {
+	return TaskStarted{}.Name()
+}
+
+// Observable returns the opaque handle to pass to
+// semconvmeter.Meter.RegisterCallback.
+func (m TaskStartedBatchObservable) Observable() semconvmeter.Observable {
+	return m.observable
+}
+
+// Observe records one `myapp.task.started` observation if m is registered
+// with observer.
+func (m TaskStartedBatchObservable) Observe(observer semconvmeter.Observer, value int64, opts ...TaskStartedAttr) {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	for _, opt := range opts {
+		if kv := opt.taskStartedAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	scope.ObserveInt64(observer, m.observable, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// ObserveSet records one `myapp.task.started` observation with set if m is
+// registered with observer.
+func (m TaskStartedBatchObservable) ObserveSet(observer semconvmeter.Observer, value int64, set TaskStartedSet) {
+	scope.ObserveInt64(observer, m.observable, value, set.observe...)
 }

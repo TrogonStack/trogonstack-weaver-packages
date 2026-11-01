@@ -194,3 +194,58 @@ func NewTaskFailedObservable(meter myappmeter.Meter, callback TaskFailedCallback
 func (TaskFailedObservable) Name() string {
 	return TaskFailed{}.Name()
 }
+
+// TaskFailedBatchObservable is the asynchronous form of TaskFailed for a
+// shared batch callback. Its zero value records nothing.
+type TaskFailedBatchObservable struct{ observable scope.Observable }
+
+// NewTaskFailedBatchObservable creates the `myapp.task.failed` instrument
+// for batch callback registration.
+func NewTaskFailedBatchObservable(meter myappmeter.Meter) (TaskFailedBatchObservable, error) {
+	var m TaskFailedBatchObservable
+	inst, err := scope.MetricMeter(meter).Int64ObservableCounter(
+		m.Name(),
+		metric.WithDescription("Number of tasks that failed."),
+		metric.WithUnit("{task}"),
+	)
+	if err != nil {
+		return TaskFailedBatchObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
+	}
+	return TaskFailedBatchObservable{observable: scope.NewObservable(meter, inst)}, nil
+}
+
+// Name returns the name `myapp.task.failed` records under.
+func (TaskFailedBatchObservable) Name() string {
+	return TaskFailed{}.Name()
+}
+
+// Observable returns the opaque handle to pass to
+// myappmeter.Meter.RegisterCallback.
+func (m TaskFailedBatchObservable) Observable() myappmeter.Observable {
+	return m.observable
+}
+
+// Observe records one `myapp.task.failed` observation if m is registered
+// with observer.
+func (m TaskFailedBatchObservable) Observe(observer myappmeter.Observer, value int64, errorType errorattr.Type, myappTaskID myappattr.TaskID, opts ...TaskFailedAttr) {
+	var buffer [3]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := errorType.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskFailedAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	scope.ObserveInt64(observer, m.observable, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// ObserveSet records one `myapp.task.failed` observation with set if m is
+// registered with observer.
+func (m TaskFailedBatchObservable) ObserveSet(observer myappmeter.Observer, value int64, set TaskFailedSet) {
+	scope.ObserveInt64(observer, m.observable, value, set.observe...)
+}

@@ -152,3 +152,50 @@ func NewTaskStartedObservable(meter acmeconvmeter.Meter, callback TaskStartedCal
 func (TaskStartedObservable) Name() string {
 	return TaskStarted{}.Name()
 }
+
+// TaskStartedBatchObservable is the asynchronous form of TaskStarted for a
+// shared batch callback. Its zero value records nothing.
+type TaskStartedBatchObservable struct{ observable scope.Observable }
+
+// NewTaskStartedBatchObservable creates the `myapp.task.started` instrument
+// for batch callback registration.
+func NewTaskStartedBatchObservable(meter acmeconvmeter.Meter) (TaskStartedBatchObservable, error) {
+	var m TaskStartedBatchObservable
+	inst, err := scope.MetricMeter(meter).Int64ObservableCounter(
+		m.Name(),
+		metric.WithDescription("Number of tasks started."),
+		metric.WithUnit("{task}"),
+	)
+	if err != nil {
+		return TaskStartedBatchObservable{}, fmt.Errorf("create the %s instrument: %w", m.Name(), err)
+	}
+	return TaskStartedBatchObservable{observable: scope.NewObservable(meter, inst)}, nil
+}
+
+// Name returns the name `myapp.task.started` records under.
+func (TaskStartedBatchObservable) Name() string {
+	return TaskStarted{}.Name()
+}
+
+// Observable returns the opaque handle to pass to
+// acmeconvmeter.Meter.RegisterCallback.
+func (m TaskStartedBatchObservable) Observable() acmeconvmeter.Observable {
+	return m.observable
+}
+
+// Observe records one `myapp.task.started` observation if m is registered
+// with observer.
+func (m TaskStartedBatchObservable) Observe(observer acmeconvmeter.Observer, value int64, myappTaskState myappattr.TaskState) {
+	var buffer [1]attribute.KeyValue
+	kvs := buffer[:0]
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	scope.ObserveInt64(observer, m.observable, value, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+}
+
+// ObserveSet records one `myapp.task.started` observation with set if m is
+// registered with observer.
+func (m TaskStartedBatchObservable) ObserveSet(observer acmeconvmeter.Observer, value int64, set TaskStartedSet) {
+	scope.ObserveInt64(observer, m.observable, value, set.observe...)
+}
