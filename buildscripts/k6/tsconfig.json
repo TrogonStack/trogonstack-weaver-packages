@@ -5,8 +5,9 @@
     "strict": true,
     "exactOptionalPropertyTypes": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": false,
     "types": ["k6", "node"]
   },
-  "include": ["cases/**/*.ts"]
+  "include": ["cases/**/*.ts", "runtime-contract.ts"]
 }

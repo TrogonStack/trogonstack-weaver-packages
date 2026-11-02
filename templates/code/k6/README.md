@@ -1,8 +1,8 @@
 # k6 Metrics Template Package
 
-Generates plain JavaScript helpers for native `k6/metrics`, with adjacent
-TypeScript declarations. Stability: Development. The generated output is
-verified against k6 2.3.0. It needs no OpenTelemetry SDK or bundler.
+Generates TypeScript helpers for native `k6/metrics`. Stability:
+Development. The generated output is verified against k6 2.3.0. It needs no
+OpenTelemetry SDK or bundler.
 
 Only metrics and their tags are rendered. Other signals and unreferenced
 attributes are ignored. Imported attributes are resolved into the metric's tag
@@ -41,11 +41,11 @@ metrics:
         name: sample_duration
 ```
 
-```js
+```ts
 import {
   createSampleDuration,
   METRIC_SAMPLE_DURATION,
-} from "./semconv/metrics.js";
+} from "./semconv/metrics.ts";
 
 const duration = createSampleDuration();
 
@@ -66,21 +66,20 @@ handle remains in a closure. Helper types distinguish raw native instruments,
 different metrics, and refinements.
 There is no raw instrument or unrestricted tag argument.
 
-The `.d.ts` files describe the `.js` imports for TypeScript and JavaScript editor
-tooling. Use TypeScript `strict` checking, or `checkJs` in JavaScript consumers,
-for required tags and literal enum checks. Runtime validation also protects
-unchecked JavaScript calls.
+Import the generated `.ts` modules directly in k6. Native TypeScript support
+needs no separate build step or bundler. k6 strips types without checking them, so run
+TypeScript with `strict`, `noEmit`, and `allowImportingTsExtensions` to check
+required tags and literal enums. Runtime validation also protects unchecked
+calls. See [k6 TypeScript support](https://grafana.com/docs/k6/latest/using-k6/javascript-typescript-compatibility-mode/).
 
 ## Output and API reference
 
-| File           | Content                                                             |
-| -------------- | ------------------------------------------------------------------- |
-| `schema.js`    | `SCHEMA_URL`, informational registry provenance. Always generated.  |
-| `schema.d.ts`  | The literal type of `SCHEMA_URL`.                                   |
-| `metrics.js`   | `METRIC_*` native name constants and `create<Metric>()` factories.  |
-| `metrics.d.ts` | Readonly helper interfaces and required or optional exact tag keys. |
+| File         | Content                                                                    |
+| ------------ | -------------------------------------------------------------------------- |
+| `schema.ts`  | Literal `SCHEMA_URL` registry provenance. Always generated.                |
+| `metrics.ts` | Native name constants, nominal helper interfaces, tag types and factories. |
 
-A registry without selected metrics produces only the schema files. k6 has no
+A registry without selected metrics produces only `schema.ts`. k6 has no
 OpenTelemetry meter, provider, instrumentation scope, or schema binding API.
 `SCHEMA_URL` is local metadata. It is not bound to native metrics or transported
 as an OpenTelemetry schema URL.
@@ -184,9 +183,12 @@ Set params with `--param key=value` or a YAML `params:` object through `--params
 
 `mise run weaver:test:templates` compares generated files with exact expected
 output and checks negative diagnostics. `mise run weaver:test:k6` installs the
-locked TypeScript test dependencies, checks positive and negative type controls,
-and executes every generated fixture with real k6 2.3.0. Each consumer uses one
-VU and one iteration, no HTTP calls, and disabled usage reporting. System tags
+locked TypeScript test dependencies, checks generated source and positive and
+negative type controls with strict TypeScript, and executes every generated
+fixture directly as TypeScript with real k6 2.3.0. Generation also checks that
+only the expected `.ts` modules exist and every generated file ends in a newline.
+Each consumer uses one VU and one iteration, no HTTP calls, and disabled usage
+reporting. System tags
 are disabled so assertions compare complete native tag objects. Mutation controls
 verify that unexpected tags fail for tagged and untagged metrics. Assertions
 also read native JSON samples and summaries for names, kinds, values, time flags,

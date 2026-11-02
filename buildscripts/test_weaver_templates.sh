@@ -121,6 +121,9 @@ run_template_test() {
     return
   fi
   run_generate_test "${test_dir}" "${package_dir}" "${observed_dir}"
+  if [[ "${package_dir##*/}" == k6 ]]; then
+    node "${package_dir}/../../../buildscripts/k6/check-generated-output.mjs" "${observed_dir}" "${test_dir}/samples.json" || exit 1
+  fi
   check_output "${observed_dir}" "${test_dir}/expected" "${test_name} - Template Output"
 }
 

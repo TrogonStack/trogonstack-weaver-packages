@@ -4,7 +4,14 @@ import { {{ ctx.imports | join(", ") }} } from "k6/metrics";
 
 const metricIdentity = Symbol("metricIdentity");
 
-function validateValue(value, kind, integer, nonnegative) {
+interface TagDefinition {
+  readonly key: string;
+  readonly kind: "string" | "int" | "double" | "boolean";
+  readonly required: boolean;
+  readonly values?: readonly unknown[];
+}
+
+function validateValue(value: unknown, kind: string, integer: boolean, nonnegative: boolean): void {
   if (kind === "rate" && typeof value === "boolean") return;
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new TypeError("Metric values must be finite numbers");
@@ -13,7 +20,7 @@ function validateValue(value, kind, integer, nonnegative) {
   if (nonnegative && value < 0) throw new TypeError("Counter values must be nonnegative");
 }
 
-function encodeTags(input, definitions) {
+function encodeTags(input: unknown, definitions: readonly TagDefinition[]): Record<string, string> {
   if (input === null || typeof input !== "object" || Array.isArray(input) ||
       (Object.getPrototypeOf(input) !== Object.prototype && Object.getPrototypeOf(input) !== null)) {
     throw new TypeError("Tags must be a plain object");
@@ -21,11 +28,11 @@ function encodeTags(input, definitions) {
   for (const key of Reflect.ownKeys(input)) {
     if (!definitions.some((definition) => definition.key === key)) throw new TypeError("Unknown tag: " + String(key));
   }
-  const tags = Object.create(null);
+  const tags: Record<string, string> = Object.create(null);
   for (const definition of definitions) {
     const descriptor = Object.getOwnPropertyDescriptor(input, definition.key);
     if (descriptor && !("value" in descriptor)) throw new TypeError("Tags must use data properties");
-    const value = descriptor && descriptor.value;
+    const value: unknown = descriptor && descriptor.value;
     if (!descriptor || value === undefined) {
       if (definition.required) throw new TypeError("Missing required tag: " + definition.key);
       continue;
@@ -44,15 +51,34 @@ function encodeTags(input, definitions) {
 
 export const {{ metric.constant }} = {{ metric.wire_literal }};
 
-export function create{{ metric.type_name }}() {
+{% if metric.attributes | length > 0 %}
+export interface {{ metric.type_name }}Tags {
+{% for attribute in metric.attributes %}
+  readonly {{ attribute.key_literal }}{% if not attribute.required %}?{% endif %}: {{ attribute.ts_type }}{% if not attribute.required %} | undefined{% endif %};
+{% endfor %}
+}
+{% else %}
+export type {{ metric.type_name }}Tags = Record<string, never>;
+{% endif %}
+
+export interface {{ metric.type_name }} {
+  readonly [metricIdentity]: "{{ metric.type_name }}";
+  readonly {{ metric.method }}: (value: {% if metric.kind == "rate" %}number | boolean{% else %}number{% endif %}, tags{% if not metric.has_required %}?{% endif %}: {{ metric.type_name }}Tags) => boolean;
+}
+
+export function create{{ metric.type_name }}(): {{ metric.type_name }} {
   const instrument = new {{ metric.constructor }}({{ metric.constant }}, {{ metric.is_time | tojson }});
-  const definitions = {{ metric.tag_definitions }};
-  return Object.freeze({
+  const definitions: readonly TagDefinition[] = {{ metric.tag_definitions }};
+  return Object.freeze<{{ metric.type_name }}>({
     [metricIdentity]: "{{ metric.type_name }}",
     {{ metric.method }}(value, tags{% if not metric.has_required %} = {}{% endif %}) {
       validateValue(value, "{{ metric.kind }}", {{ (metric.value_type == "int") | tojson }}, {{ (metric.kind == "counter") | tojson }});
-      return instrument.add(value, encodeTags(tags, definitions));
+      // @types/k6 declares void, but k6 v2.3.0 returns bool:
+      // https://github.com/grafana/k6/blob/v2.3.0/internal/js/modules/k6/metrics/metrics.go
+      const recorded: unknown = instrument.add(value, encodeTags(tags, definitions));
+      if (typeof recorded !== "boolean") throw new TypeError("Native metric recording must return a boolean");
+      return recorded;
     },
   });
 }
-{% endfor %}
+{%- endfor %}{{ "\n" }}

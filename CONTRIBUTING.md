@@ -82,11 +82,12 @@ use `@ts-expect-error` assertions to verify rejected API calls. Dependencies
 are locked in `buildscripts/typescript_effect/` and installed in a disposable
 directory outside the checkout.
 
-For the k6 package, `mise run weaver:test:k6` type-checks the generated `.d.ts`
-files and positive and negative consumer controls. It runs each `consumer.js`
-with the pinned native k6 runtime and compares JSON samples and summaries with
-`samples.json`. Consumers use one VU, one iteration, no HTTP calls, and disabled
-usage reporting. Dependencies are locked in `buildscripts/k6/` and installed in
+For the k6 package, `mise run weaver:test:k6` strictly type-checks the generated
+`.ts` source and positive and negative consumer controls. It runs each
+`consumer.ts` directly with the pinned native k6 runtime and compares JSON samples
+and summaries with `samples.json`. Consumers import `./metrics.ts` and
+`./schema.ts` without a separate build step or bundler. Consumers use one VU, one
+iteration, no HTTP calls, and disabled usage reporting. Dependencies are locked in `buildscripts/k6/` and installed in
 a disposable directory outside the checkout.
 
 Keep test registries synthetic. Use neutral namespaces such as `myapp` and

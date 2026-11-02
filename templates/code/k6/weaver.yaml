@@ -10,10 +10,10 @@ params:
   stable_only: false
 
 templates:
-  - template: schema.js.j2
+  - template: schema.ts.j2
     application_mode: single
-    file_name: schema.js
-    filter: &schema |-
+    file_name: schema.ts
+    filter: |-
       def literal: tojson | gsub("\u2028"; "\\u2028") | gsub("\u2029"; "\\u2029");
       if ($header_source | type) != "string" or ($regenerate_command | type) != "string"
       then error("header_source and regenerate_command must be strings")
@@ -22,14 +22,10 @@ templates:
       elif ($exclude_deprecated | type) != "boolean" or ($stable_only | type) != "boolean"
       then error("exclude_deprecated and stable_only must be booleans")
       else {schema: (.schema_url | literal), source: ($header_source | literal), command: ($regenerate_command | literal)} end
-  - template: schema.d.ts.j2
-    application_mode: single
-    file_name: schema.d.ts
-    filter: *schema
-  - template: metrics.js.j2
+  - template: metrics.ts.j2
     application_mode: each
-    file_name: metrics.js
-    filter: &metrics |-
+    file_name: metrics.ts
+    filter: |-
       def literal: tojson | gsub("\u2028"; "\\u2028") | gsub("\u2029"; "\\u2029");
       def pascal: gsub("[._]"; " ") | split(" ") | map(.[0:1] |= ascii_upcase) | join("");
       def unprefixed: split(".") as $parts
@@ -107,10 +103,6 @@ templates:
         | .wire_literal = (.wire_name | literal))
       | if (group_by(.wire_name) | any(map(.base) | unique | length > 1)) then error("metrics collide on the same native k6 wire name") else . end
       | ([.[] | .name as $name | [.type_name, (.type_name + "Tags"), ("create" + .type_name), .constant][] | {identifier: ., name: $name}]
-         + (["Counter", "Gauge", "Trend", "Rate", "Record", "Object", "Number", "String", "Symbol", "TypeError", "Math", "Reflect", "metricIdentity", "validateValue", "encodeTags"] | map({identifier: ., name: "a reserved runtime identifier"}))) as $symbols
+         + (["Counter", "Gauge", "Trend", "Rate", "Record", "Object", "Number", "String", "Symbol", "TypeError", "Math", "Reflect", "TagDefinition", "metricIdentity", "validateValue", "encodeTags"] | map({identifier: ., name: "a reserved runtime identifier"}))) as $symbols
       | if ($symbols | group_by(.identifier) | any(length > 1)) then error("metrics render to the same k6 helper identifier or a reserved runtime identifier") else . end
       | if length == 0 then [] else [{metrics: sort_by(.name), imports: (map(.constructor) | unique), source: ($header_source | literal), command: ($regenerate_command | literal)}] end
-  - template: metrics.d.ts.j2
-    application_mode: each
-    file_name: metrics.d.ts
-    filter: *metrics

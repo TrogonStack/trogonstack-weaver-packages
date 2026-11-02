@@ -2,4 +2,4 @@
 // Source: "quoted\" source\nthrow new Error(\"header\");\u2028//tail"
 // Regenerate: "generate */ \\ \nnext"
 
-export declare const SCHEMA_URL: "https://example.com/schemas/synthetic/1.0.0";
+export const SCHEMA_URL = "https://example.com/schemas/synthetic/1.0.0";

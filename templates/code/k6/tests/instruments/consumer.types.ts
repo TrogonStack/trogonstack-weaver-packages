@@ -1,7 +1,7 @@
 import {
   createSampleCount, createSampleDepth, createSampleFraction, METRIC_SAMPLE_COUNT,
-} from "./metrics.js";
-import type { SampleCountTags } from "./metrics.js";
+} from "./metrics.ts";
+import type { SampleCountTags } from "./metrics.ts";
 const count = createSampleCount();
 const required: SampleCountTags = { "sample.label": "demo", "sample.attempt": 1 };
 count.add(1, required);
@@ -42,7 +42,7 @@ createSampleFraction().add(true);
 createSampleFraction().add("1");
 
 import { Counter } from "k6/metrics";
-import type { SampleCount, SampleLatency } from "./metrics.js";
+import type { SampleCount, SampleLatency } from "./metrics.ts";
 // @ts-expect-error Native instruments do not have the generated metric identity.
 const raw: SampleCount = new Counter("raw_count");
 // @ts-expect-error Structurally identical helpers retain distinct metric identities.
@@ -51,5 +51,5 @@ void raw;
 void wrongMetric;
 
 // @ts-expect-error The metric identity is private to the generated module.
-import { metricIdentity } from "./metrics.js";
+import { metricIdentity } from "./metrics.ts";
 void metricIdentity;
