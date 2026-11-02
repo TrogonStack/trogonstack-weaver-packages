@@ -1,0 +1,20 @@
+file_format: definition/2
+attributes:
+  - key: sample.rank
+    type:
+      members:
+        - id: excessive
+          value: 9007199254740992
+          stability: stable
+          brief: Excessive.
+    stability: stable
+    brief: Synthetic rank.
+metrics:
+  - name: sample_count
+    instrument: counter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic observation.
+    attributes:
+      - ref: sample.rank

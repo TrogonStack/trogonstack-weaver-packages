@@ -2,6 +2,7 @@
 "github:open-telemetry/weaver" = "0.26.1"
 go = "1.27.1"
 jq = "1.8.1"
+k6 = "2.3.0"
 node = "24.21.0"
 python = "3.12.14"
 uv = "0.13.4"

@@ -1,0 +1,6 @@
+params:
+  vendor_prefixes: [vendor]
+  exclude_deprecated: true
+  stable_only: true
+  header_source: "quoted\" source\nthrow new Error(\"header\");\u2028//tail"
+  regenerate_command: "generate */ \\ \nnext"

@@ -1,0 +1,97 @@
+file_format: definition/2
+attributes:
+  - key: sample.label
+    type: string
+    stability: stable
+    brief: Synthetic label.
+    examples: [demo]
+  - key: sample.attempt
+    type: int
+    stability: stable
+    brief: Synthetic attempt.
+    examples: [1]
+  - key: sample.weight
+    type: double
+    stability: stable
+    brief: Synthetic weight.
+    examples: [0.25]
+  - key: sample.enabled
+    type: boolean
+    stability: stable
+    brief: Synthetic flag.
+    examples: [true]
+  - key: sample.state
+    type:
+      members:
+        - id: ready
+          value: 'ready'
+          stability: stable
+          brief: Ready.
+        - id: quoted
+          value: "quote\" slash\\ line\nseparator\u2028end"
+          stability: stable
+          brief: Quoted.
+    stability: stable
+    brief: Synthetic state.
+  - key: sample.priority
+    type:
+      members:
+        - id: low
+          value: 1
+          stability: stable
+          brief: Low.
+        - id: high
+          value: 2.5
+          stability: stable
+          brief: High.
+    stability: stable
+    brief: Synthetic priority.
+  - key: sample.switch
+    type:
+      members:
+        - id: enabled
+          value: true
+          stability: stable
+          brief: Enabled.
+        - id: disabled
+          value: false
+          stability: stable
+          brief: Disabled.
+    stability: stable
+    brief: Synthetic switch.
+metrics:
+  - name: vendor.sample.keep
+    instrument: counter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic observation.
+    annotations:
+      k6:
+        name: sample_keep
+    attributes:
+      - ref: sample.state
+  - name: sample_deprecated
+    instrument: counter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Retired metric.
+    deprecated:
+      reason: obsoleted
+      note: Use the kept metric.
+  - name: sample_development
+    instrument: counter
+    unit: '1'
+    stability: development
+    requirement_level: recommended
+    brief: Development metric.
+  - name: sample_excluded
+    instrument: counter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Excluded metric.
+    annotations:
+      code_generation:
+        exclude: true

@@ -35,6 +35,7 @@ does and the params it accepts.
 - [Rust code generation](templates/code/rust/README.md)
 - [TypeScript metrics](templates/code/typescript/README.md)
 - [Effect TypeScript metrics](templates/code/typescript_effect/README.md)
+- [Native k6 metrics](templates/code/k6/README.md)
 
 ## Using a package
 

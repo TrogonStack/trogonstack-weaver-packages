@@ -1,0 +1,116 @@
+whitespace_control:
+  trim_blocks: true
+  lstrip_blocks: true
+
+params:
+  header_source: ""
+  regenerate_command: ""
+  vendor_prefixes: []
+  exclude_deprecated: false
+  stable_only: false
+
+templates:
+  - template: schema.js.j2
+    application_mode: single
+    file_name: schema.js
+    filter: &schema |-
+      def literal: tojson | gsub("\u2028"; "\\u2028") | gsub("\u2029"; "\\u2029");
+      if ($header_source | type) != "string" or ($regenerate_command | type) != "string"
+      then error("header_source and regenerate_command must be strings")
+      elif ($vendor_prefixes | type) != "array" or ($vendor_prefixes | any(type != "string"))
+      then error("vendor_prefixes must be a list of strings")
+      elif ($exclude_deprecated | type) != "boolean" or ($stable_only | type) != "boolean"
+      then error("exclude_deprecated and stable_only must be booleans")
+      else {schema: (.schema_url | literal), source: ($header_source | literal), command: ($regenerate_command | literal)} end
+  - template: schema.d.ts.j2
+    application_mode: single
+    file_name: schema.d.ts
+    filter: *schema
+  - template: metrics.js.j2
+    application_mode: each
+    file_name: metrics.js
+    filter: &metrics |-
+      def literal: tojson | gsub("\u2028"; "\\u2028") | gsub("\u2029"; "\\u2029");
+      def pascal: gsub("[._]"; " ") | split(" ") | map(.[0:1] |= ascii_upcase) | join("");
+      def unprefixed: split(".") as $parts
+        | if ($parts | length) > 1 and ($vendor_prefixes | any(. == $parts[0])) then $parts[1:] else $parts end
+        | join(".");
+      def kept($options): stability_filter($options) | code_generation_exclude_filter($options) | deprecated_filter($options);
+      def instruments($options):
+        (semconv_grouped_metrics($options) | map(.metrics) | add // []) as $metrics
+        | ($metrics | map(.name)) as $names
+        | (.registry.metrics // [] | map({key: .name, value: .}) | from_entries) as $bases
+        | $metrics + (.refinements.metrics // [] | map(select(.id != .name)) | kept($options)
+          | map(select(.name as $base | $names | any(. == $base)))
+          | map($bases[.name] as $base
+            | if .instrument != $base.instrument or .unit != $base.unit or (.annotations // {}) != ($base.annotations // {})
+              then error("metric refinement \(.id) must preserve the base instrument, unit and annotations")
+              else . + {name: .id, base: .name} end)
+          | map(.attributes = ((.attributes // []) | kept($options))));
+      def tag($options):
+        .key as $key
+        | if (.type | type) == "object" then
+            (.type.members | kept($options)) as $members
+            | if ($members | length) == 0 then error("attribute \($key) has no enum members after filtering")
+              elif ($members | all(.value | type == "string")) then . + {kind: "string"}
+              elif ($members | all(.value | type == "boolean")) then . + {kind: "boolean"}
+              elif ($members | all(.value | type == "number")) then . + {kind: (if $members | all(.value | tostring | test("^-?[0-9]+$")) then "int" else "double" end)}
+              else error("attribute \($key) has mixed enum value types") end
+            | . + {values: ($members | map(.value)), ts_type: ($members | map(.value | literal) | join(" | "))}
+          elif (.type as $kind | ["string", "int", "double", "boolean"] | any(. == $kind)) then
+            . + {kind: .type, ts_type: (if .type == "int" or .type == "double" then "number" else .type end)}
+          else error("attribute \($key) has an unsupported k6 tag type: \(.type | tostring)") end
+        | if (.values // [] | any(type == "number" and (isinfinite or isnan or ((tostring | test("^-?[0-9]+$")) and fabs > 9007199254740991))))
+          then error("attribute \($key) has an unsafe numeric enum value") else . end
+        | . + {key_literal: (.key | literal), required: (.requirement_level == "required")};
+      {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $options
+      | (instruments({v2: true}) | map({key: .name, value: [(.attributes // [])[] | select(.requirement_level == "required") | .key]}) | from_entries) as $required
+      | instruments($options)
+      | map(.name as $metric
+        | . + {base: (.base // .name), type_name: (.name | unprefixed | pascal),
+               constant: ("METRIC_" + (.name | unprefixed | gsub("[.]"; "_") | ascii_upcase))}
+        | if (.type_name | test("^[A-Za-z][A-Za-z0-9]*$") | not) then error("metric \($metric) cannot become a k6 helper identifier") else . end
+        | (if (.annotations // {}) | has("k6") then .annotations.k6 else {} end) as $native
+        | if ($native | type) != "object" then error("metric \($metric) must set annotations.k6 to an object")
+          elif (($native | keys) - ["name", "kind", "is_time"] | length) > 0 then error("metric \($metric) has an unknown annotations.k6 field")
+          elif ($native | has("name")) and ($native.name | type) != "string" then error("metric \($metric) must set annotations.k6.name to a string")
+          elif ($native | has("kind")) and ($native.kind as $kind | ["counter", "gauge", "trend", "rate"] | any(. == $kind) | not) then error("metric \($metric) has an unsupported annotations.k6.kind")
+          elif ($native | has("is_time")) and ($native.is_time | type) != "boolean" then error("metric \($metric) must set annotations.k6.is_time to a boolean")
+          elif (.instrument as $kind | ["counter", "gauge", "histogram"] | any(. == $kind) | not) then error("metric \($metric) has an unsupported k6 instrument: \(.instrument)")
+          elif .annotations.aggregation != null then error("metric \($metric) sets aggregation that native k6 cannot preserve")
+          else . end
+        | . + {wire_name: ($native.name // .base), kind: ($native.kind // {counter: "counter", gauge: "gauge", histogram: "trend"}[.instrument]),
+               value_type: (if (.annotations.code_generation // {}) | has("metric_value_type") then .annotations.code_generation.metric_value_type else "double" end)}
+        | if (.wire_name | test("^[a-zA-Z_][a-zA-Z0-9_]{1,128}$") | not)
+          then error("metric \($metric) needs a native k6 name matching ^[a-zA-Z_][a-zA-Z0-9_]{1,128}$; set annotations.k6.name explicitly")
+          elif .kind == "rate" and (.instrument != "gauge" or .unit != "1")
+          then error("metric \($metric) can select native Rate only on a dimensionless gauge (unit 1); Rate counts nonzero observations")
+          elif (.wire_name as $wire | ["vus", "vus_max", "iterations", "iteration_duration", "dropped_iterations", "checks", "group_duration", "http_reqs", "http_req_failed", "http_req_duration", "http_req_blocked", "http_req_connecting", "http_req_tls_handshaking", "http_req_sending", "http_req_waiting", "http_req_receiving", "ws_sessions", "ws_msgs_sent", "ws_msgs_received", "ws_ping", "ws_session_duration", "ws_connecting", "grpc_req_duration", "data_sent", "data_received"] | any(. == $wire))
+          then error("metric \($metric) collides with a built-in k6 metric name")
+          elif .kind != "rate" and .kind != {counter: "counter", gauge: "gauge", histogram: "trend"}[.instrument]
+          then error("metric \($metric) sets annotations.k6.kind incompatible with its instrument")
+          elif .value_type != "int" and .value_type != "double" then error("metric \($metric) must set metric_value_type to int or double")
+          elif ($native.is_time // false) and (.unit != "ms" or .kind == "rate")
+          then error("metric \($metric) can set is_time true only for millisecond values outside Rate")
+          elif .unit != "ms" and .unit != "1" and .unit != "" and (.unit | test("^\\{[^{}]+\\}$") | not) and (($native | has("is_time")) | not)
+          then error("metric \($metric) has a unit k6 cannot display; set annotations.k6.is_time false to preserve raw values without time formatting")
+          else . end
+        | . + {is_time: (if $native | has("is_time") then $native.is_time else .unit == "ms" end),
+               constructor: ({counter: "Counter", gauge: "Gauge", trend: "Trend", rate: "Rate"}[.kind]),
+               method: (if .kind == "counter" or .kind == "rate" then "add" else "record" end)}
+        | .attributes = ((.attributes // []) | kept($options))
+        | (($required[$metric] // []) - [(.attributes // [])[] | .key]) as $dropped
+        | if ($dropped | length) > 0 then error("metric \($metric) loses required attributes after filtering: \($dropped | join(", "))") else . end
+        | .attributes = ((.attributes // []) | sort_by(.key) | map(tag($options)))
+        | .has_required = (.attributes | any(.required))
+        | .tag_definitions = (.attributes | map({key: .key, kind: .kind, required: .required} + (if .values then {values: .values} else {} end)) | literal)
+        | .wire_literal = (.wire_name | literal))
+      | if (group_by(.wire_name) | any(map(.base) | unique | length > 1)) then error("metrics collide on the same native k6 wire name") else . end
+      | ([.[] | .name as $name | [.type_name, (.type_name + "Tags"), ("create" + .type_name), .constant][] | {identifier: ., name: $name}]
+         + (["Counter", "Gauge", "Trend", "Rate", "Record", "Object", "Number", "String", "Symbol", "TypeError", "Math", "Reflect", "metricIdentity", "validateValue", "encodeTags"] | map({identifier: ., name: "a reserved runtime identifier"}))) as $symbols
+      | if ($symbols | group_by(.identifier) | any(length > 1)) then error("metrics render to the same k6 helper identifier or a reserved runtime identifier") else . end
+      | if length == 0 then [] else [{metrics: sort_by(.name), imports: (map(.constructor) | unique), source: ($header_source | literal), command: ($regenerate_command | literal)}] end
+  - template: metrics.d.ts.j2
+    application_mode: each
+    file_name: metrics.d.ts
+    filter: *metrics

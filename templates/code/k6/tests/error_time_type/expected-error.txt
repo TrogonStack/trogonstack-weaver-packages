@@ -1,0 +1,1 @@
+is_time to a boolean

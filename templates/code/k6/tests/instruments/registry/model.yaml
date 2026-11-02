@@ -1,0 +1,125 @@
+file_format: definition/2
+attributes:
+  - key: 'sample.quoted"key'
+    type: string
+    stability: stable
+    brief: Synthetic quoted key.
+    examples: [demo]
+  - key: sample.label
+    type: string
+    stability: stable
+    brief: Synthetic label.
+    examples: [demo]
+  - key: sample.attempt
+    type: int
+    stability: stable
+    brief: Synthetic attempt.
+    examples: [1]
+  - key: sample.weight
+    type: double
+    stability: stable
+    brief: Synthetic weight.
+    examples: [0.25]
+  - key: sample.enabled
+    type: boolean
+    stability: stable
+    brief: Synthetic flag.
+    examples: [true]
+  - key: sample.state
+    type:
+      members:
+        - id: ready
+          value: 'ready'
+          stability: stable
+          brief: Ready.
+        - id: quoted
+          value: "quote\" slash\\ line\nseparator\u2028end"
+          stability: stable
+          brief: Quoted.
+    stability: stable
+    brief: Synthetic state.
+  - key: sample.priority
+    type:
+      members:
+        - id: low
+          value: 1
+          stability: stable
+          brief: Low.
+        - id: high
+          value: 2.5
+          stability: stable
+          brief: High.
+    stability: stable
+    brief: Synthetic priority.
+  - key: sample.switch
+    type:
+      members:
+        - id: enabled
+          value: true
+          stability: stable
+          brief: Enabled.
+        - id: disabled
+          value: false
+          stability: stable
+          brief: Disabled.
+    stability: stable
+    brief: Synthetic switch.
+metrics:
+  - name: sample.count
+    instrument: counter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic observation.
+    annotations:
+      code_generation:
+        metric_value_type: int
+      k6:
+        name: sample_count
+    attributes:
+      - ref: 'sample.quoted"key'
+      - ref: sample.label
+        requirement_level: required
+      - ref: sample.attempt
+        requirement_level: required
+      - ref: sample.weight
+      - ref: sample.enabled
+      - ref: sample.state
+      - ref: sample.priority
+      - ref: sample.switch
+  - name: sample_depth
+    instrument: gauge
+    unit: '{item}'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic depth.
+  - name: sample_latency
+    instrument: histogram
+    unit: ms
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic latency.
+  - name: sample_fraction
+    instrument: gauge
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic nonzero observation fraction.
+    annotations:
+      k6:
+        kind: rate
+  - name: sample_seconds
+    instrument: histogram
+    unit: s
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic raw seconds.
+    annotations:
+      k6:
+        is_time: false
+  - name: sample_fractional_count
+    instrument: counter
+    unit: '{item}'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic fractional count.

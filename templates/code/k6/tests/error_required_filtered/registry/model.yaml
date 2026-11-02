@@ -1,0 +1,17 @@
+file_format: definition/2
+attributes:
+  - key: sample.label
+    type: string
+    stability: development
+    brief: Synthetic label.
+    examples: [demo]
+metrics:
+  - name: sample_count
+    instrument: counter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic observation.
+    attributes:
+      - ref: sample.label
+        requirement_level: required

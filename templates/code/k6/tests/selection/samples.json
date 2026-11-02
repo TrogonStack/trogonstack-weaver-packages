@@ -1,0 +1,17 @@
+{
+  "sample_keep": {
+    "kind": "counter",
+    "contains": "default",
+    "values": [
+      1
+    ],
+    "tags": [
+      {
+        "sample.state": "ready"
+      }
+    ],
+    "summary": {
+      "count": 1
+    }
+  }
+}

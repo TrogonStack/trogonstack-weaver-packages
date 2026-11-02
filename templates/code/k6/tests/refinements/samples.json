@@ -1,0 +1,13 @@
+{
+  "sample_duration": {
+    "kind": "trend",
+    "contains": "time",
+    "values": [
+      10,
+      20
+    ],
+    "summary": {
+      "avg": 15
+    }
+  }
+}
