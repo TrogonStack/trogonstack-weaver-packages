@@ -1,0 +1,8 @@
+file_format: definition/2
+metrics:
+  - name: sample_count
+    instrument: updowncounter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic observation.

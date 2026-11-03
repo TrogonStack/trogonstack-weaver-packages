@@ -1,0 +1,20 @@
+file_format: definition/2
+attributes:
+  - key: remote.state
+    type:
+      members:
+        - id: ready
+          value: ready
+          stability: stable
+          brief: Ready.
+        - id: retired
+          value: retired
+          stability: development
+          brief: Retired.
+    stability: stable
+    brief: Remote state.
+  - key: remote.count
+    type: int
+    stability: stable
+    brief: Remote count.
+    examples: [1]

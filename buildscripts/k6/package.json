@@ -1,0 +1,10 @@
+{
+  "name": "weaver-k6-consumer-tests",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@types/k6": "2.3.1",
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  }
+}

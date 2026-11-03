@@ -1,0 +1,12 @@
+{
+  "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn": {
+    "kind": "counter",
+    "contains": "default",
+    "values": [
+      1
+    ],
+    "summary": {
+      "count": 1
+    }
+  }
+}

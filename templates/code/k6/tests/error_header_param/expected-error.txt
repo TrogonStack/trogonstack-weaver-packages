@@ -1,0 +1,1 @@
+header_source and regenerate_command must be strings

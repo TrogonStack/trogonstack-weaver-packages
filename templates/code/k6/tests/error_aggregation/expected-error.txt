@@ -1,0 +1,1 @@
+aggregation that native k6 cannot preserve

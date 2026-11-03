@@ -1,0 +1,13 @@
+file_format: definition/2
+metrics:
+  - name: sample_count
+    instrument: histogram
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic observation.
+    annotations:
+      aggregation:
+        method: explicithistogram
+        parameters:
+          boundaries: [1, 2]

@@ -1,0 +1,17 @@
+file_format: definition/2
+metrics:
+  - name: sample_one
+    instrument: counter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic observation.
+  - name: sample.one
+    instrument: counter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic collision.
+    annotations:
+      k6:
+        name: other_name

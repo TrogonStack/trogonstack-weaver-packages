@@ -1,0 +1,1 @@
+collide on the same native k6 wire name

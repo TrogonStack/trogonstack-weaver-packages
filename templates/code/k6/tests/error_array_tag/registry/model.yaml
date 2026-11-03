@@ -1,0 +1,16 @@
+file_format: definition/2
+attributes:
+  - key: sample.values
+    type: string[]
+    stability: stable
+    brief: Synthetic array.
+    examples: [[one]]
+metrics:
+  - name: sample_count
+    instrument: counter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic observation.
+    attributes:
+      - ref: sample.values

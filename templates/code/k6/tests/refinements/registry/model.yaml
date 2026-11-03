@@ -1,0 +1,16 @@
+file_format: definition/2
+metrics:
+  - name: sample.duration
+    instrument: histogram
+    unit: 'ms'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic observation.
+    annotations:
+      k6:
+        name: sample_duration
+metric_refinements:
+  - id: sample.retry.duration
+    ref: sample.duration
+    stability: stable
+    brief: Synthetic retry duration.

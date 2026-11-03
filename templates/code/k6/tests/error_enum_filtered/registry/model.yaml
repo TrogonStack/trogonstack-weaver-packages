@@ -1,0 +1,20 @@
+file_format: definition/2
+attributes:
+  - key: sample.state
+    type:
+      members:
+        - id: old
+          value: old
+          stability: development
+          brief: Old.
+    stability: stable
+    brief: Synthetic state.
+metrics:
+  - name: sample_count
+    instrument: counter
+    unit: '1'
+    stability: stable
+    requirement_level: recommended
+    brief: Synthetic count.
+    attributes:
+      - ref: sample.state

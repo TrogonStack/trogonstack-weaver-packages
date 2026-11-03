@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Type-check generated k6 TypeScript source and run native k6 consumers"
+set -euo pipefail
+exec ./buildscripts/check_k6_output.sh
