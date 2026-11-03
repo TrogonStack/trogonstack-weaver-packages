@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.3.0...v0.4.0) (2026-11-03)
+
+
+### Features
+
+* **k6:** Generate native TypeScript metric helpers ([#67](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/67)) ([7f6f04e](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/7f6f04eb06ba3432ed10bd59eeadd91445965ae3))
+
 ## [0.3.0](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.2.0...v0.3.0) (2026-11-01)
 
 
