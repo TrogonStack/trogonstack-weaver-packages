@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.4.0...v0.4.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **ci:** Give the Releaser key step its project ([#70](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/70)) ([d93fc34](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/d93fc34d5a5792e63a4a4ec73ef091ac1e383a0d))
+
 ## [0.4.0](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.3.0...v0.4.0) (2026-11-03)
 
 
