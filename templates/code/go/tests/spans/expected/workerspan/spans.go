@@ -89,16 +89,24 @@ func spanNameBuild(kvs []attribute.KeyValue, template []spanNamePart, length int
 	return name.String()
 }
 
-// TaskDispatchStartAttr is an attribute a TaskDispatch starter accepts in
-// addition to the ones it requires.
-type TaskDispatchStartAttr interface {
+// TaskDispatchByWorkerStartAttr is an attribute StartTaskDispatchByWorker
+// accepts in addition to its parameters.
+type TaskDispatchByWorkerStartAttr interface {
 	taskDispatchStartAttr() attribute.KeyValue
+	taskDispatchByWorkerStartAttr()
+}
+
+// TaskDispatchFallbackStartAttr is an attribute StartTaskDispatchFallback
+// accepts in addition to its parameters.
+type TaskDispatchFallbackStartAttr interface {
+	taskDispatchStartAttr() attribute.KeyValue
+	taskDispatchFallbackStartAttr()
 }
 
 // TaskDispatchAttr is an attribute a TaskDispatch also accepts after it
 // started, through SetAttributes.
 type TaskDispatchAttr interface {
-	TaskDispatchStartAttr
+	taskDispatchStartAttr() attribute.KeyValue
 	taskDispatchAttr()
 }
 
@@ -108,13 +116,22 @@ func (o taskDispatchSpanQueueName) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
+func (taskDispatchSpanQueueName) taskDispatchByWorkerStartAttr() {}
+
+func (taskDispatchSpanQueueName) taskDispatchFallbackStartAttr() {}
+
 func (taskDispatchSpanQueueName) taskDispatchAttr() {}
 
 // WithTaskDispatchQueueName sets `myapp.queue.name` on a TaskDispatch, when
-// a TaskDispatch starter starts it or later through SetAttributes.
+// StartTaskDispatchByWorker or StartTaskDispatchFallback starts it or later
+// through SetAttributes.
 //
 // Recommended: When the task came from a named queue.
-func WithTaskDispatchQueueName(v myappattr.QueueName) TaskDispatchAttr {
+func WithTaskDispatchQueueName(v myappattr.QueueName) interface {
+	TaskDispatchAttr
+	TaskDispatchByWorkerStartAttr
+	TaskDispatchFallbackStartAttr
+} {
 	return taskDispatchSpanQueueName{v: v}
 }
 
@@ -124,9 +141,17 @@ func (o taskDispatchSpanTaskID) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskDispatchTaskID sets `myapp.task.id` when a TaskDispatch starter
-// starts the span. Samplers read it, so it is accepted only at start.
-func WithTaskDispatchTaskID(v myappattr.TaskID) TaskDispatchStartAttr {
+func (taskDispatchSpanTaskID) taskDispatchByWorkerStartAttr() {}
+
+func (taskDispatchSpanTaskID) taskDispatchFallbackStartAttr() {}
+
+// WithTaskDispatchTaskID sets `myapp.task.id` when StartTaskDispatchByWorker
+// or StartTaskDispatchFallback starts the span. Samplers read it, so it is
+// accepted only at start.
+func WithTaskDispatchTaskID(v myappattr.TaskID) interface {
+	TaskDispatchByWorkerStartAttr
+	TaskDispatchFallbackStartAttr
+} {
 	return taskDispatchSpanTaskID{v: v}
 }
 
@@ -201,7 +226,7 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 // The span is named from the first of these templates whose attributes are
 // all set and not empty: `dispatch {worker.host.name}:{worker.host.port}`.
 // Otherwise it is named `dispatch`.
-func StartTaskDispatchByWorker(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
+func StartTaskDispatchByWorker(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchByWorkerStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 3+len(opts))
 	if kv := myappTaskAttempt.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
@@ -237,7 +262,7 @@ func StartTaskDispatchByWorker(ctx context.Context, tracer semconvtracer.Tracer,
 // Ends when the worker accepts the task.
 //
 // The span is named `dispatch`.
-func StartTaskDispatchFallback(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
+func StartTaskDispatchFallback(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchFallbackStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 3+len(opts))
 	if kv := myappTaskAttempt.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)

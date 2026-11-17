@@ -371,6 +371,8 @@ Every attribute given to the starter is set as the span starts, since a sampler
 sees only those. An option for an attribute marked `sampling_relevant` returns
 only `<Name>StartAttr`, which the starter accepts, while every other option
 returns `<Name>Attr`, which `SetAttributes` also accepts after the span started.
+A span with more than one starter has a start type for each starter in place of
+`<Name>StartAttr`, as the section on name templates below shows.
 `<Name>` also has `End`, `SpanContext`, `IsRecording`, and `SetStatus`. A span
 with late attributes also has `AddEvent`, `AddLink`, and `RecordError`, which
 take the same `<Name>Attr` options as `SetAttributes`, while one without takes
@@ -422,9 +424,14 @@ keeps every starter name.
 The starter for an ID is `Start<Name><Id>`, with the ID in PascalCase and the
 usual initialisms, so `by_task_id` becomes `StartTaskRunByTaskID`. Its
 parameters are the required attributes of the span and every attribute its
-template uses. The other attributes stay options, and a starter without other
-attributes takes no options. A template without placeholders also gets a
-starter, and that starter takes no extra parameters. A template that
+template uses. The other attributes stay options. Each starter accepts its own
+`<Name><Id>StartAttr`, which only an option for one of those other attributes
+satisfies. A `With` option returns a type that satisfies the start type of
+every starter that accepts its attribute, so one option value works with each
+of them. An option for an attribute that a starter takes as a parameter does
+not compile, so `StartTaskRunByTaskID` rejects `WithTaskRunTaskID`. A starter
+without other attributes takes no options. A template without placeholders also
+gets a starter, and that starter takes no extra parameters. A template that
 `stable_only` or `exclude_deprecated` drops gets no starter. Every starter of a
 span returns the same `<Name>`.
 

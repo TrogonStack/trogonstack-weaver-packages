@@ -188,8 +188,12 @@ The map names a template by its pattern, not by its position, so a change to
 the order of the templates keeps every starter name. The starter for an ID is
 `start_<name>_<id>`, such as `trace::start_myapp_task_run_by_task_id`. Its
 parameters are the required attributes of the span and every attribute its
-template uses. The other attributes stay start attributes, and a starter
-without other attributes takes no `options`. A template without placeholders
+template uses. The other attributes stay start attributes. Each starter takes
+its own start attribute enum, `<Name><Id>StartAttr`, such as
+`trace::MyappTaskRunByTaskIdStartAttr`. That enum has a variant only for an
+attribute that the starter does not take as a parameter, so a start attribute
+for a parameter does not compile. A starter without other attributes takes no
+`options`. A template without placeholders
 also gets a starter, and that starter takes no extra parameters. A template
 that `stable_only` or `exclude_deprecated` drops gets no starter. Every starter
 of a span returns the same span type.
@@ -208,7 +212,7 @@ prose. Construct it with `From` for a static string, owned `String`, or
 names stay borrowed and owned names move into the span.
 
 All starter attributes are present before sampling. Sampling-relevant
-attributes appear only in the start attribute enum. The separate late attribute
+attributes appear only in the start attribute enums. The separate late attribute
 enum is accepted by `set_attributes`. The wrapper exposes `end`,
 `end_with_timestamp`, `record_error`, `set_status`, `span_context`, and
 `is_recording`. Events and links take the late attribute enum, so

@@ -708,6 +708,10 @@ templates:
                 end)
             | .name_derived as $derived
             | .starters |= map(. + {name_doc: (if $derived then name_doc else null end)}))
+      | map(if .starters[0].id == null then .
+            else .starters as $starters
+              | .optional |= map(.key as $key | . + {accepted_by: [$starters[] | select(.optional | any(.key == $key)) | .id]})
+            end)
       | map(
           ([.starters[].required
             | group_by(.attr_param | norm)
@@ -733,7 +737,9 @@ templates:
             | (($def.starters | map("P:start" + $short + ((.id // "") | norm)))
                + ["P:" + (if $short == "" then "span" else $short end)]
                + (if $def.name_derived then [] else ["P:" + $short + "name", "P:new" + $short + "name"] end)
-               + (if ($def.optional | length) > 0 then ["P:" + $short + "startattr"] else [] end)
+               + (if ($def.optional | length) == 0 then []
+                  elif $def.starters[0].id == null then ["P:" + $short + "startattr"]
+                  else [$def.starters[] | select((.optional | length) > 0) | "P:" + $short + (.id | norm) + "startattr"] end)
                + (if $def.has_late_attrs then ["P:" + $short + "attr"] else [] end)
                + ($def.optional | map(.attr_short_name | norm) | map("P:with" + $short + ., "p:" + $short + "span" + .)))[]
             | {identifier: ., name: $span}]

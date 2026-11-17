@@ -414,7 +414,9 @@ templates:
             | (($def.starters | map("start" + $short + ((.id // "") | norm)))
                + [$short]
                + (if $def.name_derived then [] else [$short + "name"] end)
-               + (if ($def.optional | length) > 0 then [$short + "startattr"] else [] end)
+               + (if $def.starters[0].id == null
+                  then (if ($def.optional | length) > 0 then [$short + "startattr"] else [] end)
+                  else [$def.starters[] | select(.optional | length > 0) | $short + (.id | norm) + "startattr"] end)
                + (if $def.has_late_attrs then [$short + "attr"] else [] end))[]
             | {identifier: ., name: $span}]
            | group_by(.identifier)

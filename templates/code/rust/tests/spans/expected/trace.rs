@@ -497,8 +497,9 @@ pub fn r#start_myapp_queue_drain<T: ::opentelemetry::trace::Tracer>(context: &::
         .start_with_context(tracer.inner(), context);
     MyappQueueDrain { span }
 }
+/// An attribute `start_myapp_task_dispatch_by_worker` accepts in addition to its parameters.
 #[derive(Clone, Debug)]
-pub enum MyappTaskDispatchStartAttr {
+pub enum MyappTaskDispatchByWorkerStartAttr {
     /// Recommended: When the task came from a named queue.
     QueueName(super::attribute::MyappQueueName),
     /// Opt-in: the convention records it only when a user asks for it.
@@ -506,12 +507,31 @@ pub enum MyappTaskDispatchStartAttr {
     TaskId(super::attribute::MyappTaskId),
 }
 
-impl From<MyappTaskDispatchStartAttr> for ::opentelemetry::KeyValue {
-    fn from(value: MyappTaskDispatchStartAttr) -> Self {
+impl From<MyappTaskDispatchByWorkerStartAttr> for ::opentelemetry::KeyValue {
+    fn from(value: MyappTaskDispatchByWorkerStartAttr) -> Self {
         match value {
-            MyappTaskDispatchStartAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
-            MyappTaskDispatchStartAttr::TaskAttempt(value) => ::opentelemetry::KeyValue::from(value),
-            MyappTaskDispatchStartAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
+            MyappTaskDispatchByWorkerStartAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
+            MyappTaskDispatchByWorkerStartAttr::TaskAttempt(value) => ::opentelemetry::KeyValue::from(value),
+            MyappTaskDispatchByWorkerStartAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
+        }
+    }
+}
+/// An attribute `start_myapp_task_dispatch_fallback` accepts in addition to its parameters.
+#[derive(Clone, Debug)]
+pub enum MyappTaskDispatchFallbackStartAttr {
+    /// Recommended: When the task came from a named queue.
+    QueueName(super::attribute::MyappQueueName),
+    /// Opt-in: the convention records it only when a user asks for it.
+    TaskAttempt(super::attribute::MyappTaskAttempt),
+    TaskId(super::attribute::MyappTaskId),
+}
+
+impl From<MyappTaskDispatchFallbackStartAttr> for ::opentelemetry::KeyValue {
+    fn from(value: MyappTaskDispatchFallbackStartAttr) -> Self {
+        match value {
+            MyappTaskDispatchFallbackStartAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
+            MyappTaskDispatchFallbackStartAttr::TaskAttempt(value) => ::opentelemetry::KeyValue::from(value),
+            MyappTaskDispatchFallbackStartAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -521,11 +541,11 @@ pub enum MyappTaskDispatchAttr {
     TaskAttempt(super::attribute::MyappTaskAttempt),
 }
 
-impl From<MyappTaskDispatchAttr> for MyappTaskDispatchStartAttr {
+impl From<MyappTaskDispatchAttr> for ::opentelemetry::KeyValue {
     fn from(value: MyappTaskDispatchAttr) -> Self {
         match value {
-            MyappTaskDispatchAttr::QueueName(value) => Self::QueueName(value),
-            MyappTaskDispatchAttr::TaskAttempt(value) => Self::TaskAttempt(value),
+            MyappTaskDispatchAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
+            MyappTaskDispatchAttr::TaskAttempt(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -549,16 +569,16 @@ impl<S: ::opentelemetry::trace::Span> MyappTaskDispatch<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
     pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, attributes: impl IntoIterator<Item = MyappTaskDispatchAttr>) {
-        ::opentelemetry::trace::Span::add_event(&mut self.span, name, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskDispatchStartAttr::from(attribute))).collect());
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, attributes.into_iter().map(::opentelemetry::KeyValue::from).collect());
     }
     pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime, attributes: impl IntoIterator<Item = MyappTaskDispatchAttr>) {
-        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskDispatchStartAttr::from(attribute))).collect());
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, attributes.into_iter().map(::opentelemetry::KeyValue::from).collect());
     }
     pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext, attributes: impl IntoIterator<Item = MyappTaskDispatchAttr>) {
-        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskDispatchStartAttr::from(attribute))).collect());
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, attributes.into_iter().map(::opentelemetry::KeyValue::from).collect());
     }
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = MyappTaskDispatchAttr>) {
-        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(MyappTaskDispatchStartAttr::from(attribute))); }
+        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(attribute)); }
     }
 }
 
@@ -573,7 +593,7 @@ impl Default for MyappTaskDispatch {
 }
 
 /// The span is named from the first of these templates whose attributes are all set and not empty: `dispatch {worker.host.name}:{worker.host.port}`. Otherwise it is named `dispatch`.
-pub fn r#start_myapp_task_dispatch_by_worker<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#worker_host_name: super::attribute::WorkerHostName, r#worker_host_port: super::attribute::WorkerHostPort, options: impl IntoIterator<Item = MyappTaskDispatchStartAttr>) -> MyappTaskDispatch<T::Span> {
+pub fn r#start_myapp_task_dispatch_by_worker<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#worker_host_name: super::attribute::WorkerHostName, r#worker_host_port: super::attribute::WorkerHostPort, options: impl IntoIterator<Item = MyappTaskDispatchByWorkerStartAttr>) -> MyappTaskDispatch<T::Span> {
     let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [::opentelemetry::KeyValue::from(r#worker_host_name), ::opentelemetry::KeyValue::from(r#worker_host_port)].into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)).collect();
     let name = span_name::select(&attributes, "dispatch", &[
         &[span_name::Part::Text("dispatch "), span_name::Part::Attribute("worker.host.name"), span_name::Part::Text(":"), span_name::Part::Attribute("worker.host.port")],
@@ -586,7 +606,7 @@ pub fn r#start_myapp_task_dispatch_by_worker<T: ::opentelemetry::trace::Tracer>(
 }
 
 /// The span is named `dispatch`.
-pub fn r#start_myapp_task_dispatch_fallback<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#worker_host_name: super::attribute::WorkerHostName, r#worker_host_port: super::attribute::WorkerHostPort, options: impl IntoIterator<Item = MyappTaskDispatchStartAttr>) -> MyappTaskDispatch<T::Span> {
+pub fn r#start_myapp_task_dispatch_fallback<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#worker_host_name: super::attribute::WorkerHostName, r#worker_host_port: super::attribute::WorkerHostPort, options: impl IntoIterator<Item = MyappTaskDispatchFallbackStartAttr>) -> MyappTaskDispatch<T::Span> {
     let name = "dispatch";
     let attributes: [::opentelemetry::KeyValue; 2] = [::opentelemetry::KeyValue::from(r#worker_host_name), ::opentelemetry::KeyValue::from(r#worker_host_port)];
     let span = tracer.inner().span_builder(name)
@@ -595,27 +615,45 @@ pub fn r#start_myapp_task_dispatch_fallback<T: ::opentelemetry::trace::Tracer>(c
         .start_with_context(tracer.inner(), context);
     MyappTaskDispatch { span }
 }
+/// An attribute `start_myapp_task_run_by_task_id` accepts in addition to its parameters.
 #[derive(Clone, Debug)]
-pub enum MyappTaskRunStartAttr {
+pub enum MyappTaskRunByTaskIdStartAttr {
+    QueueName(super::attribute::MyappQueueName),
+}
+
+impl From<MyappTaskRunByTaskIdStartAttr> for ::opentelemetry::KeyValue {
+    fn from(value: MyappTaskRunByTaskIdStartAttr) -> Self {
+        match value {
+            MyappTaskRunByTaskIdStartAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
+        }
+    }
+}
+/// An attribute `start_myapp_task_run_by_state` accepts in addition to its parameters.
+#[derive(Clone, Debug)]
+pub enum MyappTaskRunByStateStartAttr {
+    QueueName(super::attribute::MyappQueueName),
     TaskId(super::attribute::MyappTaskId),
 }
 
-impl From<MyappTaskRunStartAttr> for ::opentelemetry::KeyValue {
-    fn from(value: MyappTaskRunStartAttr) -> Self {
+impl From<MyappTaskRunByStateStartAttr> for ::opentelemetry::KeyValue {
+    fn from(value: MyappTaskRunByStateStartAttr) -> Self {
         match value {
-            MyappTaskRunStartAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
+            MyappTaskRunByStateStartAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
+            MyappTaskRunByStateStartAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
 #[derive(Clone, Debug)]
 pub enum MyappTaskRunAttr {
+    QueueName(super::attribute::MyappQueueName),
     TaskId(super::attribute::MyappTaskId),
 }
 
-impl From<MyappTaskRunAttr> for MyappTaskRunStartAttr {
+impl From<MyappTaskRunAttr> for ::opentelemetry::KeyValue {
     fn from(value: MyappTaskRunAttr) -> Self {
         match value {
-            MyappTaskRunAttr::TaskId(value) => Self::TaskId(value),
+            MyappTaskRunAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
+            MyappTaskRunAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -637,16 +675,16 @@ impl<S: ::opentelemetry::trace::Span> MyappTaskRun<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
     pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, attributes: impl IntoIterator<Item = MyappTaskRunAttr>) {
-        ::opentelemetry::trace::Span::add_event(&mut self.span, name, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskRunStartAttr::from(attribute))).collect());
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, attributes.into_iter().map(::opentelemetry::KeyValue::from).collect());
     }
     pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime, attributes: impl IntoIterator<Item = MyappTaskRunAttr>) {
-        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskRunStartAttr::from(attribute))).collect());
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, attributes.into_iter().map(::opentelemetry::KeyValue::from).collect());
     }
     pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext, attributes: impl IntoIterator<Item = MyappTaskRunAttr>) {
-        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(MyappTaskRunStartAttr::from(attribute))).collect());
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, attributes.into_iter().map(::opentelemetry::KeyValue::from).collect());
     }
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = MyappTaskRunAttr>) {
-        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(MyappTaskRunStartAttr::from(attribute))); }
+        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(attribute)); }
     }
 }
 
@@ -661,8 +699,8 @@ impl Default for MyappTaskRun {
 }
 
 /// The span is named from the first of these templates whose attributes are all set, not empty, and not `_OTHER`: `run {myapp.task.id}`, `run {myapp.task.state}`. Otherwise it is named `myapp.task.run`.
-pub fn r#start_myapp_task_run_by_task_id<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#myapp_task_id: super::attribute::MyappTaskId, r#myapp_task_state: super::attribute::MyappTaskState) -> MyappTaskRun<T::Span> {
-    let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [::opentelemetry::KeyValue::from(r#myapp_task_id), ::opentelemetry::KeyValue::from(r#myapp_task_state)].into_iter().collect();
+pub fn r#start_myapp_task_run_by_task_id<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#myapp_task_id: super::attribute::MyappTaskId, r#myapp_task_state: super::attribute::MyappTaskState, options: impl IntoIterator<Item = MyappTaskRunByTaskIdStartAttr>) -> MyappTaskRun<T::Span> {
+    let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [::opentelemetry::KeyValue::from(r#myapp_task_id), ::opentelemetry::KeyValue::from(r#myapp_task_state)].into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)).collect();
     let name = span_name::select(&attributes, "myapp.task.run", &[
         &[span_name::Part::Text("run "), span_name::Part::Attribute("myapp.task.id")],
         &[span_name::Part::Text("run "), span_name::Part::Enum("myapp.task.state")],
@@ -675,7 +713,7 @@ pub fn r#start_myapp_task_run_by_task_id<T: ::opentelemetry::trace::Tracer>(cont
 }
 
 /// The span is named from the first of these templates whose attributes are all set, not empty, and not `_OTHER`: `run {myapp.task.state}`, `run {myapp.task.id}`. Otherwise it is named `myapp.task.run`.
-pub fn r#start_myapp_task_run_by_state<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#myapp_task_state: super::attribute::MyappTaskState, options: impl IntoIterator<Item = MyappTaskRunStartAttr>) -> MyappTaskRun<T::Span> {
+pub fn r#start_myapp_task_run_by_state<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#myapp_task_state: super::attribute::MyappTaskState, options: impl IntoIterator<Item = MyappTaskRunByStateStartAttr>) -> MyappTaskRun<T::Span> {
     let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [::opentelemetry::KeyValue::from(r#myapp_task_state)].into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)).collect();
     let name = span_name::select(&attributes, "myapp.task.run", &[
         &[span_name::Part::Text("run "), span_name::Part::Enum("myapp.task.state")],
@@ -687,18 +725,35 @@ pub fn r#start_myapp_task_run_by_state<T: ::opentelemetry::trace::Tracer>(contex
         .start_with_context(tracer.inner(), context);
     MyappTaskRun { span }
 }
+/// An attribute `start_worker_task_dispatch_by_worker` accepts in addition to its parameters.
 #[derive(Clone, Debug)]
-pub enum WorkerTaskDispatchStartAttr {
+pub enum WorkerTaskDispatchByWorkerStartAttr {
     /// Recommended: When the task came from a named queue.
     QueueName(super::attribute::MyappQueueName),
     TaskId(super::attribute::MyappTaskId),
 }
 
-impl From<WorkerTaskDispatchStartAttr> for ::opentelemetry::KeyValue {
-    fn from(value: WorkerTaskDispatchStartAttr) -> Self {
+impl From<WorkerTaskDispatchByWorkerStartAttr> for ::opentelemetry::KeyValue {
+    fn from(value: WorkerTaskDispatchByWorkerStartAttr) -> Self {
         match value {
-            WorkerTaskDispatchStartAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
-            WorkerTaskDispatchStartAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
+            WorkerTaskDispatchByWorkerStartAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
+            WorkerTaskDispatchByWorkerStartAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
+        }
+    }
+}
+/// An attribute `start_worker_task_dispatch_fallback` accepts in addition to its parameters.
+#[derive(Clone, Debug)]
+pub enum WorkerTaskDispatchFallbackStartAttr {
+    /// Recommended: When the task came from a named queue.
+    QueueName(super::attribute::MyappQueueName),
+    TaskId(super::attribute::MyappTaskId),
+}
+
+impl From<WorkerTaskDispatchFallbackStartAttr> for ::opentelemetry::KeyValue {
+    fn from(value: WorkerTaskDispatchFallbackStartAttr) -> Self {
+        match value {
+            WorkerTaskDispatchFallbackStartAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
+            WorkerTaskDispatchFallbackStartAttr::TaskId(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -707,10 +762,10 @@ pub enum WorkerTaskDispatchAttr {
     QueueName(super::attribute::MyappQueueName),
 }
 
-impl From<WorkerTaskDispatchAttr> for WorkerTaskDispatchStartAttr {
+impl From<WorkerTaskDispatchAttr> for ::opentelemetry::KeyValue {
     fn from(value: WorkerTaskDispatchAttr) -> Self {
         match value {
-            WorkerTaskDispatchAttr::QueueName(value) => Self::QueueName(value),
+            WorkerTaskDispatchAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
         }
     }
 }
@@ -734,16 +789,16 @@ impl<S: ::opentelemetry::trace::Span> WorkerTaskDispatch<S> {
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
     pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, attributes: impl IntoIterator<Item = WorkerTaskDispatchAttr>) {
-        ::opentelemetry::trace::Span::add_event(&mut self.span, name, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(WorkerTaskDispatchStartAttr::from(attribute))).collect());
+        ::opentelemetry::trace::Span::add_event(&mut self.span, name, attributes.into_iter().map(::opentelemetry::KeyValue::from).collect());
     }
     pub fn add_event_with_timestamp(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, timestamp: ::std::time::SystemTime, attributes: impl IntoIterator<Item = WorkerTaskDispatchAttr>) {
-        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(WorkerTaskDispatchStartAttr::from(attribute))).collect());
+        ::opentelemetry::trace::Span::add_event_with_timestamp(&mut self.span, name, timestamp, attributes.into_iter().map(::opentelemetry::KeyValue::from).collect());
     }
     pub fn add_link(&mut self, span_context: ::opentelemetry::trace::SpanContext, attributes: impl IntoIterator<Item = WorkerTaskDispatchAttr>) {
-        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, attributes.into_iter().map(|attribute| ::opentelemetry::KeyValue::from(WorkerTaskDispatchStartAttr::from(attribute))).collect());
+        ::opentelemetry::trace::Span::add_link(&mut self.span, span_context, attributes.into_iter().map(::opentelemetry::KeyValue::from).collect());
     }
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = WorkerTaskDispatchAttr>) {
-        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(WorkerTaskDispatchStartAttr::from(attribute))); }
+        for attribute in attributes { ::opentelemetry::trace::Span::set_attribute(&mut self.span, ::opentelemetry::KeyValue::from(attribute)); }
     }
 }
 
@@ -758,7 +813,7 @@ impl Default for WorkerTaskDispatch {
 }
 
 /// The span is named from the first of these templates whose attributes are all set and not empty: `dispatch {worker.host.name}:{worker.host.port}`. Otherwise it is named `dispatch`.
-pub fn r#start_worker_task_dispatch_by_worker<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#myapp_task_attempt: super::attribute::MyappTaskAttempt, r#worker_host_name: super::attribute::WorkerHostName, r#worker_host_port: super::attribute::WorkerHostPort, options: impl IntoIterator<Item = WorkerTaskDispatchStartAttr>) -> WorkerTaskDispatch<T::Span> {
+pub fn r#start_worker_task_dispatch_by_worker<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#myapp_task_attempt: super::attribute::MyappTaskAttempt, r#worker_host_name: super::attribute::WorkerHostName, r#worker_host_port: super::attribute::WorkerHostPort, options: impl IntoIterator<Item = WorkerTaskDispatchByWorkerStartAttr>) -> WorkerTaskDispatch<T::Span> {
     let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [::opentelemetry::KeyValue::from(r#myapp_task_attempt), ::opentelemetry::KeyValue::from(r#worker_host_name), ::opentelemetry::KeyValue::from(r#worker_host_port)].into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)).collect();
     let name = span_name::select(&attributes, "dispatch", &[
         &[span_name::Part::Text("dispatch "), span_name::Part::Attribute("worker.host.name"), span_name::Part::Text(":"), span_name::Part::Attribute("worker.host.port")],
@@ -771,7 +826,7 @@ pub fn r#start_worker_task_dispatch_by_worker<T: ::opentelemetry::trace::Tracer>
 }
 
 /// The span is named `dispatch`.
-pub fn r#start_worker_task_dispatch_fallback<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#myapp_task_attempt: super::attribute::MyappTaskAttempt, r#worker_host_name: super::attribute::WorkerHostName, r#worker_host_port: super::attribute::WorkerHostPort, options: impl IntoIterator<Item = WorkerTaskDispatchStartAttr>) -> WorkerTaskDispatch<T::Span> {
+pub fn r#start_worker_task_dispatch_fallback<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#myapp_task_attempt: super::attribute::MyappTaskAttempt, r#worker_host_name: super::attribute::WorkerHostName, r#worker_host_port: super::attribute::WorkerHostPort, options: impl IntoIterator<Item = WorkerTaskDispatchFallbackStartAttr>) -> WorkerTaskDispatch<T::Span> {
     let name = "dispatch";
     let attributes: [::opentelemetry::KeyValue; 3] = [::opentelemetry::KeyValue::from(r#myapp_task_attempt), ::opentelemetry::KeyValue::from(r#worker_host_name), ::opentelemetry::KeyValue::from(r#worker_host_port)];
     let span = tracer.inner().span_builder(name)

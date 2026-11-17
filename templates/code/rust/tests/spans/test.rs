@@ -22,7 +22,7 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         &tracer,
         attribute::WorkerHostName::from("worker-1"),
         attribute::WorkerHostPort::from(8080),
-        [trace::MyappTaskDispatchStartAttr::TaskId(
+        [trace::MyappTaskDispatchByWorkerStartAttr::TaskId(
             attribute::MyappTaskId::from("task-1"),
         )],
     );
@@ -34,6 +34,7 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         &tracer,
         attribute::MyappTaskId::from("task-1"),
         attribute::MyappTaskState::Done,
+        [],
     );
     child.set_attributes([trace::MyappTaskRunAttr::TaskId(attribute::MyappTaskId::from(
         "task-1",
@@ -285,28 +286,28 @@ fn each_name_template_variant_names_the_span_from_its_own_template_first() {
         (
             "state set",
             attribute::MyappTaskState::Done,
-            vec![trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("t-9"))],
+            vec![trace::MyappTaskRunByStateStartAttr::TaskId(attribute::MyappTaskId::from("t-9"))],
             "run done",
         ),
         (
             "other enum member falls back to the task ID",
             attribute::MyappTaskState::Other,
-            vec![trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("t-9"))],
+            vec![trace::MyappTaskRunByStateStartAttr::TaskId(attribute::MyappTaskId::from("t-9"))],
             "run t-9",
         ),
         (
             "last optional attribute wins",
             attribute::MyappTaskState::Other,
             vec![
-                trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("t-9")),
-                trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("t-10")),
+                trace::MyappTaskRunByStateStartAttr::TaskId(attribute::MyappTaskId::from("t-9")),
+                trace::MyappTaskRunByStateStartAttr::TaskId(attribute::MyappTaskId::from("t-10")),
             ],
             "run t-10",
         ),
         (
             "other enum member and empty task ID",
             attribute::MyappTaskState::Other,
-            vec![trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from(""))],
+            vec![trace::MyappTaskRunByStateStartAttr::TaskId(attribute::MyappTaskId::from(""))],
             "myapp.task.run",
         ),
         (
@@ -341,6 +342,9 @@ fn each_name_template_variant_names_the_span_from_its_own_template_first() {
             &tracer,
             attribute::MyappTaskId::from(task_id),
             state,
+            [trace::MyappTaskRunByTaskIdStartAttr::QueueName(
+                attribute::MyappQueueName::from("reports"),
+            )],
         )
         .end();
         assert_eq!(finished_name(), expected, "{case}");

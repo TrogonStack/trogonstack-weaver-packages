@@ -226,14 +226,14 @@ func TestStartTaskRunByStateNamesTheSpanFromTheStateTemplateFirst(t *testing.T) 
 	tests := []struct {
 		name  string
 		state myappattr.TaskState
-		opts  []myappspan.TaskRunStartAttr
+		opts  []myappspan.TaskRunByStateStartAttr
 		want  string
 	}{
-		{"state set", myappattr.TaskStateDone, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9"))}, "run done"},
-		{"other enum member falls back to the task ID", myappattr.TaskStateOther, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9"))}, "run t-9"},
-		{"zero enum falls back to the task ID", myappattr.TaskState{}, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9"))}, "run t-9"},
-		{"last optional attribute wins", myappattr.TaskStateOther, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9")), myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-10"))}, "run t-10"},
-		{"other enum member and empty task ID", myappattr.TaskStateOther, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID(""))}, "myapp.task.run"},
+		{"state set", myappattr.TaskStateDone, []myappspan.TaskRunByStateStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9"))}, "run done"},
+		{"other enum member falls back to the task ID", myappattr.TaskStateOther, []myappspan.TaskRunByStateStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9"))}, "run t-9"},
+		{"zero enum falls back to the task ID", myappattr.TaskState{}, []myappspan.TaskRunByStateStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9"))}, "run t-9"},
+		{"last optional attribute wins", myappattr.TaskStateOther, []myappspan.TaskRunByStateStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9")), myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-10"))}, "run t-10"},
+		{"other enum member and empty task ID", myappattr.TaskStateOther, []myappspan.TaskRunByStateStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID(""))}, "myapp.task.run"},
 		{"other enum member and no task ID", myappattr.TaskStateOther, nil, "myapp.task.run"},
 		{"zero enum and no task ID", myappattr.TaskState{}, nil, "myapp.task.run"},
 	}
@@ -274,6 +274,27 @@ func TestStartTaskRunByTaskIDNamesTheSpanFromTheTaskIDTemplateFirst(t *testing.T
 				t.Fatalf("Name() = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestTaskRunStartersAcceptOneQueueNameOptionAndKeepTheirFallback(t *testing.T) {
+	tracer, sr := newTracer(t)
+	queueName := myappspan.WithTaskRunQueueName(myappattr.NewQueueName("reports"))
+
+	_, byTaskID := myappspan.StartTaskRunByTaskID(context.Background(), tracer, myappattr.NewTaskID(""), myappattr.TaskStateQueued, queueName)
+	byTaskID.End()
+	_, byState := myappspan.StartTaskRunByState(context.Background(), tracer, myappattr.TaskStateOther, queueName)
+	byState.End()
+
+	ended := sr.Ended()
+	for index, wantName := range []string{"run queued", "myapp.task.run"} {
+		if got := ended[index].Name(); got != wantName {
+			t.Errorf("Name() of span %d = %q, want %q", index, got, wantName)
+		}
+		attributes := attribute.NewSet(ended[index].Attributes()...)
+		if got, _ := attributes.Value("myapp.queue.name"); got.AsString() != "reports" {
+			t.Errorf("myapp.queue.name of span %d = %q, want %q", index, got.AsString(), "reports")
+		}
 	}
 }
 

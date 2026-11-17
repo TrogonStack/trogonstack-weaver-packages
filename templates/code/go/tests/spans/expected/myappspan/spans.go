@@ -628,16 +628,24 @@ func StartQueueDrain(ctx context.Context, tracer semconvtracer.Tracer, name Queu
 	return ctx, QueueDrain{span: span}
 }
 
-// TaskDispatchStartAttr is an attribute a TaskDispatch starter accepts in
-// addition to the ones it requires.
-type TaskDispatchStartAttr interface {
+// TaskDispatchByWorkerStartAttr is an attribute StartTaskDispatchByWorker
+// accepts in addition to its parameters.
+type TaskDispatchByWorkerStartAttr interface {
 	taskDispatchStartAttr() attribute.KeyValue
+	taskDispatchByWorkerStartAttr()
+}
+
+// TaskDispatchFallbackStartAttr is an attribute StartTaskDispatchFallback
+// accepts in addition to its parameters.
+type TaskDispatchFallbackStartAttr interface {
+	taskDispatchStartAttr() attribute.KeyValue
+	taskDispatchFallbackStartAttr()
 }
 
 // TaskDispatchAttr is an attribute a TaskDispatch also accepts after it
 // started, through SetAttributes.
 type TaskDispatchAttr interface {
-	TaskDispatchStartAttr
+	taskDispatchStartAttr() attribute.KeyValue
 	taskDispatchAttr()
 }
 
@@ -647,13 +655,22 @@ func (o taskDispatchSpanQueueName) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
+func (taskDispatchSpanQueueName) taskDispatchByWorkerStartAttr() {}
+
+func (taskDispatchSpanQueueName) taskDispatchFallbackStartAttr() {}
+
 func (taskDispatchSpanQueueName) taskDispatchAttr() {}
 
 // WithTaskDispatchQueueName sets `myapp.queue.name` on a TaskDispatch, when
-// a TaskDispatch starter starts it or later through SetAttributes.
+// StartTaskDispatchByWorker or StartTaskDispatchFallback starts it or later
+// through SetAttributes.
 //
 // Recommended: When the task came from a named queue.
-func WithTaskDispatchQueueName(v myappattr.QueueName) TaskDispatchAttr {
+func WithTaskDispatchQueueName(v myappattr.QueueName) interface {
+	TaskDispatchAttr
+	TaskDispatchByWorkerStartAttr
+	TaskDispatchFallbackStartAttr
+} {
 	return taskDispatchSpanQueueName{v: v}
 }
 
@@ -663,13 +680,22 @@ func (o taskDispatchSpanTaskAttempt) taskDispatchStartAttr() attribute.KeyValue 
 	return o.v.KeyValue()
 }
 
+func (taskDispatchSpanTaskAttempt) taskDispatchByWorkerStartAttr() {}
+
+func (taskDispatchSpanTaskAttempt) taskDispatchFallbackStartAttr() {}
+
 func (taskDispatchSpanTaskAttempt) taskDispatchAttr() {}
 
 // WithTaskDispatchTaskAttempt sets `myapp.task.attempt` on a TaskDispatch,
-// when a TaskDispatch starter starts it or later through SetAttributes.
+// when StartTaskDispatchByWorker or StartTaskDispatchFallback starts it or
+// later through SetAttributes.
 //
 // Opt-in: the convention records it only when a user asks for it.
-func WithTaskDispatchTaskAttempt(v myappattr.TaskAttempt) TaskDispatchAttr {
+func WithTaskDispatchTaskAttempt(v myappattr.TaskAttempt) interface {
+	TaskDispatchAttr
+	TaskDispatchByWorkerStartAttr
+	TaskDispatchFallbackStartAttr
+} {
 	return taskDispatchSpanTaskAttempt{v: v}
 }
 
@@ -679,9 +705,17 @@ func (o taskDispatchSpanTaskID) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskDispatchTaskID sets `myapp.task.id` when a TaskDispatch starter
-// starts the span. Samplers read it, so it is accepted only at start.
-func WithTaskDispatchTaskID(v myappattr.TaskID) TaskDispatchStartAttr {
+func (taskDispatchSpanTaskID) taskDispatchByWorkerStartAttr() {}
+
+func (taskDispatchSpanTaskID) taskDispatchFallbackStartAttr() {}
+
+// WithTaskDispatchTaskID sets `myapp.task.id` when StartTaskDispatchByWorker
+// or StartTaskDispatchFallback starts the span. Samplers read it, so it is
+// accepted only at start.
+func WithTaskDispatchTaskID(v myappattr.TaskID) interface {
+	TaskDispatchByWorkerStartAttr
+	TaskDispatchFallbackStartAttr
+} {
 	return taskDispatchSpanTaskID{v: v}
 }
 
@@ -756,7 +790,7 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 // The span is named from the first of these templates whose attributes are
 // all set and not empty: `dispatch {worker.host.name}:{worker.host.port}`.
 // Otherwise it is named `dispatch`.
-func StartTaskDispatchByWorker(ctx context.Context, tracer semconvtracer.Tracer, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
+func StartTaskDispatchByWorker(ctx context.Context, tracer semconvtracer.Tracer, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchByWorkerStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	if kv := workerHostName.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
@@ -789,7 +823,7 @@ func StartTaskDispatchByWorker(ctx context.Context, tracer semconvtracer.Tracer,
 // Ends when the worker accepts the task.
 //
 // The span is named `dispatch`.
-func StartTaskDispatchFallback(ctx context.Context, tracer semconvtracer.Tracer, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
+func StartTaskDispatchFallback(ctx context.Context, tracer semconvtracer.Tracer, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchFallbackStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	if kv := workerHostName.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
@@ -811,17 +845,48 @@ func StartTaskDispatchFallback(ctx context.Context, tracer semconvtracer.Tracer,
 	return ctx, TaskDispatch{span: span}
 }
 
-// TaskRunStartAttr is an attribute a TaskRun starter accepts in addition to
-// the ones it requires.
-type TaskRunStartAttr interface {
+// TaskRunByTaskIDStartAttr is an attribute StartTaskRunByTaskID accepts in
+// addition to its parameters.
+type TaskRunByTaskIDStartAttr interface {
 	taskRunStartAttr() attribute.KeyValue
+	taskRunByTaskIDStartAttr()
+}
+
+// TaskRunByStateStartAttr is an attribute StartTaskRunByState accepts in
+// addition to its parameters.
+type TaskRunByStateStartAttr interface {
+	taskRunStartAttr() attribute.KeyValue
+	taskRunByStateStartAttr()
 }
 
 // TaskRunAttr is an attribute a TaskRun also accepts after it started,
 // through SetAttributes.
 type TaskRunAttr interface {
-	TaskRunStartAttr
+	taskRunStartAttr() attribute.KeyValue
 	taskRunAttr()
+}
+
+type taskRunSpanQueueName struct{ v myappattr.QueueName }
+
+func (o taskRunSpanQueueName) taskRunStartAttr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+func (taskRunSpanQueueName) taskRunByTaskIDStartAttr() {}
+
+func (taskRunSpanQueueName) taskRunByStateStartAttr() {}
+
+func (taskRunSpanQueueName) taskRunAttr() {}
+
+// WithTaskRunQueueName sets `myapp.queue.name` on a TaskRun, when
+// StartTaskRunByTaskID or StartTaskRunByState starts it or later through
+// SetAttributes.
+func WithTaskRunQueueName(v myappattr.QueueName) interface {
+	TaskRunAttr
+	TaskRunByTaskIDStartAttr
+	TaskRunByStateStartAttr
+} {
+	return taskRunSpanQueueName{v: v}
 }
 
 type taskRunSpanTaskID struct{ v myappattr.TaskID }
@@ -830,11 +895,16 @@ func (o taskRunSpanTaskID) taskRunStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
+func (taskRunSpanTaskID) taskRunByStateStartAttr() {}
+
 func (taskRunSpanTaskID) taskRunAttr() {}
 
-// WithTaskRunTaskID sets `myapp.task.id` on a TaskRun, when a TaskRun
-// starter starts it or later through SetAttributes.
-func WithTaskRunTaskID(v myappattr.TaskID) TaskRunAttr {
+// WithTaskRunTaskID sets `myapp.task.id` on a TaskRun, when
+// StartTaskRunByState starts it or later through SetAttributes.
+func WithTaskRunTaskID(v myappattr.TaskID) interface {
+	TaskRunAttr
+	TaskRunByStateStartAttr
+} {
 	return taskRunSpanTaskID{v: v}
 }
 
@@ -907,13 +977,18 @@ func (s TaskRun) SetStatus(code codes.Code, description string) {
 // The span is named from the first of these templates whose attributes are
 // all set, not empty, and not `_OTHER`: `run {myapp.task.id}`,
 // `run {myapp.task.state}`. Otherwise it is named `myapp.task.run`.
-func StartTaskRunByTaskID(ctx context.Context, tracer semconvtracer.Tracer, myappTaskID myappattr.TaskID, myappTaskState myappattr.TaskState) (context.Context, TaskRun) {
-	kvs := make([]attribute.KeyValue, 0, 2)
+func StartTaskRunByTaskID(ctx context.Context, tracer semconvtracer.Tracer, myappTaskID myappattr.TaskID, myappTaskState myappattr.TaskState, opts ...TaskRunByTaskIDStartAttr) (context.Context, TaskRun) {
+	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	if kv := myappTaskID.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
 	}
 	if kv := myappTaskState.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskRunStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
 	}
 	name := spanName(kvs, "myapp.task.run",
 		[]spanNamePart{{text: "run "}, {key: "myapp.task.id"}},
@@ -936,7 +1011,7 @@ func StartTaskRunByTaskID(ctx context.Context, tracer semconvtracer.Tracer, myap
 // The span is named from the first of these templates whose attributes are
 // all set, not empty, and not `_OTHER`: `run {myapp.task.state}`,
 // `run {myapp.task.id}`. Otherwise it is named `myapp.task.run`.
-func StartTaskRunByState(ctx context.Context, tracer semconvtracer.Tracer, myappTaskState myappattr.TaskState, opts ...TaskRunStartAttr) (context.Context, TaskRun) {
+func StartTaskRunByState(ctx context.Context, tracer semconvtracer.Tracer, myappTaskState myappattr.TaskState, opts ...TaskRunByStateStartAttr) (context.Context, TaskRun) {
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
 	if kv := myappTaskState.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)

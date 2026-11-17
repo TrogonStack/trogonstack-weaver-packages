@@ -316,11 +316,11 @@ func spanNameWriteQuoted(name *strings.Builder, text string) {
 {%- set private = n.unexported(def.short_name) if def.short_name else "bare" %}
 {%- set span = name or "Span" %}
 {%- set start = "Start" ~ name %}
-{%- set start_doc = "a " ~ span ~ " starter" if def.starters[0].id else start %}
+{%- set multi = def.starters[0].id %}
 {%- set deprecated = d.notice(def) %}
 {%- set opt_in = "Opt-in: the convention records `" ~ def.id ~ "` only when a user asks for it." if def.requirement_level == "opt_in" else none -%}
-{% if def.optional %}
-{{ [name ~ "StartAttr is an attribute " ~ start_doc ~ " accepts in addition to the ones it requires."] | join | comment }}
+{% if def.optional and not multi %}
+{{ [name ~ "StartAttr is an attribute " ~ start ~ " accepts in addition to the ones it requires."] | join | comment }}
 type {{ name }}StartAttr interface {
 	{{ private }}StartAttr() attribute.KeyValue
 }
@@ -339,19 +339,69 @@ func (o {{ private }}Span{{ optname }}) {{ private }}StartAttr() attribute.KeyVa
 	return {{ attr_kv(opt, "o.v") }}
 }
 {% if opt.sampling_relevant %}
-{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` when " ~ start_doc ~ " starts the span. Samplers read it, so it is accepted only at start.", opt.requirement_doc] | select | join("\n\n") | comment }}
+{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` when " ~ start ~ " starts the span. Samplers read it, so it is accepted only at start.", opt.requirement_doc] | select | join("\n\n") | comment }}
 func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}StartAttr {
 	return {{ private }}Span{{ optname }}{v: v}
 }
 {% else %}
 func ({{ private }}Span{{ optname }}) {{ private }}Attr() {}
 
-{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on a " ~ span ~ ", when " ~ start_doc ~ " starts it or later through SetAttributes.", opt.requirement_doc] | select | join("\n\n") | comment }}
+{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on a " ~ span ~ ", when " ~ start ~ " starts it or later through SetAttributes.", opt.requirement_doc] | select | join("\n\n") | comment }}
 func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
 	return {{ private }}Span{{ optname }}{v: v}
 }
 {% endif %}
 {%- endfor %}
+{%- elif def.optional %}
+{%- for starter in def.starters if starter.optional %}
+{%- set starter_attr = name ~ n.exported(starter.id) ~ "StartAttr" %}
+{{ [starter_attr ~ " is an attribute " ~ start ~ n.exported(starter.id) ~ " accepts in addition to its parameters."] | join | comment }}
+type {{ starter_attr }} interface {
+	{{ private }}StartAttr() attribute.KeyValue
+	{{ private }}{{ n.exported(starter.id) }}StartAttr()
+}
+{% endfor %}
+{%- if def.has_late_attrs %}
+{{ [name ~ "Attr is an attribute a " ~ span ~ " also accepts after it started, through SetAttributes."] | join | comment }}
+type {{ name }}Attr interface {
+	{{ private }}StartAttr() attribute.KeyValue
+	{{ private }}Attr()
+}
+{% endif %}
+{%- for opt in def.optional if opt.accepted_by or not opt.sampling_relevant %}
+{%- set optname = n.exported(opt.attr_short_name) %}
+{%- set option = namespace(types=([] if opt.sampling_relevant else [name ~ "Attr"]), starters=[]) %}
+{%- for id in opt.accepted_by %}
+{%- set option.types = option.types + [name ~ n.exported(id) ~ "StartAttr"] %}
+{%- set option.starters = option.starters + [start ~ n.exported(id)] %}
+{%- endfor %}
+{%- set starters_doc = (option.starters[:-1] | join(", ") ~ ", or " ~ option.starters[-1]) if option.starters | length > 2 else option.starters | join(" or ") %}
+type {{ private }}Span{{ optname }} struct{ v {{ attr_type(opt) }} }
+
+func (o {{ private }}Span{{ optname }}) {{ private }}StartAttr() attribute.KeyValue {
+	return {{ attr_kv(opt, "o.v") }}
+}
+{% for id in opt.accepted_by %}
+func ({{ private }}Span{{ optname }}) {{ private }}{{ n.exported(id) }}StartAttr() {}
+{% endfor %}
+{%- if not opt.sampling_relevant %}
+func ({{ private }}Span{{ optname }}) {{ private }}Attr() {}
+{% endif %}
+{% if opt.sampling_relevant %}
+{{- ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` when " ~ starters_doc ~ " starts the span. Samplers read it, so it is accepted only at start.", opt.requirement_doc] | select | join("\n\n") | comment }}
+{%- elif option.starters %}
+{{- ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on a " ~ span ~ ", when " ~ starters_doc ~ " starts it or later through SetAttributes.", opt.requirement_doc] | select | join("\n\n") | comment }}
+{%- else %}
+{{- ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on a " ~ span ~ " after it started, through SetAttributes.", opt.requirement_doc] | select | join("\n\n") | comment }}
+{%- endif %}
+func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {% if option.types | length == 1 %}{{ option.types[0] }}{% else %}interface {
+{%- for type in option.types %}
+	{{ type }}
+{%- endfor %}
+} {%- endif %} {
+	return {{ private }}Span{{ optname }}{v: v}
+}
+{% endfor %}
 {%- endif %}
 {%- if not def.name_derived %}
 {{ [name ~ "Name is the name the `" ~ def.id ~ "` span is started with.", def.name.note, "An empty " ~ name ~ "Name, including the zero one, names the span `" ~ def.type ~ "`."] | select | join("\n\n") | comment }}
@@ -448,7 +498,7 @@ func (s {{ span }}) SetStatus(code codes.Code, description string) {
 {% for starter in def.starters %}
 {%- set starter_name = start ~ (n.exported(starter.id) if starter.id else "") %}
 {{ [starter_name ~ " starts the `" ~ def.id ~ "` span from tracer with span kind " ~ def.kind ~ (", as a refinement of `" ~ def.refines ~ "`" if def.refines else "") ~ ".", def.brief, def.note, starter.name_doc, opt_in, deprecated] | select | join("\n\n") | comment }}
-func {{ starter_name }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if not def.name_derived %}, name {{ name }}Name{% endif %}{% for req in starter.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if starter.optional %}, opts ...{{ name }}StartAttr{% endif %}) (context.Context, {{ span }}) {
+func {{ starter_name }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if not def.name_derived %}, name {{ name }}Name{% endif %}{% for req in starter.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if starter.optional %}, opts ...{{ name }}{{ n.exported(starter.id) if multi else "" }}StartAttr{% endif %}) (context.Context, {{ span }}) {
 {%- if not def.name_derived %}
 	if name.value == "" {
 		name = {{ name }}Name{value: {{ def.type | tojson }}}
