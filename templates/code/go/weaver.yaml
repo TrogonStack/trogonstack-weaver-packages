@@ -604,7 +604,9 @@ templates:
              elif (.attributes | all(. as $key | $attributes | any(.key == $key)))
              then {pattern, parts: [.parts[]
                     | if .type == "attribute"
-                      then (.attribute as $key | $attributes | map(select(.key == $key)) | .[0] | {key, enum: ((.type | type) == "object")})
+                      then (.attribute as $key | $attributes | map(select(.key == $key)) | .[0]
+                            | {key, enum: ((.type | type) == "object"),
+                               value_type: (if (.type | type) == "object" then (.key as $key | .type | enum_value_type($key)) else .type end)})
                       else {text: .value} end]}
              else empty end];
       def name_template_ids:
@@ -745,6 +747,7 @@ templates:
       | map({namespace: .[0].namespace, prefix: .[0].prefix, spans: sort_by(.id),
              uses_attributes: ([.[] | .attributes[]] | length > 0),
              uses_name_templates: any(.[].starters[]; (.name_templates | length) > 0),
+             name_value_types: ([.[].starters[].name_templates[].parts[] | .value_type // empty] | unique),
              imports: (
                .[0].namespace as $pkg
                | (([.[] | .attributes[] | select(.imported | not)

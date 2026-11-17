@@ -4,6 +4,8 @@ package workerspan
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -23,46 +25,68 @@ type spanNamePart struct {
 }
 
 func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
-	// A stack buffer holds most names, so the returned string is the only allocation.
-	var buffer [64]byte
 	for _, template := range templates {
-		if name, ok := spanNameAppend(buffer[:0], kvs, template); ok {
-			return string(name)
+		if length, ok := spanNameLength(kvs, template); ok {
+			return spanNameBuild(kvs, template, length)
 		}
 	}
 	return fallback
 }
 
-func spanNameAppend(name []byte, kvs []attribute.KeyValue, template []spanNamePart) ([]byte, bool) {
-	for _, part := range template {
-		if part.key == "" {
-			name = append(name, part.text...)
-			continue
+func spanNameValue(kvs []attribute.KeyValue, key attribute.Key) (attribute.Value, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key == key {
+			return kvs[index].Value, true
 		}
-		value, ok := spanNameValue(kvs, part)
-		if !ok {
-			return name, false
-		}
-		name = append(name, value...)
 	}
-	return name, true
+	return attribute.Value{}, false
 }
 
-func spanNameValue(kvs []attribute.KeyValue, part spanNamePart) (string, bool) {
-	for index := len(kvs) - 1; index >= 0; index-- {
-		if kvs[index].Key != part.key {
+// The length is an upper bound, so the builder never grows and the name is its only allocation.
+func spanNameLength(kvs []attribute.KeyValue, template []spanNamePart) (int, bool) {
+	length := 0
+	for _, part := range template {
+		if part.key == "" {
+			length += len(part.text)
 			continue
 		}
-		value := kvs[index].Value.Emit()
-		switch kvs[index].Value.Type() {
-		case attribute.STRING:
-			return value, value != "" && !(part.enum && value == "_OTHER")
-		case attribute.BOOLSLICE, attribute.INT64SLICE, attribute.FLOAT64SLICE, attribute.STRINGSLICE:
-			return value, value != "[]"
+		value, found := spanNameValue(kvs, part.key)
+		if !found {
+			return 0, false
 		}
-		return value, true
+		switch value.Type() {
+		case attribute.STRING:
+			text := value.AsString()
+			if text == "" || (part.enum && text == "_OTHER") {
+				return 0, false
+			}
+			length += len(text)
+		case attribute.INT64:
+			length += len("-9223372036854775808")
+		}
 	}
-	return "", false
+	return length, true
+}
+
+// Values are written as attribute.Value.Emit writes them, so names keep the text they had.
+func spanNameBuild(kvs []attribute.KeyValue, template []spanNamePart, length int) string {
+	var name strings.Builder
+	name.Grow(length)
+	var number [32]byte
+	for _, part := range template {
+		if part.key == "" {
+			name.WriteString(part.text)
+			continue
+		}
+		value, _ := spanNameValue(kvs, part.key)
+		switch value.Type() {
+		case attribute.STRING:
+			name.WriteString(value.AsString())
+		case attribute.INT64:
+			name.Write(strconv.AppendInt(number[:0], value.AsInt64(), 10))
+		}
+	}
+	return name.String()
 }
 
 // TaskDispatchStartAttr is an attribute a TaskDispatch starter accepts in

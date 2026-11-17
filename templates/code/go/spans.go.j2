@@ -15,6 +15,7 @@ attribute.{{ a.attr_type | map_text("attribute_type_method") }}({{ a.key | tojso
 {{ v }}.KeyValue()
 {%- endif -%}
 {%- endmacro -%}
+{%- set types = ctx.name_value_types -%}
 {%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
 {{ h.header() }}
 
@@ -22,6 +23,18 @@ package {{ ctx.namespace }}span
 
 import (
 	"context"
+{%- if "double[]" in types %}
+	"math"
+{%- endif %}
+{%- if types | select("in", ["boolean", "int", "double", "boolean[]", "int[]", "double[]"]) | list | length > 0 %}
+	"strconv"
+{%- endif %}
+{%- if ctx.uses_name_templates %}
+	"strings"
+{%- endif %}
+{%- if "string[]" in types %}
+	"unicode/utf8"
+{%- endif %}
 {% if ctx.uses_attributes %}
 	"go.opentelemetry.io/otel/attribute"
 {%- endif %}
@@ -40,47 +53,263 @@ type spanNamePart struct {
 }
 
 func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
-	// A stack buffer holds most names, so the returned string is the only allocation.
-	var buffer [64]byte
 	for _, template := range templates {
-		if name, ok := spanNameAppend(buffer[:0], kvs, template); ok {
-			return string(name)
+		if length, ok := spanNameLength(kvs, template); ok {
+			return spanNameBuild(kvs, template, length)
 		}
 	}
 	return fallback
 }
 
-func spanNameAppend(name []byte, kvs []attribute.KeyValue, template []spanNamePart) ([]byte, bool) {
-	for _, part := range template {
-		if part.key == "" {
-			name = append(name, part.text...)
-			continue
+func spanNameValue(kvs []attribute.KeyValue, key attribute.Key) (attribute.Value, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key == key {
+			return kvs[index].Value, true
 		}
-		value, ok := spanNameValue(kvs, part)
-		if !ok {
-			return name, false
-		}
-		name = append(name, value...)
 	}
-	return name, true
+	return attribute.Value{}, false
 }
 
-func spanNameValue(kvs []attribute.KeyValue, part spanNamePart) (string, bool) {
-	for index := len(kvs) - 1; index >= 0; index-- {
-		if kvs[index].Key != part.key {
+// The length is an upper bound, so the builder never grows and the name is its only allocation.
+func spanNameLength(kvs []attribute.KeyValue, template []spanNamePart) (int, bool) {
+	length := 0
+	for _, part := range template {
+		if part.key == "" {
+			length += len(part.text)
 			continue
 		}
-		value := kvs[index].Value.Emit()
-		switch kvs[index].Value.Type() {
-		case attribute.STRING:
-			return value, value != "" && !(part.enum && value == "_OTHER")
-		case attribute.BOOLSLICE, attribute.INT64SLICE, attribute.FLOAT64SLICE, attribute.STRINGSLICE:
-			return value, value != "[]"
+		value, found := spanNameValue(kvs, part.key)
+		if !found {
+			return 0, false
 		}
-		return value, true
+		switch value.Type() {
+{%- if "string" in types %}
+		case attribute.STRING:
+			text := value.AsString()
+			if text == "" || (part.enum && text == "_OTHER") {
+				return 0, false
+			}
+			length += len(text)
+{%- endif %}
+{%- if "boolean" in types %}
+		case attribute.BOOL:
+			length += len("false")
+{%- endif %}
+{%- if "int" in types %}
+		case attribute.INT64:
+			length += len("-9223372036854775808")
+{%- endif %}
+{%- if "double" in types %}
+		case attribute.FLOAT64:
+			length += len("-1.7976931348623157e+308")
+{%- endif %}
+{%- if "boolean[]" in types %}
+		case attribute.BOOLSLICE:
+			elements := value.AsBoolSlice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]") + len("false ")*len(elements)
+{%- endif %}
+{%- if "int[]" in types %}
+		case attribute.INT64SLICE:
+			elements := value.AsInt64Slice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]") + len("-9223372036854775808,")*len(elements)
+{%- endif %}
+{%- if "double[]" in types %}
+		case attribute.FLOAT64SLICE:
+			elements := value.AsFloat64Slice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("invalid: []") + len("-0.0000012345678901234567,")*len(elements)
+{%- endif %}
+{%- if "string[]" in types %}
+		case attribute.STRINGSLICE:
+			elements := value.AsStringSlice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]")
+			for _, element := range elements {
+				// encoding/json escapes one byte to at most six, as in \u001f.
+				length += len(`"",`) + 6*len(element)
+			}
+{%- endif %}
+		}
 	}
-	return "", false
+	return length, true
 }
+
+// Values are written as attribute.Value.Emit writes them, so names keep the text they had.
+func spanNameBuild(kvs []attribute.KeyValue, template []spanNamePart, length int) string {
+	var name strings.Builder
+	name.Grow(length)
+{%- if types | select("in", ["int", "double", "int[]"]) | list | length > 0 %}
+	var number [32]byte
+{%- endif %}
+	for _, part := range template {
+		if part.key == "" {
+			name.WriteString(part.text)
+			continue
+		}
+		value, _ := spanNameValue(kvs, part.key)
+		switch value.Type() {
+{%- if "string" in types %}
+		case attribute.STRING:
+			name.WriteString(value.AsString())
+{%- endif %}
+{%- if "boolean" in types %}
+		case attribute.BOOL:
+			name.WriteString(strconv.FormatBool(value.AsBool()))
+{%- endif %}
+{%- if "int" in types %}
+		case attribute.INT64:
+			name.Write(strconv.AppendInt(number[:0], value.AsInt64(), 10))
+{%- endif %}
+{%- if "double" in types %}
+		case attribute.FLOAT64:
+			name.Write(strconv.AppendFloat(number[:0], value.AsFloat64(), 'g', -1, 64))
+{%- endif %}
+{%- if "boolean[]" in types %}
+		case attribute.BOOLSLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsBoolSlice() {
+				if index > 0 {
+					name.WriteByte(' ')
+				}
+				name.WriteString(strconv.FormatBool(element))
+			}
+			name.WriteByte(']')
+{%- endif %}
+{%- if "int[]" in types %}
+		case attribute.INT64SLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsInt64Slice() {
+				if index > 0 {
+					name.WriteByte(',')
+				}
+				name.Write(strconv.AppendInt(number[:0], element, 10))
+			}
+			name.WriteByte(']')
+{%- endif %}
+{%- if "double[]" in types %}
+		case attribute.FLOAT64SLICE:
+			spanNameWriteFloats(&name, value.AsFloat64Slice())
+{%- endif %}
+{%- if "string[]" in types %}
+		case attribute.STRINGSLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsStringSlice() {
+				if index > 0 {
+					name.WriteByte(',')
+				}
+				spanNameWriteQuoted(&name, element)
+			}
+			name.WriteByte(']')
+{%- endif %}
+		}
+	}
+	return name.String()
+}
+{%- if "double[]" in types %}
+
+// Emit writes a float array as JSON, and falls back to fmt formatting when JSON cannot hold NaN or an infinity.
+func spanNameWriteFloats(name *strings.Builder, elements []float64) {
+	var number [32]byte
+	for _, element := range elements {
+		if math.IsInf(element, 0) || math.IsNaN(element) {
+			name.WriteString("invalid: [")
+			for index, element := range elements {
+				if index > 0 {
+					name.WriteByte(' ')
+				}
+				name.Write(strconv.AppendFloat(number[:0], element, 'g', -1, 64))
+			}
+			name.WriteByte(']')
+			return
+		}
+	}
+	name.WriteByte('[')
+	for index, element := range elements {
+		if index > 0 {
+			name.WriteByte(',')
+		}
+		format := byte('f')
+		if magnitude := math.Abs(element); magnitude != 0 && (magnitude < 1e-6 || magnitude >= 1e21) {
+			format = 'e'
+		}
+		text := strconv.AppendFloat(number[:0], element, format, -1, 64)
+		// encoding/json drops the leading zero of a negative exponent, as in 1e-07 to 1e-7.
+		if length := len(text); format == 'e' && text[length-4] == 'e' && text[length-3] == '-' && text[length-2] == '0' {
+			text[length-2] = text[length-1]
+			text = text[:length-1]
+		}
+		name.Write(text)
+	}
+	name.WriteByte(']')
+}
+{%- endif %}
+{%- if "string[]" in types %}
+
+// Emit writes a string array as JSON, which escapes HTML characters and replaces invalid UTF-8.
+func spanNameWriteQuoted(name *strings.Builder, text string) {
+	const hexadecimal = "0123456789abcdef"
+	name.WriteByte('"')
+	start := 0
+	for index := 0; index < len(text); {
+		if character := text[index]; character < utf8.RuneSelf {
+			if character >= ' ' && character != '"' && character != '\\' && character != '<' && character != '>' && character != '&' {
+				index++
+				continue
+			}
+			name.WriteString(text[start:index])
+			switch character {
+			case '"', '\\':
+				name.WriteByte('\\')
+				name.WriteByte(character)
+			case '\b':
+				name.WriteString(`\b`)
+			case '\f':
+				name.WriteString(`\f`)
+			case '\n':
+				name.WriteString(`\n`)
+			case '\r':
+				name.WriteString(`\r`)
+			case '\t':
+				name.WriteString(`\t`)
+			default:
+				name.WriteString(`\u00`)
+				name.WriteByte(hexadecimal[character>>4])
+				name.WriteByte(hexadecimal[character&0xf])
+			}
+			index++
+			start = index
+			continue
+		}
+		symbol, size := utf8.DecodeRuneInString(text[index:])
+		switch {
+		case symbol == utf8.RuneError && size == 1:
+			name.WriteString(text[start:index])
+			name.WriteString(`�`)
+		case symbol == ' ' || symbol == ' ':
+			name.WriteString(text[start:index])
+			name.WriteString(`\u202`)
+			name.WriteByte(hexadecimal[symbol&0xf])
+		default:
+			index += size
+			continue
+		}
+		index += size
+		start = index
+	}
+	name.WriteString(text[start:])
+	name.WriteByte('"')
+}
+{%- endif %}
 {% endif %}
 {%- for def in ctx.spans %}
 {%- set name = n.exported(def.short_name) %}

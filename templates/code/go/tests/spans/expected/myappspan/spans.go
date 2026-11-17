@@ -4,6 +4,10 @@ package myappspan
 
 import (
 	"context"
+	"math"
+	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -23,46 +27,514 @@ type spanNamePart struct {
 }
 
 func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
-	// A stack buffer holds most names, so the returned string is the only allocation.
-	var buffer [64]byte
 	for _, template := range templates {
-		if name, ok := spanNameAppend(buffer[:0], kvs, template); ok {
-			return string(name)
+		if length, ok := spanNameLength(kvs, template); ok {
+			return spanNameBuild(kvs, template, length)
 		}
 	}
 	return fallback
 }
 
-func spanNameAppend(name []byte, kvs []attribute.KeyValue, template []spanNamePart) ([]byte, bool) {
-	for _, part := range template {
-		if part.key == "" {
-			name = append(name, part.text...)
-			continue
+func spanNameValue(kvs []attribute.KeyValue, key attribute.Key) (attribute.Value, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key == key {
+			return kvs[index].Value, true
 		}
-		value, ok := spanNameValue(kvs, part)
-		if !ok {
-			return name, false
-		}
-		name = append(name, value...)
 	}
-	return name, true
+	return attribute.Value{}, false
 }
 
-func spanNameValue(kvs []attribute.KeyValue, part spanNamePart) (string, bool) {
-	for index := len(kvs) - 1; index >= 0; index-- {
-		if kvs[index].Key != part.key {
+// The length is an upper bound, so the builder never grows and the name is its only allocation.
+func spanNameLength(kvs []attribute.KeyValue, template []spanNamePart) (int, bool) {
+	length := 0
+	for _, part := range template {
+		if part.key == "" {
+			length += len(part.text)
 			continue
 		}
-		value := kvs[index].Value.Emit()
-		switch kvs[index].Value.Type() {
-		case attribute.STRING:
-			return value, value != "" && !(part.enum && value == "_OTHER")
-		case attribute.BOOLSLICE, attribute.INT64SLICE, attribute.FLOAT64SLICE, attribute.STRINGSLICE:
-			return value, value != "[]"
+		value, found := spanNameValue(kvs, part.key)
+		if !found {
+			return 0, false
 		}
-		return value, true
+		switch value.Type() {
+		case attribute.STRING:
+			text := value.AsString()
+			if text == "" || (part.enum && text == "_OTHER") {
+				return 0, false
+			}
+			length += len(text)
+		case attribute.INT64:
+			length += len("-9223372036854775808")
+		case attribute.FLOAT64:
+			length += len("-1.7976931348623157e+308")
+		case attribute.BOOLSLICE:
+			elements := value.AsBoolSlice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]") + len("false ")*len(elements)
+		case attribute.INT64SLICE:
+			elements := value.AsInt64Slice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]") + len("-9223372036854775808,")*len(elements)
+		case attribute.FLOAT64SLICE:
+			elements := value.AsFloat64Slice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("invalid: []") + len("-0.0000012345678901234567,")*len(elements)
+		case attribute.STRINGSLICE:
+			elements := value.AsStringSlice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]")
+			for _, element := range elements {
+				// encoding/json escapes one byte to at most six, as in \u001f.
+				length += len(`"",`) + 6*len(element)
+			}
+		}
 	}
-	return "", false
+	return length, true
+}
+
+// Values are written as attribute.Value.Emit writes them, so names keep the text they had.
+func spanNameBuild(kvs []attribute.KeyValue, template []spanNamePart, length int) string {
+	var name strings.Builder
+	name.Grow(length)
+	var number [32]byte
+	for _, part := range template {
+		if part.key == "" {
+			name.WriteString(part.text)
+			continue
+		}
+		value, _ := spanNameValue(kvs, part.key)
+		switch value.Type() {
+		case attribute.STRING:
+			name.WriteString(value.AsString())
+		case attribute.INT64:
+			name.Write(strconv.AppendInt(number[:0], value.AsInt64(), 10))
+		case attribute.FLOAT64:
+			name.Write(strconv.AppendFloat(number[:0], value.AsFloat64(), 'g', -1, 64))
+		case attribute.BOOLSLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsBoolSlice() {
+				if index > 0 {
+					name.WriteByte(' ')
+				}
+				name.WriteString(strconv.FormatBool(element))
+			}
+			name.WriteByte(']')
+		case attribute.INT64SLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsInt64Slice() {
+				if index > 0 {
+					name.WriteByte(',')
+				}
+				name.Write(strconv.AppendInt(number[:0], element, 10))
+			}
+			name.WriteByte(']')
+		case attribute.FLOAT64SLICE:
+			spanNameWriteFloats(&name, value.AsFloat64Slice())
+		case attribute.STRINGSLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsStringSlice() {
+				if index > 0 {
+					name.WriteByte(',')
+				}
+				spanNameWriteQuoted(&name, element)
+			}
+			name.WriteByte(']')
+		}
+	}
+	return name.String()
+}
+
+// Emit writes a float array as JSON, and falls back to fmt formatting when JSON cannot hold NaN or an infinity.
+func spanNameWriteFloats(name *strings.Builder, elements []float64) {
+	var number [32]byte
+	for _, element := range elements {
+		if math.IsInf(element, 0) || math.IsNaN(element) {
+			name.WriteString("invalid: [")
+			for index, element := range elements {
+				if index > 0 {
+					name.WriteByte(' ')
+				}
+				name.Write(strconv.AppendFloat(number[:0], element, 'g', -1, 64))
+			}
+			name.WriteByte(']')
+			return
+		}
+	}
+	name.WriteByte('[')
+	for index, element := range elements {
+		if index > 0 {
+			name.WriteByte(',')
+		}
+		format := byte('f')
+		if magnitude := math.Abs(element); magnitude != 0 && (magnitude < 1e-6 || magnitude >= 1e21) {
+			format = 'e'
+		}
+		text := strconv.AppendFloat(number[:0], element, format, -1, 64)
+		// encoding/json drops the leading zero of a negative exponent, as in 1e-07 to 1e-7.
+		if length := len(text); format == 'e' && text[length-4] == 'e' && text[length-3] == '-' && text[length-2] == '0' {
+			text[length-2] = text[length-1]
+			text = text[:length-1]
+		}
+		name.Write(text)
+	}
+	name.WriteByte(']')
+}
+
+// Emit writes a string array as JSON, which escapes HTML characters and replaces invalid UTF-8.
+func spanNameWriteQuoted(name *strings.Builder, text string) {
+	const hexadecimal = "0123456789abcdef"
+	name.WriteByte('"')
+	start := 0
+	for index := 0; index < len(text); {
+		if character := text[index]; character < utf8.RuneSelf {
+			if character >= ' ' && character != '"' && character != '\\' && character != '<' && character != '>' && character != '&' {
+				index++
+				continue
+			}
+			name.WriteString(text[start:index])
+			switch character {
+			case '"', '\\':
+				name.WriteByte('\\')
+				name.WriteByte(character)
+			case '\b':
+				name.WriteString(`\b`)
+			case '\f':
+				name.WriteString(`\f`)
+			case '\n':
+				name.WriteString(`\n`)
+			case '\r':
+				name.WriteString(`\r`)
+			case '\t':
+				name.WriteString(`\t`)
+			default:
+				name.WriteString(`\u00`)
+				name.WriteByte(hexadecimal[character>>4])
+				name.WriteByte(hexadecimal[character&0xf])
+			}
+			index++
+			start = index
+			continue
+		}
+		symbol, size := utf8.DecodeRuneInString(text[index:])
+		switch {
+		case symbol == utf8.RuneError && size == 1:
+			name.WriteString(text[start:index])
+			name.WriteString(`�`)
+		case symbol == ' ' || symbol == ' ':
+			name.WriteString(text[start:index])
+			name.WriteString(`\u202`)
+			name.WriteByte(hexadecimal[symbol&0xf])
+		default:
+			index += size
+			continue
+		}
+		index += size
+		start = index
+	}
+	name.WriteString(text[start:])
+	name.WriteByte('"')
+}
+
+// NameArrays is a started span of `myapp.name.arrays`. The zero NameArrays
+// records nothing.
+type NameArrays struct{ span trace.Span }
+
+func (s NameArrays) raw() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+// End ends the span.
+func (s NameArrays) End(opts ...trace.SpanEndOption) {
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s NameArrays) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s NameArrays) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+// AddEvent adds an event called name to the span.
+func (s NameArrays) AddEvent(name string) {
+	s.raw().AddEvent(name)
+}
+
+// AddLink links the span to sc.
+func (s NameArrays) AddLink(sc trace.SpanContext) {
+	s.raw().AddLink(trace.Link{SpanContext: sc})
+}
+
+// RecordError records err as an exception event on the span.
+func (s NameArrays) RecordError(err error) {
+	s.raw().RecordError(err)
+}
+
+// SetStatus sets the status of the span.
+func (s NameArrays) SetStatus(code codes.Code, description string) {
+	s.raw().SetStatus(code, description)
+}
+
+// StartNameArrays starts the `myapp.name.arrays` span from tracer with span
+// kind internal.
+//
+// A span named from array values.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty:
+// `{myapp.array.tags}:{myapp.array.indices}:{myapp.array.samples}:{myapp.array.flags}`.
+// Otherwise it is named `myapp.name.arrays`.
+func StartNameArrays(ctx context.Context, tracer semconvtracer.Tracer, myappArrayFlags myappattr.ArrayFlags, myappArrayIndices myappattr.ArrayIndices, myappArraySamples myappattr.ArraySamples, myappArrayTags myappattr.ArrayTags) (context.Context, NameArrays) {
+	kvs := make([]attribute.KeyValue, 0, 4)
+	if kv := myappArrayFlags.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := myappArrayIndices.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := myappArraySamples.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := myappArrayTags.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	name := spanName(kvs, "myapp.name.arrays",
+		[]spanNamePart{{key: "myapp.array.tags"}, {text: ":"}, {key: "myapp.array.indices"}, {text: ":"}, {key: "myapp.array.samples"}, {text: ":"}, {key: "myapp.array.flags"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, NameArrays{span: span}
+}
+
+// NameAttempt is a started span of `myapp.name.attempt`. The zero
+// NameAttempt records nothing.
+type NameAttempt struct{ span trace.Span }
+
+func (s NameAttempt) raw() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+// End ends the span.
+func (s NameAttempt) End(opts ...trace.SpanEndOption) {
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s NameAttempt) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s NameAttempt) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+// AddEvent adds an event called name to the span.
+func (s NameAttempt) AddEvent(name string) {
+	s.raw().AddEvent(name)
+}
+
+// AddLink links the span to sc.
+func (s NameAttempt) AddLink(sc trace.SpanContext) {
+	s.raw().AddLink(trace.Link{SpanContext: sc})
+}
+
+// RecordError records err as an exception event on the span.
+func (s NameAttempt) RecordError(err error) {
+	s.raw().RecordError(err)
+}
+
+// SetStatus sets the status of the span.
+func (s NameAttempt) SetStatus(code codes.Code, description string) {
+	s.raw().SetStatus(code, description)
+}
+
+// StartNameAttempt starts the `myapp.name.attempt` span from tracer with
+// span kind internal.
+//
+// A span named from an integer value.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `attempt {myapp.task.attempt}`. Otherwise it is
+// named `myapp.name.attempt`.
+func StartNameAttempt(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt) (context.Context, NameAttempt) {
+	kvs := make([]attribute.KeyValue, 0, 1)
+	if kv := myappTaskAttempt.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	name := spanName(kvs, "myapp.name.attempt",
+		[]spanNamePart{{text: "attempt "}, {key: "myapp.task.attempt"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, NameAttempt{span: span}
+}
+
+// NameFloat is a started span of `myapp.name.float`. The zero NameFloat
+// records nothing.
+type NameFloat struct{ span trace.Span }
+
+func (s NameFloat) raw() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+// End ends the span.
+func (s NameFloat) End(opts ...trace.SpanEndOption) {
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s NameFloat) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s NameFloat) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+// AddEvent adds an event called name to the span.
+func (s NameFloat) AddEvent(name string) {
+	s.raw().AddEvent(name)
+}
+
+// AddLink links the span to sc.
+func (s NameFloat) AddLink(sc trace.SpanContext) {
+	s.raw().AddLink(trace.Link{SpanContext: sc})
+}
+
+// RecordError records err as an exception event on the span.
+func (s NameFloat) RecordError(err error) {
+	s.raw().RecordError(err)
+}
+
+// SetStatus sets the status of the span.
+func (s NameFloat) SetStatus(code codes.Code, description string) {
+	s.raw().SetStatus(code, description)
+}
+
+// StartNameFloat starts the `myapp.name.float` span from tracer with span
+// kind internal.
+//
+// A span named from a floating point value.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `{myapp.number.value}`. Otherwise it is named
+// `myapp.name.float`.
+func StartNameFloat(ctx context.Context, tracer semconvtracer.Tracer, myappNumberValue myappattr.NumberValue) (context.Context, NameFloat) {
+	kvs := make([]attribute.KeyValue, 0, 1)
+	if kv := myappNumberValue.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	name := spanName(kvs, "myapp.name.float",
+		[]spanNamePart{{key: "myapp.number.value"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, NameFloat{span: span}
+}
+
+// NameIndices is a started span of `myapp.name.indices`. The zero
+// NameIndices records nothing.
+type NameIndices struct{ span trace.Span }
+
+func (s NameIndices) raw() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+// End ends the span.
+func (s NameIndices) End(opts ...trace.SpanEndOption) {
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s NameIndices) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s NameIndices) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+// AddEvent adds an event called name to the span.
+func (s NameIndices) AddEvent(name string) {
+	s.raw().AddEvent(name)
+}
+
+// AddLink links the span to sc.
+func (s NameIndices) AddLink(sc trace.SpanContext) {
+	s.raw().AddLink(trace.Link{SpanContext: sc})
+}
+
+// RecordError records err as an exception event on the span.
+func (s NameIndices) RecordError(err error) {
+	s.raw().RecordError(err)
+}
+
+// SetStatus sets the status of the span.
+func (s NameIndices) SetStatus(code codes.Code, description string) {
+	s.raw().SetStatus(code, description)
+}
+
+// StartNameIndices starts the `myapp.name.indices` span from tracer with
+// span kind internal.
+//
+// A span named from one array value.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `indices {myapp.array.indices}`. Otherwise it is
+// named `myapp.name.indices`.
+func StartNameIndices(ctx context.Context, tracer semconvtracer.Tracer, myappArrayIndices myappattr.ArrayIndices) (context.Context, NameIndices) {
+	kvs := make([]attribute.KeyValue, 0, 1)
+	if kv := myappArrayIndices.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	name := spanName(kvs, "myapp.name.indices",
+		[]spanNamePart{{text: "indices "}, {key: "myapp.array.indices"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, NameIndices{span: span}
 }
 
 // QueueDrainName is the name the `myapp.queue.drain` span is started with.

@@ -4,6 +4,121 @@ package myappattr
 
 import "go.opentelemetry.io/otel/attribute"
 
+// arrayFlagsKey is the attribute key of `myapp.array.flags`.
+const arrayFlagsKey = attribute.Key("myapp.array.flags")
+
+// ArrayFlags is a value of `myapp.array.flags`.
+//
+// Synthetic naming value.
+type ArrayFlags struct{ value []bool }
+
+// NewArrayFlags returns a value of `myapp.array.flags`.
+func NewArrayFlags(value ...bool) ArrayFlags {
+	return ArrayFlags{value: value}
+}
+
+// Key is the attribute key, for filters and views that need it.
+func (ArrayFlags) Key() attribute.Key {
+	return arrayFlagsKey
+}
+
+// KeyValue is the `myapp.array.flags` attribute set to this value.
+func (v ArrayFlags) KeyValue() attribute.KeyValue {
+	return arrayFlagsKey.BoolSlice(v.value)
+}
+
+// arrayIndicesKey is the attribute key of `myapp.array.indices`.
+const arrayIndicesKey = attribute.Key("myapp.array.indices")
+
+// ArrayIndices is a value of `myapp.array.indices`.
+//
+// Synthetic naming value.
+type ArrayIndices struct{ value []int }
+
+// NewArrayIndices returns a value of `myapp.array.indices`.
+func NewArrayIndices(value ...int) ArrayIndices {
+	return ArrayIndices{value: value}
+}
+
+// Key is the attribute key, for filters and views that need it.
+func (ArrayIndices) Key() attribute.Key {
+	return arrayIndicesKey
+}
+
+// KeyValue is the `myapp.array.indices` attribute set to this value.
+func (v ArrayIndices) KeyValue() attribute.KeyValue {
+	return arrayIndicesKey.IntSlice(v.value)
+}
+
+// arraySamplesKey is the attribute key of `myapp.array.samples`.
+const arraySamplesKey = attribute.Key("myapp.array.samples")
+
+// ArraySamples is a value of `myapp.array.samples`.
+//
+// Synthetic naming value.
+type ArraySamples struct{ value []float64 }
+
+// NewArraySamples returns a value of `myapp.array.samples`.
+func NewArraySamples(value ...float64) ArraySamples {
+	return ArraySamples{value: value}
+}
+
+// Key is the attribute key, for filters and views that need it.
+func (ArraySamples) Key() attribute.Key {
+	return arraySamplesKey
+}
+
+// KeyValue is the `myapp.array.samples` attribute set to this value.
+func (v ArraySamples) KeyValue() attribute.KeyValue {
+	return arraySamplesKey.Float64Slice(v.value)
+}
+
+// arrayTagsKey is the attribute key of `myapp.array.tags`.
+const arrayTagsKey = attribute.Key("myapp.array.tags")
+
+// ArrayTags is a value of `myapp.array.tags`.
+//
+// Synthetic naming value.
+type ArrayTags struct{ value []string }
+
+// NewArrayTags returns a value of `myapp.array.tags`.
+func NewArrayTags(value ...string) ArrayTags {
+	return ArrayTags{value: value}
+}
+
+// Key is the attribute key, for filters and views that need it.
+func (ArrayTags) Key() attribute.Key {
+	return arrayTagsKey
+}
+
+// KeyValue is the `myapp.array.tags` attribute set to this value.
+func (v ArrayTags) KeyValue() attribute.KeyValue {
+	return arrayTagsKey.StringSlice(v.value)
+}
+
+// numberValueKey is the attribute key of `myapp.number.value`.
+const numberValueKey = attribute.Key("myapp.number.value")
+
+// NumberValue is a value of `myapp.number.value`.
+//
+// Synthetic naming value.
+type NumberValue struct{ value float64 }
+
+// NewNumberValue returns a value of `myapp.number.value`.
+func NewNumberValue(value float64) NumberValue {
+	return NumberValue{value: value}
+}
+
+// Key is the attribute key, for filters and views that need it.
+func (NumberValue) Key() attribute.Key {
+	return numberValueKey
+}
+
+// KeyValue is the `myapp.number.value` attribute set to this value.
+func (v NumberValue) KeyValue() attribute.KeyValue {
+	return numberValueKey.Float64(v.value)
+}
+
 // queueNameKey is the attribute key of `myapp.queue.name`.
 const queueNameKey = attribute.Key("myapp.queue.name")
 

@@ -444,6 +444,14 @@ the span is named `run task_0001`, because the state is `_OTHER`.
 If Weaver gives a template its own ID, the ID moves from the annotation onto
 the template, and the starter names stay the same.
 
+A value in the name has the text that `attribute.Value.Emit` gives it, such as
+`8080`, `1.5`, `[1,2]`, or `["a","b"]`. The starter writes each value directly
+into the name, so a name from a template costs one allocation at any length,
+and a fallback name costs none. Each array in the template costs two more
+allocations, because the attribute API copies the elements each time it reads
+them. The consumer test `tests/spans/consumer/myappspan/allocations_test.go`
+holds these counts.
+
 The name is set once, when the span starts, so attributes set later do not
 rename it. A span without `name.templates` takes a typed `<Name>Name`, since
 `name.note` is prose that Go cannot check:
