@@ -65,7 +65,7 @@ func spanNameValue(kvs []attribute.KeyValue, part spanNamePart) (string, bool) {
 	return "", false
 }
 
-// TaskDispatchStartAttr is an attribute StartTaskDispatch accepts in
+// TaskDispatchStartAttr is an attribute a TaskDispatch starter accepts in
 // addition to the ones it requires.
 type TaskDispatchStartAttr interface {
 	taskDispatchStartAttr() attribute.KeyValue
@@ -87,7 +87,7 @@ func (o taskDispatchSpanQueueName) taskDispatchStartAttr() attribute.KeyValue {
 func (taskDispatchSpanQueueName) taskDispatchAttr() {}
 
 // WithTaskDispatchQueueName sets `myapp.queue.name` on a TaskDispatch, when
-// StartTaskDispatch starts it or later through SetAttributes.
+// a TaskDispatch starter starts it or later through SetAttributes.
 //
 // Recommended: When the task came from a named queue.
 func WithTaskDispatchQueueName(v myappattr.QueueName) TaskDispatchAttr {
@@ -100,8 +100,8 @@ func (o taskDispatchSpanTaskID) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskDispatchTaskID sets `myapp.task.id` when StartTaskDispatch starts
-// the span. Samplers read it, so it is accepted only at start.
+// WithTaskDispatchTaskID sets `myapp.task.id` when a TaskDispatch starter
+// starts the span. Samplers read it, so it is accepted only at start.
 func WithTaskDispatchTaskID(v myappattr.TaskID) TaskDispatchStartAttr {
 	return taskDispatchSpanTaskID{v: v}
 }
@@ -167,8 +167,8 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 	s.raw().SetStatus(code, description)
 }
 
-// StartTaskDispatch starts the `worker.task.dispatch` span from tracer with
-// span kind client, as a refinement of `myapp.task.dispatch`.
+// StartTaskDispatchByWorker starts the `worker.task.dispatch` span from
+// tracer with span kind client, as a refinement of `myapp.task.dispatch`.
 //
 // The scheduler handing a task to a worker.
 //
@@ -177,7 +177,7 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 // The span is named from the first of these templates whose attributes are
 // all set and not empty: `dispatch {worker.host.name}:{worker.host.port}`.
 // Otherwise it is named `dispatch`.
-func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
+func StartTaskDispatchByWorker(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 3+len(opts))
 	if kv := myappTaskAttempt.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
@@ -199,6 +199,39 @@ func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, myappTa
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, TaskDispatch{span: span}
+}
+
+// StartTaskDispatchFallback starts the `worker.task.dispatch` span from
+// tracer with span kind client, as a refinement of `myapp.task.dispatch`.
+//
+// The scheduler handing a task to a worker.
+//
+// Ends when the worker accepts the task.
+//
+// The span is named `dispatch`.
+func StartTaskDispatchFallback(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
+	kvs := make([]attribute.KeyValue, 0, 3+len(opts))
+	if kv := myappTaskAttempt.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := workerHostName.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := workerHostPort.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskDispatchStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		"dispatch",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(kvs...),
 	)

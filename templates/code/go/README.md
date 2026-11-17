@@ -358,7 +358,7 @@ typed parameter, then the rest as options, and starts the span with the kind
 the registry gives it:
 
 ```go
-ctx, span := myappspan.StartTaskDispatch(ctx, tracer,
+ctx, span := myappspan.StartTaskDispatchByWorker(ctx, tracer,
 	workerattr.NewHostName("worker-1"),
 	workerattr.NewHostPort(8080),
 	myappspan.WithTaskDispatchTaskID(myappattr.NewTaskID("task_0001")),
@@ -395,6 +395,11 @@ name:
   templates:
     - "dispatch {worker.host.name}:{worker.host.port}"
     - dispatch
+annotations:
+  code_generation:
+    name_templates:
+      by_worker: "dispatch {worker.host.name}:{worker.host.port}"
+      fallback: dispatch
 ```
 
 the span above is named `dispatch worker-1:8080`, and it is named `dispatch`
@@ -404,6 +409,40 @@ an attribute the span does not declare fails the generation, and so does a
 template Weaver cannot parse. A template whose attribute `stable_only` or
 `exclude_deprecated` leaves out can never match, so it is dropped. The starter
 doc comment quotes the templates.
+
+A span with one template keeps the single `Start<Name>` starter. A span with
+more than one template gets one starter for each template, so each template
+needs an ID. Weaver does not give a template a stable ID
+([open-telemetry/weaver#1916](https://github.com/open-telemetry/weaver/issues/1916)),
+so the span sets `annotations.code_generation.name_templates`, as above. It is
+a map from an ID to the exact pattern of one template. It names a template by
+its pattern, not by its position, so a change to the order of the templates
+keeps every starter name.
+
+The starter for an ID is `Start<Name><Id>`, with the ID in PascalCase and the
+usual initialisms, so `by_task_id` becomes `StartTaskRunByTaskID`. Its
+parameters are the required attributes of the span and every attribute its
+template uses. The other attributes stay options, and a starter without other
+attributes takes no options. A template without placeholders also gets a
+starter, and that starter takes no extra parameters. A template that
+`stable_only` or `exclude_deprecated` drops gets no starter. Every starter of a
+span returns the same `<Name>`.
+
+Each starter names the span from its own template first. If a value of that
+template is empty, `_OTHER`, or an empty array, the name falls back through the
+other templates of the span, in their order, and then to the span type. With
+the templates `run {myapp.task.id}` and `run {myapp.task.state}`:
+
+```go
+ctx, span := myappspan.StartTaskRunByState(ctx, tracer, myappattr.TaskStateOther,
+	myappspan.WithTaskRunTaskID(myappattr.NewTaskID("task_0001")),
+)
+```
+
+the span is named `run task_0001`, because the state is `_OTHER`.
+
+If Weaver gives a template its own ID, the ID moves from the annotation onto
+the template, and the starter names stay the same.
 
 The name is set once, when the span starts, so attributes set later do not
 rename it. A span without `name.templates` takes a typed `<Name>Name`, since
@@ -750,6 +789,13 @@ or is tied to no schema, when:
   `annotations.aggregation` than the metric it refines.
 - Two spans or refinements in one package render to the same Go identifier,
   such as `myapp.task.run` and `myapp.task_run`.
+- A span with one name template sets
+  `annotations.code_generation.name_templates`, or a span with more than one
+  does not set it.
+- A name template has no ID in `annotations.code_generation.name_templates`,
+  an ID names a pattern that matches no template, or two IDs name the same
+  pattern.
+- A name template ID does not match `^[a-z][a-z0-9]*(_[a-z0-9]+)*$`.
 - Two events or refinements in one package render to the same Go identifier,
   such as `myapp.task.finished` and `myapp.task_finished`.
 - Two entities or refinements in one package render to the same Go

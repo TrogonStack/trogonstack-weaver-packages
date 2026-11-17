@@ -87,10 +87,11 @@ func spanNameValue(kvs []attribute.KeyValue, part spanNamePart) (string, bool) {
 {%- set private = n.unexported(def.short_name) if def.short_name else "bare" %}
 {%- set span = name or "Span" %}
 {%- set start = "Start" ~ name %}
+{%- set start_doc = "a " ~ span ~ " starter" if def.starters[0].id else start %}
 {%- set deprecated = d.notice(def) %}
 {%- set opt_in = "Opt-in: the convention records `" ~ def.id ~ "` only when a user asks for it." if def.requirement_level == "opt_in" else none -%}
 {% if def.optional %}
-{{ [name ~ "StartAttr is an attribute " ~ start ~ " accepts in addition to the ones it requires."] | join | comment }}
+{{ [name ~ "StartAttr is an attribute " ~ start_doc ~ " accepts in addition to the ones it requires."] | join | comment }}
 type {{ name }}StartAttr interface {
 	{{ private }}StartAttr() attribute.KeyValue
 }
@@ -109,14 +110,14 @@ func (o {{ private }}Span{{ optname }}) {{ private }}StartAttr() attribute.KeyVa
 	return {{ attr_kv(opt, "o.v") }}
 }
 {% if opt.sampling_relevant %}
-{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` when " ~ start ~ " starts the span. Samplers read it, so it is accepted only at start.", opt.requirement_doc] | select | join("\n\n") | comment }}
+{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` when " ~ start_doc ~ " starts the span. Samplers read it, so it is accepted only at start.", opt.requirement_doc] | select | join("\n\n") | comment }}
 func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}StartAttr {
 	return {{ private }}Span{{ optname }}{v: v}
 }
 {% else %}
 func ({{ private }}Span{{ optname }}) {{ private }}Attr() {}
 
-{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on a " ~ span ~ ", when " ~ start ~ " starts it or later through SetAttributes.", opt.requirement_doc] | select | join("\n\n") | comment }}
+{{ ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on a " ~ span ~ ", when " ~ start_doc ~ " starts it or later through SetAttributes.", opt.requirement_doc] | select | join("\n\n") | comment }}
 func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
 	return {{ private }}Span{{ optname }}{v: v}
 }
@@ -215,17 +216,18 @@ func (s {{ span }}) SetName(name {{ name }}Name) {
 func (s {{ span }}) SetStatus(code codes.Code, description string) {
 	s.raw().SetStatus(code, description)
 }
-
-{{ [start ~ " starts the `" ~ def.id ~ "` span from tracer with span kind " ~ def.kind ~ (", as a refinement of `" ~ def.refines ~ "`" if def.refines else "") ~ ".", def.brief, def.note, def.name_doc, opt_in, deprecated] | select | join("\n\n") | comment }}
-func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if not def.name_derived %}, name {{ name }}Name{% endif %}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.optional %}, opts ...{{ name }}StartAttr{% endif %}) (context.Context, {{ span }}) {
+{% for starter in def.starters %}
+{%- set starter_name = start ~ (n.exported(starter.id) if starter.id else "") %}
+{{ [starter_name ~ " starts the `" ~ def.id ~ "` span from tracer with span kind " ~ def.kind ~ (", as a refinement of `" ~ def.refines ~ "`" if def.refines else "") ~ ".", def.brief, def.note, starter.name_doc, opt_in, deprecated] | select | join("\n\n") | comment }}
+func {{ starter_name }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if not def.name_derived %}, name {{ name }}Name{% endif %}{% for req in starter.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if starter.optional %}, opts ...{{ name }}StartAttr{% endif %}) (context.Context, {{ span }}) {
 {%- if not def.name_derived %}
 	if name.value == "" {
 		name = {{ name }}Name{value: {{ def.type | tojson }}}
 	}
 {%- endif %}
-{%- if def.required or def.optional %}
-	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
-{%- for req in def.required %}
+{%- if starter.required or starter.optional %}
+	kvs := make([]attribute.KeyValue, 0, {{ starter.required | length }}{% if starter.optional %}+len(opts){% endif %})
+{%- for req in starter.required %}
 {%- if req.imported %}
 	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
 {%- else %}
@@ -234,7 +236,7 @@ func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if no
 	}
 {%- endif %}
 {%- endfor %}
-{%- if def.optional %}
+{%- if starter.optional %}
 	for _, opt := range opts {
 		if kv := opt.{{ private }}StartAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
@@ -242,25 +244,26 @@ func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if no
 	}
 {%- endif %}
 {%- endif %}
-{%- if def.name_templates %}
-	name := spanName(kvs, {{ def.name_fallback | tojson }}{% for template in def.name_templates %},
+{%- if starter.name_templates %}
+	name := spanName(kvs, {{ starter.name_fallback | tojson }}{% for template in starter.name_templates %},
 		[]spanNamePart{ {%- for part in template.parts %}{% if not loop.first %}, {% endif %}{% if part.key %}{key: {{ part.key | tojson }}{% if part.enum %}, enum: true{% endif %}}{% else %}{text: {{ part.text | tojson }}}{% endif %}{% endfor %}}{% endfor %},
 	)
 {%- endif %}
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
-{%- if def.name_templates %}
+{%- if starter.name_templates %}
 		name,
 {%- elif def.name_derived %}
-		{{ def.name_fallback | tojson }},
+		{{ starter.name_fallback | tojson }},
 {%- else %}
 		name.value,
 {%- endif %}
 		trace.WithSpanKind(trace.{{ def.kind | map_text("span_kind") }}),
-{%- if def.required or def.optional %}
+{%- if starter.required or starter.optional %}
 		trace.WithAttributes(kvs...),
 {%- endif %}
 	)
 	return ctx, {{ span }}{span: span}
 }
-{% endfor %}{% endfilter %}
+{% endfor %}
+{%- endfor %}{% endfilter %}

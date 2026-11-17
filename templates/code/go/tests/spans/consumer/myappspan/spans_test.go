@@ -23,14 +23,14 @@ func newTracer(t *testing.T) (semconvtracer.Tracer, *tracetest.SpanRecorder) {
 	return semconvtracer.New(tp, "test"), sr
 }
 
-func TestStartTaskRunRecordsNameKindAndAttributes(t *testing.T) {
+func TestStartTaskRunByTaskIDRecordsNameKindAndAttributes(t *testing.T) {
 	tracer, sr := newTracer(t)
 
-	_, span := myappspan.StartTaskRun(
+	_, span := myappspan.StartTaskRunByTaskID(
 		context.Background(),
 		tracer,
+		myappattr.NewTaskID("t-1"),
 		myappattr.TaskStateDone,
-		myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-1")),
 	)
 	span.End()
 
@@ -55,10 +55,10 @@ func TestStartTaskRunRecordsNameKindAndAttributes(t *testing.T) {
 	}
 }
 
-func TestStartTaskRunDropsZeroValueRequiredAttribute(t *testing.T) {
+func TestStartTaskRunByStateDropsZeroValueRequiredAttribute(t *testing.T) {
 	tracer, sr := newTracer(t)
 
-	_, span := myappspan.StartTaskRun(
+	_, span := myappspan.StartTaskRunByState(
 		context.Background(),
 		tracer,
 		myappattr.TaskState{},
@@ -77,7 +77,7 @@ func TestStartTaskRunDropsZeroValueRequiredAttribute(t *testing.T) {
 func TestSetAttributesAddsAttributeAfterStart(t *testing.T) {
 	tracer, sr := newTracer(t)
 
-	_, span := myappspan.StartTaskRun(
+	_, span := myappspan.StartTaskRunByState(
 		context.Background(),
 		tracer,
 		myappattr.TaskStateQueued,
@@ -112,7 +112,7 @@ func TestZeroSpanEndsWithoutPanic(t *testing.T) {
 func TestAddEventRecordsTypedAttributes(t *testing.T) {
 	tracer, sr := newTracer(t)
 
-	_, span := myappspan.StartTaskRun(context.Background(), tracer, myappattr.TaskStateQueued)
+	_, span := myappspan.StartTaskRunByState(context.Background(), tracer, myappattr.TaskStateQueued)
 	span.AddEvent("retry", myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-4")))
 	span.End()
 
@@ -133,7 +133,7 @@ func TestAddEventRecordsTypedAttributes(t *testing.T) {
 func TestRecordErrorRecordsTypedAttributes(t *testing.T) {
 	tracer, sr := newTracer(t)
 
-	_, span := myappspan.StartTaskRun(context.Background(), tracer, myappattr.TaskStateQueued)
+	_, span := myappspan.StartTaskRunByState(context.Background(), tracer, myappattr.TaskStateQueued)
 	span.RecordError(errors.New("boom"), myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-5")))
 	span.End()
 
@@ -158,8 +158,8 @@ func TestRecordErrorRecordsTypedAttributes(t *testing.T) {
 func TestAddLinkRecordsTypedAttributes(t *testing.T) {
 	tracer, sr := newTracer(t)
 
-	_, linked := myappspan.StartTaskRun(context.Background(), tracer, myappattr.TaskStateQueued)
-	_, span := myappspan.StartTaskRun(context.Background(), tracer, myappattr.TaskStateQueued, myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-6")))
+	_, linked := myappspan.StartTaskRunByState(context.Background(), tracer, myappattr.TaskStateQueued)
+	_, span := myappspan.StartTaskRunByTaskID(context.Background(), tracer, myappattr.NewTaskID("t-6"), myappattr.TaskStateQueued)
 	span.AddLink(linked.SpanContext(), myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-6")))
 	span.End()
 	linked.End()
@@ -186,7 +186,7 @@ func TestAddLinkRecordsTypedAttributes(t *testing.T) {
 func TestSpanContextAndIsRecordingReflectTheStartedSpan(t *testing.T) {
 	tracer, _ := newTracer(t)
 
-	ctx, span := myappspan.StartTaskRun(context.Background(), tracer, myappattr.TaskStateQueued)
+	ctx, span := myappspan.StartTaskRunByState(context.Background(), tracer, myappattr.TaskStateQueued)
 	if !span.IsRecording() {
 		t.Fatal("IsRecording() = false, want true before End")
 	}
@@ -222,25 +222,52 @@ func TestEmptySpanNameFallsBackToTheSpanType(t *testing.T) {
 	}
 }
 
-func TestTaskRunTakesTheFirstNameTemplateWhoseAttributesAreSet(t *testing.T) {
+func TestStartTaskRunByStateNamesTheSpanFromTheStateTemplateFirst(t *testing.T) {
 	tests := []struct {
 		name  string
 		state myappattr.TaskState
 		opts  []myappspan.TaskRunStartAttr
 		want  string
 	}{
-		{"optional attribute", myappattr.TaskStateDone, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9"))}, "run t-9"},
-		{"last optional attribute wins", myappattr.TaskStateDone, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9")), myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-10"))}, "run t-10"},
-		{"missing optional attribute", myappattr.TaskStateQueued, nil, "run queued"},
-		{"empty optional attribute", myappattr.TaskStateQueued, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID(""))}, "run queued"},
-		{"other enum member", myappattr.TaskStateOther, nil, "myapp.task.run"},
-		{"zero enum", myappattr.TaskState{}, nil, "myapp.task.run"},
+		{"state set", myappattr.TaskStateDone, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9"))}, "run done"},
+		{"other enum member falls back to the task ID", myappattr.TaskStateOther, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9"))}, "run t-9"},
+		{"zero enum falls back to the task ID", myappattr.TaskState{}, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9"))}, "run t-9"},
+		{"last optional attribute wins", myappattr.TaskStateOther, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-9")), myappspan.WithTaskRunTaskID(myappattr.NewTaskID("t-10"))}, "run t-10"},
+		{"other enum member and empty task ID", myappattr.TaskStateOther, []myappspan.TaskRunStartAttr{myappspan.WithTaskRunTaskID(myappattr.NewTaskID(""))}, "myapp.task.run"},
+		{"other enum member and no task ID", myappattr.TaskStateOther, nil, "myapp.task.run"},
+		{"zero enum and no task ID", myappattr.TaskState{}, nil, "myapp.task.run"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			tracer, sr := newTracer(t)
 
-			_, span := myappspan.StartTaskRun(context.Background(), tracer, test.state, test.opts...)
+			_, span := myappspan.StartTaskRunByState(context.Background(), tracer, test.state, test.opts...)
+			span.End()
+
+			if got := sr.Ended()[0].Name(); got != test.want {
+				t.Fatalf("Name() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestStartTaskRunByTaskIDNamesTheSpanFromTheTaskIDTemplateFirst(t *testing.T) {
+	tests := []struct {
+		name   string
+		taskID string
+		state  myappattr.TaskState
+		want   string
+	}{
+		{"task ID set", "t-9", myappattr.TaskStateDone, "run t-9"},
+		{"empty task ID falls back to the state", "", myappattr.TaskStateQueued, "run queued"},
+		{"empty task ID and other enum member", "", myappattr.TaskStateOther, "myapp.task.run"},
+		{"empty task ID and zero enum", "", myappattr.TaskState{}, "myapp.task.run"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tracer, sr := newTracer(t)
+
+			_, span := myappspan.StartTaskRunByTaskID(context.Background(), tracer, myappattr.NewTaskID(test.taskID), test.state)
 			span.End()
 
 			if got := sr.Ended()[0].Name(); got != test.want {
@@ -264,7 +291,7 @@ func TestSpanWithoutLateAttributesAddsEventAndError(t *testing.T) {
 	}
 }
 
-func TestTaskDispatchFallsBackToTheLiteralNameTemplate(t *testing.T) {
+func TestStartTaskDispatchByWorkerFallsBackToTheLiteralNameTemplate(t *testing.T) {
 	tests := []struct {
 		name     string
 		hostName string
@@ -277,12 +304,29 @@ func TestTaskDispatchFallsBackToTheLiteralNameTemplate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tracer, sr := newTracer(t)
 
-			_, span := myappspan.StartTaskDispatch(context.Background(), tracer, workerattr.NewHostName(test.hostName), workerattr.NewHostPort(8080))
+			_, span := myappspan.StartTaskDispatchByWorker(context.Background(), tracer, workerattr.NewHostName(test.hostName), workerattr.NewHostPort(8080))
 			span.End()
 
 			if got := sr.Ended()[0].Name(); got != test.want {
 				t.Fatalf("Name() = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestStartTaskDispatchFallbackNamesTheSpanFromTheLiteralTemplate(t *testing.T) {
+	tracer, sr := newTracer(t)
+
+	_, span := myappspan.StartTaskDispatchFallback(context.Background(), tracer, workerattr.NewHostName("worker-1"), workerattr.NewHostPort(8080))
+	span.End()
+
+	got := sr.Ended()[0]
+	if got.Name() != "dispatch" {
+		t.Fatalf("Name() = %q, want %q", got.Name(), "dispatch")
+	}
+	want := attribute.NewSet(workerattr.NewHostName("worker-1").KeyValue(), workerattr.NewHostPort(8080).KeyValue())
+	gotSet := attribute.NewSet(got.Attributes()...)
+	if !gotSet.Equals(&want) {
+		t.Fatalf("Attributes() = %v, want %v", gotSet, want)
 	}
 }

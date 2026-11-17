@@ -1,0 +1,1 @@
+span myapp.task.run has annotations.code_generation.name_templates, which is only for a span with more than one name template

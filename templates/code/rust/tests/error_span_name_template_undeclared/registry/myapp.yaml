@@ -17,7 +17,6 @@ spans:
       note: Named after the queue, which the span does not declare.
       templates:
         - "run {myapp.queue.name}"
-        - run
     requirement_level: recommended
     stability: stable
     brief: One run of a task.

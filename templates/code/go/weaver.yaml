@@ -560,6 +560,9 @@ templates:
   # match, so it is dropped, and the templates end at the first one without
   # placeholders, which is the fallback. A placeholder for an attribute the
   # span does not declare fails.
+  # A span with more than one template gets one starter per template, named
+  # by `annotations.code_generation.name_templates`, a map from an ID to the
+  # pattern. Weaver gives a template no ID of its own (weaver#1916).
   # A span whose name has a single segment, such as a vendor-prefix-only name,
   # has nothing left after its namespace. Rather than failing, it renders
   # unprefixed: `Start`, `Span`, `Name`, and so on, in `<name>span`.
@@ -604,6 +607,38 @@ templates:
                       then (.attribute as $key | $attributes | map(select(.key == $key)) | .[0] | {key, enum: ((.type | type) == "object")})
                       else {text: .value} end]}
              else empty end];
+      def name_template_ids:
+        .id as $span
+        | [(.name.templates // [])[] | .pattern] as $patterns
+        | .annotations.code_generation.name_templates as $ids
+        | if ($patterns | length) <= 1
+          then (if $ids == null then null
+                else error("span \($span) has annotations.code_generation.name_templates, which is only for a span with more than one name template") end)
+          elif $ids == null
+          then error("span \($span) has more than one name template, so add annotations.code_generation.name_templates to give each template an ID")
+          elif ($ids | type) != "object"
+          then error("span \($span) has annotations.code_generation.name_templates that is not a map from an ID to a template pattern")
+          else ($ids | to_entries) as $entries
+            | [$entries[] | select(.key | test("^[a-z][a-z0-9]*(_[a-z0-9]+)*$") | not) | .key] as $invalid
+            | [$entries[] | select(.value as $pattern | $patterns | any(. == $pattern) | not) | .key] as $unknown
+            | [$entries | group_by(.value)[] | select(length > 1) | map(.key) | sort | join(" and ")] as $shared
+            | [$patterns[] | select(. as $pattern | $entries | any(.value == $pattern) | not)] as $unnamed
+            | if ($invalid | length) > 0
+              then error("span \($span) has name template IDs that are not lower snake case: \($invalid | join(", "))")
+              elif ($unknown | length) > 0
+              then error("span \($span) has name template IDs whose pattern matches none of its templates: \($unknown | join(", "))")
+              elif ($shared | length) > 0
+              then error("span \($span) has name template IDs that point at the same template: \($shared | join("; "))")
+              elif ($unnamed | length) > 0
+              then error("span \($span) has name templates without an ID: \($unnamed | map("`\(.)`") | join(", "))")
+              else ($entries | map({key: .value, value: .key}) | from_entries) end
+          end;
+      def name_doc:
+        if (.name_templates | length) == 0 then "The span is named `\(.name_fallback)`."
+        else "The span is named from the first of these templates whose attributes are all set"
+             + (if [.name_templates[].parts[] | select(.enum)] | length > 0 then ", not empty, and not `_OTHER`" else " and not empty" end)
+             + ": " + (.name_templates | map("`" + (.pattern | gsub("(?<control>[\\x00-\\x1f\\x7f-\\x9f])"; .control | tojson | .[1:-1])) + "`") | join(", "))
+             + ". Otherwise it is named `\(.name_fallback)`." end;
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key)) as $rendered
       | (spans({v2: true})
@@ -648,26 +683,40 @@ templates:
       | map(.optional = (.attributes | map(select(.requirement_level != "required"))))
       | map(.has_late_attrs = (.optional | any(.sampling_relevant != true)))
       | map(.name_derived = ((.name.templates // []) | length > 0))
-      | map(name_templates($declared[.id] // []) as $templates
+      | map(name_template_ids as $ids
+            | name_templates($declared[.id] // []) as $templates
             | ([$templates | to_entries[] | select(.value.parts | all(has("text"))) | .key] | first) as $literal
-            | . + {name_templates: (if $literal == null then $templates else $templates[:$literal] end),
-                   name_fallback: (if $literal == null then .type else ($templates[$literal].parts | map(.text) | join("")) end)})
-      | map(.name_doc = (if .name_derived | not then null
-            elif (.name_templates | length) == 0 then "The span is named `\(.name_fallback)`."
-            else "The span is named from the first of these templates whose attributes are all set"
-                 + (if [.name_templates[].parts[] | select(.enum)] | length > 0 then ", not empty, and not `_OTHER`" else " and not empty" end)
-                 + ": " + (.name_templates | map("`" + (.pattern | gsub("(?<control>[\\x00-\\x1f\\x7f-\\x9f])"; .control | tojson | .[1:-1])) + "`") | join(", "))
-                 + ". Otherwise it is named `\(.name_fallback)`." end))
+            | {name_templates: (if $literal == null then $templates else $templates[:$literal] end),
+               name_fallback: (if $literal == null then .type else ($templates[$literal].parts | map(.text) | join("")) end)} as $chain
+            | .attributes as $attributes
+            | if $ids != null and ($templates | length) == 0
+              then error("span \(.id) keeps none of its name templates after exclude_deprecated or stable_only, so no starter could name it")
+              else . end
+            | .starters = (if $ids == null
+                then [$chain + {id: null, required: .required, optional: .optional}]
+                else [$templates[] | . as $template
+                      | [.parts[] | .key // empty] as $keys
+                      | (if (.parts | all(has("text")))
+                         then {name_templates: [], name_fallback: (.parts | map(.text) | join(""))}
+                         else {name_templates: ([$template] + ($chain.name_templates | map(select(.pattern != $template.pattern)))),
+                               name_fallback: $chain.name_fallback} end)
+                      + {id: $ids[.pattern],
+                         required: ($attributes | map(select(.requirement_level == "required" or (.key as $key | $keys | any(. == $key))))),
+                         optional: ($attributes | map(select(.requirement_level != "required" and (.key as $key | $keys | any(. == $key) | not))))}]
+                end)
+            | .name_derived as $derived
+            | .starters |= map(. + {name_doc: (if $derived then name_doc else null end)}))
       | map(
-          (.required
-           | group_by(.attr_param | norm)
-           | map(select(length > 1) | map(.key) | join(" and "))) as $required_collisions
+          ([.starters[].required
+            | group_by(.attr_param | norm)
+            | map(select(length > 1) | map(.key) | join(" and "))[]] | unique) as $required_collisions
           | (.optional
              | group_by(.attr_short_name | norm)
              | map(select(length > 1) | map(.key) | join(" and "))) as $optional_collisions
-          | (["ctx", "tracer", "name", "opts", "opt", "kvs", "span", "scope"]
-             + (if (.name_templates | length) > 0 then ["spanname", "spannamepart"] else [] end)) as $reserved
-          | (.required | map(select(.attr_param | norm | . as $p | $reserved | any(. == $p))) | map(.key)) as $shadowing
+          | ([.starters[]
+              | (["ctx", "tracer", "name", "opts", "opt", "kvs", "span", "scope"]
+                 + (if (.name_templates | length) > 0 then ["spanname", "spannamepart"] else [] end)) as $reserved
+              | .required[] | select(.attr_param | norm | . as $p | $reserved | any(. == $p)) | .key] | unique) as $shadowing
           | if ($required_collisions | length) > 0
             then error("span \(.id) has required attributes that render to the same Go parameter: \($required_collisions | join("; "))")
             elif ($optional_collisions | length) > 0
@@ -679,7 +728,8 @@ templates:
       | group_by(.namespace)
       | map(
           ([.[] | . as $def | .id as $span | (.short_name | norm) as $short
-            | (["P:start" + $short, "P:" + (if $short == "" then "span" else $short end)]
+            | (($def.starters | map("P:start" + $short + ((.id // "") | norm)))
+               + ["P:" + (if $short == "" then "span" else $short end)]
                + (if $def.name_derived then [] else ["P:" + $short + "name", "P:new" + $short + "name"] end)
                + (if ($def.optional | length) > 0 then ["P:" + $short + "startattr"] else [] end)
                + (if $def.has_late_attrs then ["P:" + $short + "attr"] else [] end)
@@ -694,7 +744,7 @@ templates:
         )
       | map({namespace: .[0].namespace, prefix: .[0].prefix, spans: sort_by(.id),
              uses_attributes: ([.[] | .attributes[]] | length > 0),
-             uses_name_templates: any(.[]; (.name_templates | length) > 0),
+             uses_name_templates: any(.[].starters[]; (.name_templates | length) > 0),
              imports: (
                .[0].namespace as $pkg
                | (([.[] | .attributes[] | select(.imported | not)

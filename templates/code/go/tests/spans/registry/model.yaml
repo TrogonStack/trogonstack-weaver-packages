@@ -54,6 +54,11 @@ spans:
       templates:
         - "dispatch {worker.host.name}:{worker.host.port}"
         - dispatch
+    annotations:
+      code_generation:
+        name_templates:
+          by_worker: "dispatch {worker.host.name}:{worker.host.port}"
+          fallback: dispatch
     attributes:
       - ref: worker.host.name
         requirement_level: required
@@ -77,6 +82,11 @@ spans:
       templates:
         - "run {myapp.task.id}"
         - "run {myapp.task.state}"
+    annotations:
+      code_generation:
+        name_templates:
+          by_task_id: "run {myapp.task.id}"
+          by_state: "run {myapp.task.state}"
     attributes:
       - ref: myapp.task.state
         requirement_level: required
