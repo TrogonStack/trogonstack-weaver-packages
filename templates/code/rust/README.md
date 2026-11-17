@@ -154,11 +154,20 @@ provides unit-specific boundaries; units absent from that map use SDK defaults.
 ### Spans
 
 A span starter takes a parent `Context`, a generated tracer, required typed
-attributes, and optional start attributes. A registry name template whose
-placeholders refer to required attributes is expanded from those values.
-Otherwise the starter takes a typed `Name`, constructed with `From` for a static
-string, owned `String`, or `Cow<'static, str>`. An empty name borrows the span's
-registry type; static names stay borrowed and owned names move into the span.
+attributes, and optional start attributes. A span with `name.templates` is
+named from the first template whose attributes the starter received, each set,
+not empty, and, for an enum, not `_OTHER`. A placeholder may name a required or
+an optional attribute. A template without placeholders ends the list and is the
+fallback; without one, the fallback is the span's registry type. A placeholder
+for an attribute the span does not declare fails generation, and Weaver rejects
+a template it cannot parse. A template whose attribute `stable_only` or
+`exclude_deprecated` leaves out is dropped. The starter doc comment quotes the
+templates, and the name is set once, when the span starts.
+
+A span without `name.templates` takes a typed `Name`, since `name.note` is
+prose. Construct it with `From` for a static string, owned `String`, or
+`Cow<'static, str>`. An empty name borrows the span's registry type; static
+names stay borrowed and owned names move into the span.
 
 All starter attributes are present before sampling. Sampling-relevant
 attributes appear only in the start attribute enum. The separate late attribute
@@ -168,7 +177,7 @@ enum is accepted by `set_attributes`. The wrapper exposes `end`,
 `add_event`, `add_event_with_timestamp`, and `add_link` accept only declared
 attributes; a span with no late attributes takes none. `update_name` is emitted
 for spans with a typed `Name` and is absent when the name is derived from
-attributes. The wrapper does not expose the underlying span, so every attribute
+templates. The wrapper does not expose the underlying span, so every attribute
 it records is typed. `into_context` transfers the span into a parent context for nested spans and
 normal OpenTelemetry context attachment. The generated tracer and span wrappers
 retain the provider's concrete types. Their default type is the no-op API type;
@@ -177,11 +186,12 @@ context integration is needed. The typed span is the only generated surface;
 once the span is in a `Context`, the OpenTelemetry API's own `SpanRef` governs
 it, and context propagation is that API's boundary.
 
-Derived names borrow attribute values and write directly into a preallocated
-`String`, reserving known literal and string lengths plus space for other
-values. Nonempty derived names allocate their output buffer. Required attributes use a
-stack array and optional iterators, which the span builder collects into its
-owned attribute buffer.
+A span named from templates collects its start attributes into a `Vec`, which
+the span builder takes without copying, and reads the template values from it.
+A template that matches writes into a `String` preallocated from known literal
+and string lengths plus space for other values, so it allocates once. A literal
+fallback is borrowed. Other spans use a stack array for required attributes and
+chain the optional iterator.
 
 ### Events
 

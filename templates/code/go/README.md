@@ -375,7 +375,7 @@ returns `<Name>Attr`, which `SetAttributes` also accepts after the span started.
 with late attributes also has `AddEvent`, `AddLink`, and `RecordError`, which
 take the same `<Name>Attr` options as `SetAttributes`, while one without takes
 no attributes there. A span with a typed `<Name>Name` also has `SetName`, and a
-span named from its attributes has none, so its name stays derived. The zero
+span named from its templates has none, so its name stays derived. The zero
 `<Name>` records nothing.
 
 The raw `trace.Span` is not exposed, and no method accepts a `trace.Link` or a
@@ -384,17 +384,34 @@ declares. The typed span is the only generated surface, and the `context.Context
 the starter returns carries the underlying span as the OpenTelemetry API's own
 boundary for context propagation.
 
-The span name comes from `name.note`, read only for a name template: a single
-code span holding at least one `{placeholder}`, each the key of an attribute
-the span requires. Such a span is named from those attributes, so
-`` `dispatch {worker.host.name}:{worker.host.port}` `` names the span above
-`dispatch worker-1:8080`. Any other span takes a typed `<Name>Name`, whose doc
-comment quotes `name.note`, since Go cannot check prose:
+The span name comes from `name.templates`, which Weaver checks and parses. The
+starter names the span from the first template whose attributes the span
+started with, each set, not empty, and, for an enum, not `_OTHER`. A
+placeholder may name a required or an optional attribute, and an optional one
+counts only when it is given to the starter. With these templates:
+
+```yaml
+name:
+  templates:
+    - "dispatch {worker.host.name}:{worker.host.port}"
+    - dispatch
+```
+
+the span above is named `dispatch worker-1:8080`, and it is named `dispatch`
+when the host name is empty. A template without placeholders ends the list and
+is the fallback. Without one, the fallback is the span type. A placeholder for
+an attribute the span does not declare fails the generation, and so does a
+template Weaver cannot parse. A template whose attribute `stable_only` or
+`exclude_deprecated` leaves out can never match, so it is dropped. The starter
+doc comment quotes the templates.
+
+The name is set once, when the span starts, so attributes set later do not
+rename it. A span without `name.templates` takes a typed `<Name>Name`, since
+`name.note` is prose that Go cannot check:
 
 ```go
-ctx, span := myappspan.StartTaskRun(ctx, tracer,
-	myappspan.NewTaskRunName("run task_0001"),
-	myappattr.TaskStateQueued,
+ctx, span := myappspan.StartQueueDrain(ctx, tracer,
+	myappspan.NewQueueDrainName("drain reports"),
 )
 ```
 

@@ -554,10 +554,12 @@ templates:
   # identifier collisions. A span refinement becomes its own starter, named
   # from its id, generated only alongside the span it refines. Every attribute
   # is set when the span starts, since a sampler reads only those.
-  # `name.note` is read only for a name template: a single code span with at
-  # least one `{placeholder}`, each the key of an attribute the span requires.
-  # Such a span is named from those attributes, and any other span takes a
-  # typed name, since Go cannot check prose.
+  # A span with `name.templates` is named from them when it starts, and any
+  # other span takes a typed name, since `name.note` is prose. A template
+  # whose attribute exclude_deprecated or stable_only leaves out can never
+  # match, so it is dropped, and the templates end at the first one without
+  # placeholders, which is the fallback. A placeholder for an attribute the
+  # span does not declare fails.
   # A span whose name has a single segment, such as a vendor-prefix-only name,
   # has nothing left after its namespace. Rather than failing, it renders
   # unprefixed: `Start`, `Span`, `Name`, and so on, in `<name>span`.
@@ -589,27 +591,27 @@ templates:
         | ($spans | map(.type)) as $kept_bases
         | $spans + (.refinements.spans // [] | map(select(.id != .type)) | kept($o)
             | map(select(.type as $base | $kept_bases | any(. == $base)) | . + {refines: .type}));
-      def name_parts:
-        .required as $required
-        | [(.name.note // "") | scan("`[^`]*`"; "g")] as $codes
-        | if ($codes | length) != 1 then null
-          else ($codes[0] | .[1:-1]) as $code
-          | [$code | scan("\\{[^{}]*\\}"; "g") | .[1:-1]] as $keys
-          | [$code | splits("\\{[^{}]*\\}")] as $texts
-          | if ($keys | length) == 0
-               or ($texts | any(test("[{}]")))
-               or ($keys | any(. as $k | $required | any(.key == $k) | not))
-            then null
-            else [range(0; $keys | length) as $i | {text: $texts[$i]}, ($keys[$i] as $k | {attr: ($required | map(select(.key == $k)) | .[0])})]
-                 + [{text: $texts[-1]}]
-                 | map(select(.text != ""))
-            end
-          end;
+      def name_templates($declared):
+        .id as $span
+        | .attributes as $attributes
+        | [(.name.templates // [])[]
+           | [.attributes[] | select(. as $key | $declared | any(. == $key) | not)] as $undeclared
+           | if ($undeclared | length) > 0
+             then error("span \($span) has name template `\(.pattern)` with placeholders for attributes the span does not declare: \($undeclared | join(", "))")
+             elif (.attributes | all(. as $key | $attributes | any(.key == $key)))
+             then {pattern, parts: [.parts[]
+                    | if .type == "attribute"
+                      then (.attribute as $key | $attributes | map(select(.key == $key)) | .[0] | {key, enum: ((.type | type) == "object")})
+                      else {text: .value} end]}
+             else empty end];
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key)) as $rendered
       | (spans({v2: true})
          | map({key: .id, value: [(.attributes // [])[] | select(.requirement_level == "required") | .key]})
          | from_entries) as $declared_required
+      | (spans({v2: true})
+         | map({key: .id, value: [(.attributes // [])[] | .key]})
+         | from_entries) as $declared
       | spans($opts)
       | map(.id as $span
             | (($declared_required[$span] // []) - [(.attributes // [])[] | .key]) as $dropped
@@ -645,8 +647,17 @@ templates:
       | map(.required = (.attributes | map(select(.requirement_level == "required"))))
       | map(.optional = (.attributes | map(select(.requirement_level != "required"))))
       | map(.has_late_attrs = (.optional | any(.sampling_relevant != true)))
-      | map(.name_parts = name_parts)
-      | map(.name_template = (if .name_parts then [.name.note | scan("`[^`]*`"; "g")][0][1:-1] else null end))
+      | map(.name_derived = ((.name.templates // []) | length > 0))
+      | map(name_templates($declared[.id] // []) as $templates
+            | ([$templates | to_entries[] | select(.value.parts | all(has("text"))) | .key] | first) as $literal
+            | . + {name_templates: (if $literal == null then $templates else $templates[:$literal] end),
+                   name_fallback: (if $literal == null then .type else ($templates[$literal].parts | map(.text) | join("")) end)})
+      | map(.name_doc = (if .name_derived | not then null
+            elif (.name_templates | length) == 0 then "The span is named `\(.name_fallback)`."
+            else "The span is named from the first of these templates whose attributes are all set"
+                 + (if [.name_templates[].parts[] | select(.enum)] | length > 0 then ", not empty, and not `_OTHER`" else " and not empty" end)
+                 + ": " + (.name_templates | map("`" + (.pattern | gsub("(?<control>[\\x00-\\x1f\\x7f-\\x9f])"; .control | tojson | .[1:-1])) + "`") | join(", "))
+                 + ". Otherwise it is named `\(.name_fallback)`." end))
       | map(
           (.required
            | group_by(.attr_param | norm)
@@ -654,7 +665,9 @@ templates:
           | (.optional
              | group_by(.attr_short_name | norm)
              | map(select(length > 1) | map(.key) | join(" and "))) as $optional_collisions
-          | (.required | map(select(.attr_param | norm | . as $p | ["ctx", "tracer", "name", "opts", "opt", "kvs", "span", "scope"] | any(. == $p))) | map(.key)) as $shadowing
+          | (["ctx", "tracer", "name", "opts", "opt", "kvs", "span", "scope"]
+             + (if (.name_templates | length) > 0 then ["spanname", "spannamepart"] else [] end)) as $reserved
+          | (.required | map(select(.attr_param | norm | . as $p | $reserved | any(. == $p))) | map(.key)) as $shadowing
           | if ($required_collisions | length) > 0
             then error("span \(.id) has required attributes that render to the same Go parameter: \($required_collisions | join("; "))")
             elif ($optional_collisions | length) > 0
@@ -667,7 +680,7 @@ templates:
       | map(
           ([.[] | . as $def | .id as $span | (.short_name | norm) as $short
             | (["P:start" + $short, "P:" + (if $short == "" then "span" else $short end)]
-               + (if $def.name_parts then [] else ["P:" + $short + "name", "P:new" + $short + "name"] end)
+               + (if $def.name_derived then [] else ["P:" + $short + "name", "P:new" + $short + "name"] end)
                + (if ($def.optional | length) > 0 then ["P:" + $short + "startattr"] else [] end)
                + (if $def.has_late_attrs then ["P:" + $short + "attr"] else [] end)
                + ($def.optional | map(.attr_short_name | norm) | map("P:with" + $short + ., "p:" + $short + "span" + .)))[]
@@ -681,6 +694,7 @@ templates:
         )
       | map({namespace: .[0].namespace, prefix: .[0].prefix, spans: sort_by(.id),
              uses_attributes: ([.[] | .attributes[]] | length > 0),
+             uses_name_templates: any(.[]; (.name_templates | length) > 0),
              imports: (
                .[0].namespace as $pkg
                | (([.[] | .attributes[] | select(.imported | not)
@@ -837,6 +851,8 @@ templates:
   # The type's only state is the attribute.KeyValue slice its constructor
   # built, exposed through Attributes and, tied to the registry's schema,
   # through Resource.
+  # An identity attribute is always required. Weaver 0.27 and later drop its
+  # `requirement_level` from the resolved schema, so the filter restores it.
   - template: entities.go.j2
     filter: |-
       def ns: split(".") as $s
@@ -859,7 +875,7 @@ templates:
       def norm: gsub("[._]"; "") | ascii_downcase;
       def kept($o):
         stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
-        | map(.identity = (if .identity == null then .identity else .identity | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) end))
+        | map(.identity = (if .identity == null then .identity else .identity | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | map(.requirement_level = "required") end))
         | map(.description = (if .description == null then .description else .description | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) end));
       def entities($o):
         (.registry.entities // [] | kept($o) | map(. + {id: .type})) as $entities

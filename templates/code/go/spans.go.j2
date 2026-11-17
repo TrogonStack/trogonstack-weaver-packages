@@ -32,7 +32,57 @@ import (
 	"{{ imp.path }}"
 {%- endfor %}
 )
-{% for def in ctx.spans %}
+{% if ctx.uses_name_templates %}
+type spanNamePart struct {
+	text string
+	key  attribute.Key
+	enum bool
+}
+
+func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
+	// A stack buffer holds most names, so the returned string is the only allocation.
+	var buffer [64]byte
+	for _, template := range templates {
+		if name, ok := spanNameAppend(buffer[:0], kvs, template); ok {
+			return string(name)
+		}
+	}
+	return fallback
+}
+
+func spanNameAppend(name []byte, kvs []attribute.KeyValue, template []spanNamePart) ([]byte, bool) {
+	for _, part := range template {
+		if part.key == "" {
+			name = append(name, part.text...)
+			continue
+		}
+		value, ok := spanNameValue(kvs, part)
+		if !ok {
+			return name, false
+		}
+		name = append(name, value...)
+	}
+	return name, true
+}
+
+func spanNameValue(kvs []attribute.KeyValue, part spanNamePart) (string, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key != part.key {
+			continue
+		}
+		value := kvs[index].Value.Emit()
+		switch kvs[index].Value.Type() {
+		case attribute.STRING:
+			return value, value != "" && !(part.enum && value == "_OTHER")
+		case attribute.BOOLSLICE, attribute.INT64SLICE, attribute.FLOAT64SLICE, attribute.STRINGSLICE:
+			return value, value != "[]"
+		}
+		return value, true
+	}
+	return "", false
+}
+{% endif %}
+{%- for def in ctx.spans %}
 {%- set name = n.exported(def.short_name) %}
 {%- set private = n.unexported(def.short_name) if def.short_name else "bare" %}
 {%- set span = name or "Span" %}
@@ -73,7 +123,7 @@ func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
 {% endif %}
 {%- endfor %}
 {%- endif %}
-{%- if not def.name_parts %}
+{%- if not def.name_derived %}
 {{ [name ~ "Name is the name the `" ~ def.id ~ "` span is started with.", def.name.note, "An empty " ~ name ~ "Name, including the zero one, names the span `" ~ def.type ~ "`."] | select | join("\n\n") | comment }}
 type {{ name }}Name struct{ value string }
 
@@ -152,7 +202,7 @@ func (s {{ span }}) RecordError(err error) {
 	s.raw().RecordError(err)
 }
 {% endif %}
-{%- if not def.name_parts %}
+{%- if not def.name_derived %}
 {{ ["SetName sets the name of the span. An empty " ~ name ~ "Name, including the zero one, names the span `" ~ def.type ~ "`."] | join | comment }}
 func (s {{ span }}) SetName(name {{ name }}Name) {
 	if name.value == "" {
@@ -165,11 +215,10 @@ func (s {{ span }}) SetName(name {{ name }}Name) {
 func (s {{ span }}) SetStatus(code codes.Code, description string) {
 	s.raw().SetStatus(code, description)
 }
-{%- set name_doc = "The span is named `" ~ def.name_template ~ "`, with each placeholder replaced by the value of the attribute it names." if def.name_parts else none %}
 
-{{ [start ~ " starts the `" ~ def.id ~ "` span from tracer with span kind " ~ def.kind ~ (", as a refinement of `" ~ def.refines ~ "`" if def.refines else "") ~ ".", def.brief, def.note, name_doc, opt_in, deprecated] | select | join("\n\n") | comment }}
-func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if not def.name_parts %}, name {{ name }}Name{% endif %}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.optional %}, opts ...{{ name }}StartAttr{% endif %}) (context.Context, {{ span }}) {
-{%- if not def.name_parts %}
+{{ [start ~ " starts the `" ~ def.id ~ "` span from tracer with span kind " ~ def.kind ~ (", as a refinement of `" ~ def.refines ~ "`" if def.refines else "") ~ ".", def.brief, def.note, def.name_doc, opt_in, deprecated] | select | join("\n\n") | comment }}
+func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if not def.name_derived %}, name {{ name }}Name{% endif %}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.optional %}, opts ...{{ name }}StartAttr{% endif %}) (context.Context, {{ span }}) {
+{%- if not def.name_derived %}
 	if name.value == "" {
 		name = {{ name }}Name{value: {{ def.type | tojson }}}
 	}
@@ -193,13 +242,17 @@ func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if no
 	}
 {%- endif %}
 {%- endif %}
-{%- if def.name_parts %}
-	name := {% for part in def.name_parts %}{% if not loop.first %} + {% endif %}{% if part.attr %}{{ attr_kv(part.attr, n.unexported(part.attr.attr_param)) }}.Value.Emit(){% else %}{{ part.text | tojson }}{% endif %}{% endfor %}
+{%- if def.name_templates %}
+	name := spanName(kvs, {{ def.name_fallback | tojson }}{% for template in def.name_templates %},
+		[]spanNamePart{ {%- for part in template.parts %}{% if not loop.first %}, {% endif %}{% if part.key %}{key: {{ part.key | tojson }}{% if part.enum %}, enum: true{% endif %}}{% else %}{text: {{ part.text | tojson }}}{% endif %}{% endfor %}}{% endfor %},
+	)
 {%- endif %}
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
-{%- if def.name_parts %}
+{%- if def.name_templates %}
 		name,
+{%- elif def.name_derived %}
+		{{ def.name_fallback | tojson }},
 {%- else %}
 		name.value,
 {%- endif %}

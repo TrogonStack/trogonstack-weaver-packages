@@ -1,36 +1,89 @@
 {%- filter trim %}
 #![allow(deprecated)]
 use ::opentelemetry::trace::{TraceContextExt as _, Tracer as _};
-{% macro needs_name_formatting(definitions) -%}
-{%- for definition in definitions -%}
-{%- for part in definition.name_parts or [] -%}
-{%- if part.attr -%}yes{%- endif -%}
-{%- endfor -%}
-{%- endfor -%}
-{%- endmacro %}
-{% if needs_name_formatting(ctx.spans) %}
-use ::std::fmt::Write as _;
-{% endif %}
 
 {% import "signal_helpers.j2" as h %}
-{# Floating-point names need space for full decimal notation, including subnormals. #}
-{% macro name_capacity(a, value) -%}
-{% set t = a.attr_type if a.imported else a.type %}
-{%- if t == 'string' or (t is mapping and t.members[0].value is string) -%}
-{% if a.imported %}{{ value }}.as_str().len(){% else %}::std::convert::AsRef::<str>::as_ref(&{{ value }}).len(){% endif %}
-{%- elif t in ['string[]', 'int[]', 'double[]', 'boolean[]'] -%}
-{%- set element = '::opentelemetry::StringValue' if t == 'string[]' else ('i64' if t == 'int[]' else ('f64' if t == 'double[]' else 'bool')) -%}
-{%- set values = value if a.imported else '::std::convert::AsRef::<[' ~ element ~ ']>::as_ref(&' ~ value ~ ')' -%}
-{%- if t == 'string[]' -%}
-{{ values }}.iter().map(|value| value.as_str().len() + 3).sum::<usize>() + 2
-{%- else -%}
-{{ values }}.len() * {{ 328 if t == 'double[]' else (21 if t == 'int[]' else 6) }} + 2
-{%- endif -%}
-{%- elif t == 'int' -%}20
-{%- elif t == 'double' or t is mapping and t.members[0].value is number -%}328
-{%- else -%}5
-{%- endif -%}
-{%- endmacro %}
+{# A double needs room for full decimal notation, including subnormals. #}
+{% if ctx.name_part_kinds.attribute or ctx.name_part_kinds.enum %}
+mod span_name {
+    use ::std::fmt::Write as _;
+
+    pub(super) enum Part {
+{% if ctx.name_part_kinds.text %}
+        Text(&'static str),
+{% endif %}
+{% if ctx.name_part_kinds.attribute %}
+        Attribute(&'static str),
+{% endif %}
+{% if ctx.name_part_kinds.enum %}
+        Enum(&'static str),
+{% endif %}
+    }
+
+    pub(super) fn select(attributes: &[::opentelemetry::KeyValue], fallback: &'static str, templates: &[&[Part]]) -> ::std::borrow::Cow<'static, str> {
+        for template in templates {
+            let Some(capacity) = capacity(attributes, template) else { continue };
+            let mut name = String::with_capacity(capacity);
+            for part in *template {
+                match part {
+{% if ctx.name_part_kinds.text %}
+                    Part::Text(text) => name.push_str(text),
+{% endif %}
+                    {{ ["Part::Attribute(key)" if ctx.name_part_kinds.attribute, "Part::Enum(key)" if ctx.name_part_kinds.enum] | select | join(" | ") }} => {
+                        if let Some(value) = value(attributes, key) {
+                            write!(&mut name, "{value}").expect("writing a span name to String cannot fail");
+                        }
+                    }
+                }
+            }
+            return ::std::borrow::Cow::Owned(name);
+        }
+        ::std::borrow::Cow::Borrowed(fallback)
+    }
+
+    fn value<'a>(attributes: &'a [::opentelemetry::KeyValue], key: &str) -> Option<&'a ::opentelemetry::Value> {
+        attributes.iter().rev().find(|attribute| attribute.key.as_str() == key).map(|attribute| &attribute.value)
+    }
+
+    fn capacity(attributes: &[::opentelemetry::KeyValue], template: &[Part]) -> Option<usize> {
+        template.iter().try_fold(0, |capacity, part| {
+            let length = match part {
+{% if ctx.name_part_kinds.text %}
+                Part::Text(text) => text.len(),
+{% endif %}
+{% if ctx.name_part_kinds.attribute %}
+                Part::Attribute(key) => length(value(attributes, key)?)?,
+{% endif %}
+{% if ctx.name_part_kinds.enum %}
+                Part::Enum(key) => match value(attributes, key)? {
+                    ::opentelemetry::Value::String(text) if text.as_str() == "_OTHER" => return None,
+                    value => length(value)?,
+                },
+{% endif %}
+            };
+            Some(capacity + length)
+        })
+    }
+
+    fn length(value: &::opentelemetry::Value) -> Option<usize> {
+        use ::opentelemetry::{Array, Value};
+        match value {
+            Value::String(text) if text.as_str().is_empty() => None,
+            Value::String(text) => Some(text.as_str().len()),
+            Value::I64(_) => Some(20),
+            Value::F64(_) => Some(328),
+            Value::Bool(_) => Some(5),
+            Value::Array(Array::String(values)) if values.is_empty() => None,
+            Value::Array(Array::String(values)) => Some(values.iter().map(|value| value.as_str().len() + 3).sum::<usize>() + 2),
+            Value::Array(Array::I64(values)) => (!values.is_empty()).then(|| values.len() * 21 + 2),
+            Value::Array(Array::F64(values)) => (!values.is_empty()).then(|| values.len() * 328 + 2),
+            Value::Array(Array::Bool(values)) => (!values.is_empty()).then(|| values.len() * 6 + 2),
+            _ => Some(0),
+        }
+    }
+}
+
+{% endif %}
 {% for def in ctx.spans %}
 {% set name = h.exported(def.qualified) %}
 {% set span = name %}
@@ -73,7 +126,7 @@ impl From<{{ name }}Attr> for {{ name }}StartAttr {
     }
 }
 {% endif %}
-{% if not def.name_parts %}
+{% if not def.name_derived %}
 #[derive(Clone, Debug, Default)]
 pub struct {{ name }}Name(::std::borrow::Cow<'static, str>);
 
@@ -106,7 +159,7 @@ impl<S: ::opentelemetry::trace::Span> {{ span }}<S> {
     pub fn end_with_timestamp(&mut self, timestamp: ::std::time::SystemTime) { ::opentelemetry::trace::Span::end_with_timestamp(&mut self.span, timestamp); }
     pub fn record_error(&mut self, error: &dyn ::std::error::Error) { ::opentelemetry::trace::Span::record_error(&mut self.span, error); }
     pub fn set_status(&mut self, status: ::opentelemetry::trace::Status) { ::opentelemetry::trace::Span::set_status(&mut self.span, status); }
-{% if not def.name_parts %}
+{% if not def.name_derived %}
     pub fn update_name(&mut self, name: {{ name }}Name) {
         let name = if name.0.is_empty() { ::std::borrow::Cow::Borrowed({{ span }}::NAME) } else { name.0 };
         ::opentelemetry::trace::Span::update_name(&mut self.span, name);
@@ -148,29 +201,24 @@ impl Default for {{ span }} {
     }
 }
 {{ h.deprecated(def) }}
-pub fn {{ h.signal_fn('start', def.qualified) }}<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>{% if not def.name_parts %}, name: {{ name }}Name{% endif %}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}StartAttr>{% endif %}) -> {{ span }}<T::Span> {
-{% if def.name_parts %}
-    let mut name = String::with_capacity({% for part in def.name_parts %}{% if not loop.first %} + {% endif %}{% if part.attr %}{{ name_capacity(part.attr, h.ident(part.attr.attr_param)) }}{% else %}{{ h.literal(part.text) }}.len(){% endif %}{% endfor %});
-{% for part in def.name_parts %}
-{% if part.attr %}
-{% if part.attr.imported and '[]' in part.attr.attr_type %}
-    name.push('[');
-    for (index, value) in {{ h.ident(part.attr.attr_param) }}.iter().enumerate() {
-        if index > 0 { name.push(','); }
-        write!(&mut name, {% if part.attr.attr_type == 'string[]' %}"\"{}\""{% else %}"{}"{% endif %}, value).expect("writing a span name to String cannot fail");
-    }
-    name.push(']');
-{% else %}
-    write!(&mut name, "{}", {{ h.ident(part.attr.attr_param) }}).expect("writing a span name to String cannot fail");
+{% if def.name_doc %}
+{{ def.name_doc | comment }}
 {% endif %}
-{% else %}
-{% if part.text | length == 1 %}
-    name.push('{{ h.literal(part.text)[1:-1] | replace("'", "\\'") }}');
-{% else %}
-    name.push_str({{ h.literal(part.text) }});
-{% endif %}
-{% endif %}
+pub fn {{ h.signal_fn('start', def.qualified) }}<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>{% if not def.name_derived %}, name: {{ name }}Name{% endif %}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}StartAttr>{% endif %}) -> {{ span }}<T::Span> {
+{% if def.name_templates %}
+    let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}].into_iter(){% if def.optional %}.chain(options.into_iter().map(::opentelemetry::KeyValue::from)){% endif %}.collect();
+    let name = span_name::select(&attributes, {{ h.literal(def.name_fallback) }}, &[
+{% for template in def.name_templates %}
+        &[{% for part in template.parts %}{% if part.key %}span_name::Part::{{ "Enum" if part.enum else "Attribute" }}({{ h.literal(part.key) }}){% else %}span_name::Part::Text({{ h.literal(part.text) }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}],
 {% endfor %}
+    ]);
+    let span = tracer.inner().span_builder(name)
+        .with_kind(::opentelemetry::trace::SpanKind::{{ def.kind | pascal_case }})
+        .with_attributes(attributes)
+        .start_with_context(tracer.inner(), context);
+{% else %}
+{% if def.name_derived %}
+    let name = {{ h.literal(def.name_fallback) }};
 {% else %}
     let name = if name.0.is_empty() { ::std::borrow::Cow::Borrowed({{ span }}::NAME) } else { name.0 };
 {% endif %}
@@ -179,6 +227,7 @@ pub fn {{ h.signal_fn('start', def.qualified) }}<T: ::opentelemetry::trace::Trac
         .with_kind(::opentelemetry::trace::SpanKind::{{ def.kind | pascal_case }})
         .with_attributes(attributes{% if def.optional %}.into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)){% endif %})
         .start_with_context(tracer.inner(), context);
+{% endif %}
     {{ span }} { span }
 }
 {% endfor %}

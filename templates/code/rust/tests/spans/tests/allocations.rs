@@ -57,6 +57,17 @@ fn derived_name_only_allocates_output_and_attribute_vector() {
 }
 
 #[test]
+fn literal_fallback_name_only_allocates_the_attribute_vector() {
+    let tracer = tracer::Tracer::default();
+    let context = opentelemetry::Context::new();
+    let host = attribute::WorkerHostName::from("");
+    let port = attribute::WorkerHostPort::from(8080);
+    let (_, count) =
+        allocations(|| trace::start_myapp_task_dispatch(&context, &tracer, host, port, []));
+    assert_eq!(count, 1);
+}
+
+#[test]
 fn extreme_float_names_do_not_reallocate_the_output() {
     let tracer = tracer::Tracer::default();
     let context = opentelemetry::Context::new();

@@ -32,9 +32,8 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     let mut child = trace::start_myapp_task_run(
         &context,
         &tracer,
-        trace::MyappTaskRunName::from("run task-1"),
         attribute::MyappTaskState::Done,
-        [],
+        [trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("task-1"))],
     );
     child.set_attributes([trace::MyappTaskRunAttr::TaskId(attribute::MyappTaskId::from(
         "task-1",
@@ -54,8 +53,7 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     let mut fallback = trace::start_myapp_task_run(
         &opentelemetry::Context::new(),
         &tracer,
-        trace::MyappTaskRunName::default(),
-        attribute::MyappTaskState::Done,
+        attribute::MyappTaskState::Other,
         [],
     );
     fallback.end();
@@ -178,7 +176,6 @@ fn typed_events_links_names_and_span_context_reach_the_exporter() {
     let linked = trace::start_myapp_task_run(
         &opentelemetry::Context::new(),
         &tracer,
-        trace::MyappTaskRunName::from("linked"),
         attribute::MyappTaskState::Done,
         [],
     );
@@ -268,4 +265,60 @@ fn typed_events_links_names_and_span_context_reach_the_exporter() {
     assert!(spans
         .iter()
         .any(|span| span.name == trace::MyappNameStatic::NAME));
+}
+
+#[test]
+fn name_templates_take_the_first_template_whose_attributes_are_set() {
+    let exporter = InMemorySpanExporter::default();
+    let provider = SdkTracerProvider::builder()
+        .with_simple_exporter(exporter.clone())
+        .build();
+    let tracer = tracer::Tracer::new(&provider, Default::default());
+    let context = opentelemetry::Context::new();
+    let cases = [
+        (
+            "optional attribute",
+            attribute::MyappTaskState::Done,
+            vec![trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("t-9"))],
+            "run t-9",
+        ),
+        (
+            "last optional attribute wins",
+            attribute::MyappTaskState::Done,
+            vec![
+                trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("t-9")),
+                trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("t-10")),
+            ],
+            "run t-10",
+        ),
+        ("missing optional attribute", attribute::MyappTaskState::Queued, vec![], "run queued"),
+        (
+            "empty optional attribute",
+            attribute::MyappTaskState::Queued,
+            vec![trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from(""))],
+            "run queued",
+        ),
+        ("other enum member", attribute::MyappTaskState::Other, vec![], "myapp.task.run"),
+    ];
+    for (case, state, options, expected) in cases {
+        exporter.reset();
+        trace::start_myapp_task_run(&context, &tracer, state, options).end();
+        provider.force_flush().unwrap();
+        let spans = exporter.get_finished_spans().unwrap();
+        assert_eq!(spans[0].name, expected, "{case}");
+    }
+    for (host, expected) in [("worker-1", "dispatch worker-1:8080"), ("", "dispatch")] {
+        exporter.reset();
+        trace::start_myapp_task_dispatch(
+            &context,
+            &tracer,
+            attribute::WorkerHostName::from(host),
+            attribute::WorkerHostPort::from(8080),
+            [],
+        )
+        .end();
+        provider.force_flush().unwrap();
+        let spans = exporter.get_finished_spans().unwrap();
+        assert_eq!(spans[0].name, expected);
+    }
 }

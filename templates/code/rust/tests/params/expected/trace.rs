@@ -1,6 +1,64 @@
 #![allow(deprecated)]
 use ::opentelemetry::trace::{TraceContextExt as _, Tracer as _};
-use ::std::fmt::Write as _;
+
+mod span_name {
+    use ::std::fmt::Write as _;
+
+    pub(super) enum Part {
+        Text(&'static str),
+        Attribute(&'static str),
+    }
+
+    pub(super) fn select(attributes: &[::opentelemetry::KeyValue], fallback: &'static str, templates: &[&[Part]]) -> ::std::borrow::Cow<'static, str> {
+        for template in templates {
+            let Some(capacity) = capacity(attributes, template) else { continue };
+            let mut name = String::with_capacity(capacity);
+            for part in *template {
+                match part {
+                    Part::Text(text) => name.push_str(text),
+                    Part::Attribute(key) => {
+                        if let Some(value) = value(attributes, key) {
+                            write!(&mut name, "{value}").expect("writing a span name to String cannot fail");
+                        }
+                    }
+                }
+            }
+            return ::std::borrow::Cow::Owned(name);
+        }
+        ::std::borrow::Cow::Borrowed(fallback)
+    }
+
+    fn value<'a>(attributes: &'a [::opentelemetry::KeyValue], key: &str) -> Option<&'a ::opentelemetry::Value> {
+        attributes.iter().rev().find(|attribute| attribute.key.as_str() == key).map(|attribute| &attribute.value)
+    }
+
+    fn capacity(attributes: &[::opentelemetry::KeyValue], template: &[Part]) -> Option<usize> {
+        template.iter().try_fold(0, |capacity, part| {
+            let length = match part {
+                Part::Text(text) => text.len(),
+                Part::Attribute(key) => length(value(attributes, key)?)?,
+            };
+            Some(capacity + length)
+        })
+    }
+
+    fn length(value: &::opentelemetry::Value) -> Option<usize> {
+        use ::opentelemetry::{Array, Value};
+        match value {
+            Value::String(text) if text.as_str().is_empty() => None,
+            Value::String(text) => Some(text.as_str().len()),
+            Value::I64(_) => Some(20),
+            Value::F64(_) => Some(328),
+            Value::Bool(_) => Some(5),
+            Value::Array(Array::String(values)) if values.is_empty() => None,
+            Value::Array(Array::String(values)) => Some(values.iter().map(|value| value.as_str().len() + 3).sum::<usize>() + 2),
+            Value::Array(Array::I64(values)) => (!values.is_empty()).then(|| values.len() * 21 + 2),
+            Value::Array(Array::F64(values)) => (!values.is_empty()).then(|| values.len() * 328 + 2),
+            Value::Array(Array::Bool(values)) => (!values.is_empty()).then(|| values.len() * 6 + 2),
+            _ => Some(0),
+        }
+    }
+}
 
 /// An invoice is being issued.
 pub struct BillingInvoiceIssue<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
@@ -40,11 +98,12 @@ impl Default for BillingInvoiceIssue {
     }
 }
 
+/// The span is named from the first of these templates whose attributes are all set and not empty: `invoice {acme.billing.invoice.id}`. Otherwise it is named `acme.billing.invoice.issue`.
 pub fn r#start_billing_invoice_issue<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#billing_invoice_id: super::attribute::BillingInvoiceId) -> BillingInvoiceIssue<T::Span> {
-    let mut name = String::with_capacity("invoice ".len() + ::std::convert::AsRef::<str>::as_ref(&r#billing_invoice_id).len());
-    name.push_str("invoice ");
-    write!(&mut name, "{}", r#billing_invoice_id).expect("writing a span name to String cannot fail");
-    let attributes: [::opentelemetry::KeyValue; 1] = [::opentelemetry::KeyValue::from(r#billing_invoice_id)];
+    let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [::opentelemetry::KeyValue::from(r#billing_invoice_id)].into_iter().collect();
+    let name = span_name::select(&attributes, "acme.billing.invoice.issue", &[
+        &[span_name::Part::Text("invoice "), span_name::Part::Attribute("acme.billing.invoice.id")],
+    ]);
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Internal)
         .with_attributes(attributes)

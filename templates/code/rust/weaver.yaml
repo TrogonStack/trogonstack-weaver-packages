@@ -238,6 +238,12 @@ templates:
     application_mode: each
     file_name: metric.rs
 
+  # A span with `name.templates` is named from them when it starts, and any
+  # other span takes a typed name, since `name.note` is prose. A template
+  # whose attribute exclude_deprecated or stable_only leaves out can never
+  # match, so it is dropped, and the templates end at the first one without
+  # placeholders, which is the fallback. A placeholder for an attribute the
+  # span does not declare fails.
   - template: spans.rs.j2
     filter: |-
       def ns: if (test("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*$") | not)
@@ -267,27 +273,27 @@ templates:
         | ($spans | map(.type)) as $kept_bases
         | $spans + (.refinements.spans // [] | map(select(.id != .type)) | kept($o)
             | map(select(.type as $base | $kept_bases | any(. == $base)) | . + {refines: .type}));
-      def name_parts:
-        .required as $required
-        | [(.name.note // "") | scan("`[^`]*`"; "g")] as $codes
-        | if ($codes | length) != 1 then null
-          else ($codes[0] | .[1:-1]) as $code
-          | [$code | scan("\\{[^{}]*\\}"; "g") | .[1:-1]] as $keys
-          | [$code | splits("\\{[^{}]*\\}")] as $texts
-          | if ($keys | length) == 0
-               or ($texts | any(test("[{}]")))
-               or ($keys | any(. as $k | $required | any(.key == $k) | not))
-            then null
-            else [range(0; $keys | length) as $i | {text: $texts[$i]}, ($keys[$i] as $k | {attr: ($required | map(select(.key == $k)) | .[0])})]
-                 + [{text: $texts[-1]}]
-                 | map(select(.text != ""))
-            end
-          end;
+      def name_templates($declared):
+        .id as $span
+        | .attributes as $attributes
+        | [(.name.templates // [])[]
+           | [.attributes[] | select(. as $key | $declared | any(. == $key) | not)] as $undeclared
+           | if ($undeclared | length) > 0
+             then error("span \($span) has name template `\(.pattern)` with placeholders for attributes the span does not declare: \($undeclared | join(", "))")
+             elif (.attributes | all(. as $key | $attributes | any(.key == $key)))
+             then {pattern, parts: [.parts[]
+                    | if .type == "attribute"
+                      then (.attribute as $key | $attributes | map(select(.key == $key)) | .[0] | {key, enum: ((.type | type) == "object")})
+                      else {text: .value} end]}
+             else empty end];
       {v2: true, exclude_deprecated: $exclude_deprecated, stable_only: $stable_only} as $opts
       | (semconv_grouped_attributes($opts) | map(.attributes) | add // [] | map(.key)) as $rendered
       | (spans({v2: true})
          | map({key: .id, value: [(.attributes // [])[] | select(.requirement_level == "required") | .key]})
          | from_entries) as $declared_required
+      | (spans({v2: true})
+         | map({key: .id, value: [(.attributes // [])[] | .key]})
+         | from_entries) as $declared
       | spans($opts)
       | map(.id as $span
             | (($declared_required[$span] // []) - [(.attributes // [])[] | .key]) as $dropped
@@ -327,8 +333,17 @@ templates:
       | map(if (.optional | any(.attr_short_name == "self" or .attr_short_name == "Self"))
           then error("signal \(.id // .name) has an optional attribute that becomes the reserved Rust Self identifier") else . end)
       | map(.has_late_attrs = (.optional | any(.sampling_relevant != true)))
-      | map(.name_parts = name_parts)
-      | map(.name_template = (if .name_parts then [.name.note | scan("`[^`]*`"; "g")][0][1:-1] else null end))
+      | map(.name_derived = ((.name.templates // []) | length > 0))
+      | map(name_templates($declared[.id] // []) as $templates
+            | ([$templates | to_entries[] | select(.value.parts | all(has("text"))) | .key] | first) as $literal
+            | . + {name_templates: (if $literal == null then $templates else $templates[:$literal] end),
+                   name_fallback: (if $literal == null then .type else ($templates[$literal].parts | map(.text) | join("")) end)})
+      | map(.name_doc = (if .name_derived | not then null
+            elif (.name_templates | length) == 0 then "The span is named `\(.name_fallback)`."
+            else "The span is named from the first of these templates whose attributes are all set"
+                 + (if [.name_templates[].parts[] | select(.enum)] | length > 0 then ", not empty, and not `_OTHER`" else " and not empty" end)
+                 + ": " + (.name_templates | map("`" + (.pattern | gsub("(?<control>[\\x00-\\x1f\\x7f-\\x9f])"; .control | tojson | .[1:-1])) + "`") | join(", "))
+                 + ". Otherwise it is named `\(.name_fallback)`." end))
       | map(
           (.required
            | group_by(.attr_param | norm)
@@ -349,7 +364,7 @@ templates:
       | map(
           ([.[] | . as $def | .id as $span | (.qualified | norm) as $short
             | (["start" + $short, $short]
-               + (if $def.name_parts then [] else [$short + "name"] end)
+               + (if $def.name_derived then [] else [$short + "name"] end)
                + (if ($def.optional | length) > 0 then [$short + "startattr"] else [] end)
                + (if $def.has_late_attrs then [$short + "attr"] else [] end))[]
             | {identifier: ., name: $span}]
@@ -360,7 +375,9 @@ templates:
             then error("module trace has spans that render to the same Rust identifier: \($collisions | join("; "))")
             else . end
         )
-      | map({spans: sort_by(.id)})
+      | map({spans: sort_by(.id),
+             name_part_kinds: ([.[] | .name_templates[].parts[]]
+               | {text: any(.[]; has("text")), attribute: any(.[]; has("key") and (.enum | not)), enum: any(.[]; .enum == true)})})
     application_mode: each
     file_name: trace.rs
 
@@ -473,6 +490,8 @@ templates:
     application_mode: each
     file_name: event.rs
 
+  # An identity attribute is always required. Weaver 0.27 and later drop its
+  # `requirement_level` from the resolved schema, so the filter restores it.
   - template: entities.rs.j2
     filter: |-
       def ns: if (test("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*$") | not)
@@ -496,7 +515,7 @@ templates:
       def norm: gsub("[._]"; "") | ascii_downcase;
       def kept($o):
         stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o)
-        | map(.identity = (if .identity == null then .identity else .identity | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) end))
+        | map(.identity = (if .identity == null then .identity else .identity | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) | map(.requirement_level = "required") end))
         | map(.description = (if .description == null then .description else .description | stability_filter($o) | code_generation_exclude_filter($o) | deprecated_filter($o) end));
       def entities($o):
         (.registry.entities // [] | kept($o) | map(. + {id: .type})) as $entities

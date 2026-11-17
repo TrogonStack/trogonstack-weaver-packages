@@ -29,6 +29,8 @@ spans:
     brief: Dispatch of a task.
     name:
       note: "`task {myapp.task.id} failed with {error.type}`"
+      templates:
+        - "task {myapp.task.id} failed with {error.type}"
     attributes:
       - ref: myapp.task.id
         requirement_level: required

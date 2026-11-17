@@ -14,6 +14,55 @@ import (
 	"example.com/semconv/semconvtracer"
 )
 
+type spanNamePart struct {
+	text string
+	key  attribute.Key
+	enum bool
+}
+
+func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
+	// A stack buffer holds most names, so the returned string is the only allocation.
+	var buffer [64]byte
+	for _, template := range templates {
+		if name, ok := spanNameAppend(buffer[:0], kvs, template); ok {
+			return string(name)
+		}
+	}
+	return fallback
+}
+
+func spanNameAppend(name []byte, kvs []attribute.KeyValue, template []spanNamePart) ([]byte, bool) {
+	for _, part := range template {
+		if part.key == "" {
+			name = append(name, part.text...)
+			continue
+		}
+		value, ok := spanNameValue(kvs, part)
+		if !ok {
+			return name, false
+		}
+		name = append(name, value...)
+	}
+	return name, true
+}
+
+func spanNameValue(kvs []attribute.KeyValue, part spanNamePart) (string, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key != part.key {
+			continue
+		}
+		value := kvs[index].Value.Emit()
+		switch kvs[index].Value.Type() {
+		case attribute.STRING:
+			return value, value != "" && !(part.enum && value == "_OTHER")
+		case attribute.BOOLSLICE, attribute.INT64SLICE, attribute.FLOAT64SLICE, attribute.STRINGSLICE:
+			return value, value != "[]"
+		}
+		return value, true
+	}
+	return "", false
+}
+
 // UpstreamRequestStartAttr is an attribute StartUpstreamRequest accepts in
 // addition to the ones it requires.
 type UpstreamRequestStartAttr interface {
@@ -122,8 +171,9 @@ func (s UpstreamRequest) SetStatus(code codes.Code, description string) {
 //
 // A request to an upstream server.
 //
-// The span is named `{server.address}:{server.port}`, with each placeholder
-// replaced by the value of the attribute it names.
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `{server.address}:{server.port}`. Otherwise it is
+// named `edge.upstream.request`.
 func StartUpstreamRequest(ctx context.Context, tracer semconvtracer.Tracer, serverAddress string, serverPort int, opts ...UpstreamRequestStartAttr) (context.Context, UpstreamRequest) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	kvs = append(kvs, attribute.String("server.address", serverAddress))
@@ -133,7 +183,9 @@ func StartUpstreamRequest(ctx context.Context, tracer semconvtracer.Tracer, serv
 			kvs = append(kvs, kv)
 		}
 	}
-	name := attribute.String("server.address", serverAddress).Value.Emit() + ":" + attribute.Int("server.port", serverPort).Value.Emit()
+	name := spanName(kvs, "edge.upstream.request",
+		[]spanNamePart{{key: "server.address"}, {text: ":"}, {key: "server.port"}},
+	)
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,

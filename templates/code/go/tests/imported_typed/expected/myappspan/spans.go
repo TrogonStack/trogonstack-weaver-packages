@@ -16,6 +16,55 @@ import (
 	"example.com/upstream/errorattr"
 )
 
+type spanNamePart struct {
+	text string
+	key  attribute.Key
+	enum bool
+}
+
+func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
+	// A stack buffer holds most names, so the returned string is the only allocation.
+	var buffer [64]byte
+	for _, template := range templates {
+		if name, ok := spanNameAppend(buffer[:0], kvs, template); ok {
+			return string(name)
+		}
+	}
+	return fallback
+}
+
+func spanNameAppend(name []byte, kvs []attribute.KeyValue, template []spanNamePart) ([]byte, bool) {
+	for _, part := range template {
+		if part.key == "" {
+			name = append(name, part.text...)
+			continue
+		}
+		value, ok := spanNameValue(kvs, part)
+		if !ok {
+			return name, false
+		}
+		name = append(name, value...)
+	}
+	return name, true
+}
+
+func spanNameValue(kvs []attribute.KeyValue, part spanNamePart) (string, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key != part.key {
+			continue
+		}
+		value := kvs[index].Value.Emit()
+		switch kvs[index].Value.Type() {
+		case attribute.STRING:
+			return value, value != "" && !(part.enum && value == "_OTHER")
+		case attribute.BOOLSLICE, attribute.INT64SLICE, attribute.FLOAT64SLICE, attribute.STRINGSLICE:
+			return value, value != "[]"
+		}
+		return value, true
+	}
+	return "", false
+}
+
 // TaskDispatchStartAttr is an attribute StartTaskDispatch accepts in
 // addition to the ones it requires.
 type TaskDispatchStartAttr interface {
@@ -109,8 +158,10 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 //
 // Dispatch of a task.
 //
-// The span is named `task {myapp.task.id} failed with {error.type}`, with
-// each placeholder replaced by the value of the attribute it names.
+// The span is named from the first of these templates whose attributes are
+// all set, not empty, and not `_OTHER`:
+// `task {myapp.task.id} failed with {error.type}`. Otherwise it is named
+// `myapp.task.dispatch`.
 func StartTaskDispatch(ctx context.Context, tracer myapptracer.Tracer, errorType errorattr.Type, myappTaskID myappattr.TaskID, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	if kv := errorType.KeyValue(); kv.Valid() {
@@ -124,7 +175,9 @@ func StartTaskDispatch(ctx context.Context, tracer myapptracer.Tracer, errorType
 			kvs = append(kvs, kv)
 		}
 	}
-	name := "task " + myappTaskID.KeyValue().Value.Emit() + " failed with " + errorType.KeyValue().Value.Emit()
+	name := spanName(kvs, "myapp.task.dispatch",
+		[]spanNamePart{{text: "task "}, {key: "myapp.task.id"}, {text: " failed with "}, {key: "error.type", enum: true}},
+	)
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,

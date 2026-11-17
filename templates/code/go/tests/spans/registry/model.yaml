@@ -16,6 +16,10 @@ attributes:
           value: done
           stability: stable
           brief: The task finished.
+        - id: other
+          value: _OTHER
+          stability: stable
+          brief: A state the convention does not list.
     stability: stable
     brief: Current state of the task.
   - key: myapp.task.attempt
@@ -46,7 +50,10 @@ spans:
     brief: The scheduler handing a task to a worker.
     note: Ends when the worker accepts the task.
     name:
-      note: "`dispatch {worker.host.name}:{worker.host.port}`"
+      note: Named after the worker it goes to, when the worker has a host name.
+      templates:
+        - "dispatch {worker.host.name}:{worker.host.port}"
+        - dispatch
     attributes:
       - ref: worker.host.name
         requirement_level: required
@@ -66,7 +73,10 @@ spans:
     stability: stable
     brief: One run of a task.
     name:
-      note: "`run {myapp.task.id}`"
+      note: Named after the task when its id is known, else after its state.
+      templates:
+        - "run {myapp.task.id}"
+        - "run {myapp.task.state}"
     attributes:
       - ref: myapp.task.state
         requirement_level: required

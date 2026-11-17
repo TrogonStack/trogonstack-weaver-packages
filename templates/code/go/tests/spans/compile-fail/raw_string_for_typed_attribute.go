@@ -9,5 +9,5 @@ import (
 
 func invalid() {
 	var tracer semconvtracer.Tracer
-	myappspan.StartTaskRun(context.Background(), tracer, myappspan.TaskRunName{}, "running")
+	myappspan.StartTaskRun(context.Background(), tracer, "running")
 }

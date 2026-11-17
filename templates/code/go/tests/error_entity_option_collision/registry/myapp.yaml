@@ -22,7 +22,6 @@ entities:
     brief: A host.
     identity:
       - ref: myapp.host.id
-        requirement_level: required
     description:
       - ref: myapp.host.type
       - ref: myapp.host_type

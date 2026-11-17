@@ -16,6 +16,55 @@ import (
 	"example.com/semconv/workerattr"
 )
 
+type spanNamePart struct {
+	text string
+	key  attribute.Key
+	enum bool
+}
+
+func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
+	// A stack buffer holds most names, so the returned string is the only allocation.
+	var buffer [64]byte
+	for _, template := range templates {
+		if name, ok := spanNameAppend(buffer[:0], kvs, template); ok {
+			return string(name)
+		}
+	}
+	return fallback
+}
+
+func spanNameAppend(name []byte, kvs []attribute.KeyValue, template []spanNamePart) ([]byte, bool) {
+	for _, part := range template {
+		if part.key == "" {
+			name = append(name, part.text...)
+			continue
+		}
+		value, ok := spanNameValue(kvs, part)
+		if !ok {
+			return name, false
+		}
+		name = append(name, value...)
+	}
+	return name, true
+}
+
+func spanNameValue(kvs []attribute.KeyValue, part spanNamePart) (string, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key != part.key {
+			continue
+		}
+		value := kvs[index].Value.Emit()
+		switch kvs[index].Value.Type() {
+		case attribute.STRING:
+			return value, value != "" && !(part.enum && value == "_OTHER")
+		case attribute.BOOLSLICE, attribute.INT64SLICE, attribute.FLOAT64SLICE, attribute.STRINGSLICE:
+			return value, value != "[]"
+		}
+		return value, true
+	}
+	return "", false
+}
+
 // TaskDispatchStartAttr is an attribute StartTaskDispatch accepts in
 // addition to the ones it requires.
 type TaskDispatchStartAttr interface {
@@ -125,8 +174,9 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 //
 // Ends when the worker accepts the task.
 //
-// The span is named `dispatch {worker.host.name}:{worker.host.port}`, with
-// each placeholder replaced by the value of the attribute it names.
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `dispatch {worker.host.name}:{worker.host.port}`.
+// Otherwise it is named `dispatch`.
 func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 3+len(opts))
 	if kv := myappTaskAttempt.KeyValue(); kv.Valid() {
@@ -143,7 +193,9 @@ func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, myappTa
 			kvs = append(kvs, kv)
 		}
 	}
-	name := "dispatch " + workerHostName.KeyValue().Value.Emit() + ":" + workerHostPort.KeyValue().Value.Emit()
+	name := spanName(kvs, "dispatch",
+		[]spanNamePart{{text: "dispatch "}, {key: "worker.host.name"}, {text: ":"}, {key: "worker.host.port"}},
+	)
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,

@@ -111,4 +111,9 @@ var (
 	//
 	// The task finished.
 	TaskStateDone = TaskState{value: "done", ok: true}
+
+	// TaskStateOther is the "_OTHER" member of `myapp.task.state`.
+	//
+	// A state the convention does not list.
+	TaskStateOther = TaskState{value: "_OTHER", ok: true}
 )

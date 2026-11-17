@@ -42,6 +42,8 @@ spans:
     brief: A request to an upstream server.
     name:
       note: "`{server.address}:{server.port}`"
+      templates:
+        - "{server.address}:{server.port}"
     attributes:
       - ref: server.address
         requirement_level: required

@@ -16,6 +16,55 @@ import (
 	"example.com/semconv/workerattr"
 )
 
+type spanNamePart struct {
+	text string
+	key  attribute.Key
+	enum bool
+}
+
+func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
+	// A stack buffer holds most names, so the returned string is the only allocation.
+	var buffer [64]byte
+	for _, template := range templates {
+		if name, ok := spanNameAppend(buffer[:0], kvs, template); ok {
+			return string(name)
+		}
+	}
+	return fallback
+}
+
+func spanNameAppend(name []byte, kvs []attribute.KeyValue, template []spanNamePart) ([]byte, bool) {
+	for _, part := range template {
+		if part.key == "" {
+			name = append(name, part.text...)
+			continue
+		}
+		value, ok := spanNameValue(kvs, part)
+		if !ok {
+			return name, false
+		}
+		name = append(name, value...)
+	}
+	return name, true
+}
+
+func spanNameValue(kvs []attribute.KeyValue, part spanNamePart) (string, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key != part.key {
+			continue
+		}
+		value := kvs[index].Value.Emit()
+		switch kvs[index].Value.Type() {
+		case attribute.STRING:
+			return value, value != "" && !(part.enum && value == "_OTHER")
+		case attribute.BOOLSLICE, attribute.INT64SLICE, attribute.FLOAT64SLICE, attribute.STRINGSLICE:
+			return value, value != "[]"
+		}
+		return value, true
+	}
+	return "", false
+}
+
 // QueueDrainName is the name the `myapp.queue.drain` span is started with.
 //
 // `drain` followed by the queue's name, such as `drain reports`.
@@ -232,8 +281,9 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 //
 // Ends when the worker accepts the task.
 //
-// The span is named `dispatch {worker.host.name}:{worker.host.port}`, with
-// each placeholder replaced by the value of the attribute it names.
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `dispatch {worker.host.name}:{worker.host.port}`.
+// Otherwise it is named `dispatch`.
 func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	if kv := workerHostName.KeyValue(); kv.Valid() {
@@ -247,7 +297,9 @@ func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, workerH
 			kvs = append(kvs, kv)
 		}
 	}
-	name := "dispatch " + workerHostName.KeyValue().Value.Emit() + ":" + workerHostPort.KeyValue().Value.Emit()
+	name := spanName(kvs, "dispatch",
+		[]spanNamePart{{text: "dispatch "}, {key: "worker.host.name"}, {text: ":"}, {key: "worker.host.port"}},
+	)
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,
@@ -282,19 +334,6 @@ func (taskRunSpanTaskID) taskRunAttr() {}
 // starts it or later through SetAttributes.
 func WithTaskRunTaskID(v myappattr.TaskID) TaskRunAttr {
 	return taskRunSpanTaskID{v: v}
-}
-
-// TaskRunName is the name the `myapp.task.run` span is started with.
-//
-// `run {myapp.task.id}`
-//
-// An empty TaskRunName, including the zero one, names the span
-// `myapp.task.run`.
-type TaskRunName struct{ value string }
-
-// NewTaskRunName returns name as a TaskRunName.
-func NewTaskRunName(name string) TaskRunName {
-	return TaskRunName{value: name}
 }
 
 // TaskRun is a started span of `myapp.task.run`. The zero TaskRun records
@@ -353,15 +392,6 @@ func (s TaskRun) RecordError(err error, attrs ...TaskRunAttr) {
 	s.raw().RecordError(err, trace.WithAttributes(s.lateAttrs(attrs)...))
 }
 
-// SetName sets the name of the span. An empty TaskRunName, including the
-// zero one, names the span `myapp.task.run`.
-func (s TaskRun) SetName(name TaskRunName) {
-	if name.value == "" {
-		name = TaskRunName{value: "myapp.task.run"}
-	}
-	s.raw().SetName(name.value)
-}
-
 // SetStatus sets the status of the span.
 func (s TaskRun) SetStatus(code codes.Code, description string) {
 	s.raw().SetStatus(code, description)
@@ -371,10 +401,11 @@ func (s TaskRun) SetStatus(code codes.Code, description string) {
 // internal.
 //
 // One run of a task.
-func StartTaskRun(ctx context.Context, tracer semconvtracer.Tracer, name TaskRunName, myappTaskState myappattr.TaskState, opts ...TaskRunStartAttr) (context.Context, TaskRun) {
-	if name.value == "" {
-		name = TaskRunName{value: "myapp.task.run"}
-	}
+//
+// The span is named from the first of these templates whose attributes are
+// all set, not empty, and not `_OTHER`: `run {myapp.task.id}`,
+// `run {myapp.task.state}`. Otherwise it is named `myapp.task.run`.
+func StartTaskRun(ctx context.Context, tracer semconvtracer.Tracer, myappTaskState myappattr.TaskState, opts ...TaskRunStartAttr) (context.Context, TaskRun) {
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
 	if kv := myappTaskState.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
@@ -384,9 +415,13 @@ func StartTaskRun(ctx context.Context, tracer semconvtracer.Tracer, name TaskRun
 			kvs = append(kvs, kv)
 		}
 	}
+	name := spanName(kvs, "myapp.task.run",
+		[]spanNamePart{{text: "run "}, {key: "myapp.task.id"}},
+		[]spanNamePart{{text: "run "}, {key: "myapp.task.state", enum: true}},
+	)
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
-		name.value,
+		name,
 		trace.WithSpanKind(trace.SpanKindInternal),
 		trace.WithAttributes(kvs...),
 	)
