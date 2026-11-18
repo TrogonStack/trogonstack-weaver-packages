@@ -48,6 +48,8 @@ spans:
     brief: An invoice is being issued.
     name:
       note: "`invoice {acme.billing.invoice.id}`"
+      templates:
+        - "invoice {acme.billing.invoice.id}"
     attributes:
       - ref: acme.billing.invoice.id
         requirement_level: required

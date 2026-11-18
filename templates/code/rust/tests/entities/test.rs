@@ -55,15 +55,6 @@ fn consuming_export_preserves_owned_string_storage() {
 }
 
 #[test]
-fn default_is_available_when_no_attributes_are_required() {
-    let empty = resource::MyappOptional::default();
-    assert_eq!(empty.attributes().count(), 0);
-    let resource = Resource::from(empty);
-    assert_eq!(resource.len(), 0);
-    assert_eq!(resource.schema_url(), Some(SCHEMA_URL));
-}
-
-#[test]
 fn optional_attribute_overflow_preserves_values_and_order() {
     let options = (0..15).map(|index| {
         resource::MyappHostAttr::HostType(if index == 14 {

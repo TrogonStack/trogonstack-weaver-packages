@@ -17,22 +17,22 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         },
     );
     let _: &tracer::Tracer<opentelemetry_sdk::trace::SdkTracer> = &tracer;
-    let parent = trace::start_myapp_task_dispatch(
+    let parent = trace::start_myapp_task_dispatch_by_worker(
         &opentelemetry::Context::new(),
         &tracer,
         attribute::WorkerHostName::from("worker-1"),
         attribute::WorkerHostPort::from(8080),
-        [trace::MyappTaskDispatchStartAttr::TaskId(
+        [trace::MyappTaskDispatchByWorkerStartAttr::TaskId(
             attribute::MyappTaskId::from("task-1"),
         )],
     );
     assert!(parent.is_recording());
     assert!(parent.span_context().is_valid());
     let context = parent.into_context(&opentelemetry::Context::new());
-    let mut child = trace::start_myapp_task_run(
+    let mut child = trace::start_myapp_task_run_by_task_id(
         &context,
         &tracer,
-        trace::MyappTaskRunName::from("run task-1"),
+        attribute::MyappTaskId::from("task-1"),
         attribute::MyappTaskState::Done,
         [],
     );
@@ -42,7 +42,7 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     child.set_status(opentelemetry::trace::Status::Ok);
     child.end();
     context.span().end();
-    let mut refined = trace::start_worker_task_dispatch(
+    let mut refined = trace::start_worker_task_dispatch_by_worker(
         &opentelemetry::Context::new(),
         &tracer,
         attribute::MyappTaskAttempt::from(3),
@@ -51,11 +51,10 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
         [],
     );
     refined.end();
-    let mut fallback = trace::start_myapp_task_run(
+    let mut fallback = trace::start_myapp_task_run_by_state(
         &opentelemetry::Context::new(),
         &tracer,
-        trace::MyappTaskRunName::default(),
-        attribute::MyappTaskState::Done,
+        attribute::MyappTaskState::Other,
         [],
     );
     fallback.end();
@@ -175,15 +174,14 @@ fn typed_events_links_names_and_span_context_reach_the_exporter() {
         .with_simple_exporter(exporter.clone())
         .build();
     let tracer = tracer::Tracer::new(&provider, Default::default());
-    let linked = trace::start_myapp_task_run(
+    let linked = trace::start_myapp_task_run_by_state(
         &opentelemetry::Context::new(),
         &tracer,
-        trace::MyappTaskRunName::from("linked"),
         attribute::MyappTaskState::Done,
         [],
     );
     let linked_context = linked.span_context().clone();
-    let mut span = trace::start_myapp_task_dispatch(
+    let mut span = trace::start_myapp_task_dispatch_by_worker(
         &opentelemetry::Context::new(),
         &tracer,
         attribute::WorkerHostName::from("worker-1"),
@@ -268,4 +266,117 @@ fn typed_events_links_names_and_span_context_reach_the_exporter() {
     assert!(spans
         .iter()
         .any(|span| span.name == trace::MyappNameStatic::NAME));
+}
+
+#[test]
+fn each_name_template_variant_names_the_span_from_its_own_template_first() {
+    let exporter = InMemorySpanExporter::default();
+    let provider = SdkTracerProvider::builder()
+        .with_simple_exporter(exporter.clone())
+        .build();
+    let tracer = tracer::Tracer::new(&provider, Default::default());
+    let context = opentelemetry::Context::new();
+    let finished_name = || {
+        provider.force_flush().unwrap();
+        let name = exporter.get_finished_spans().unwrap()[0].name.to_string();
+        exporter.reset();
+        name
+    };
+    let by_state_cases = [
+        (
+            "state set",
+            attribute::MyappTaskState::Done,
+            vec![trace::MyappTaskRunByStateStartAttr::TaskId(attribute::MyappTaskId::from("t-9"))],
+            "run done",
+        ),
+        (
+            "other enum member falls back to the task ID",
+            attribute::MyappTaskState::Other,
+            vec![trace::MyappTaskRunByStateStartAttr::TaskId(attribute::MyappTaskId::from("t-9"))],
+            "run t-9",
+        ),
+        (
+            "last optional attribute wins",
+            attribute::MyappTaskState::Other,
+            vec![
+                trace::MyappTaskRunByStateStartAttr::TaskId(attribute::MyappTaskId::from("t-9")),
+                trace::MyappTaskRunByStateStartAttr::TaskId(attribute::MyappTaskId::from("t-10")),
+            ],
+            "run t-10",
+        ),
+        (
+            "other enum member and empty task ID",
+            attribute::MyappTaskState::Other,
+            vec![trace::MyappTaskRunByStateStartAttr::TaskId(attribute::MyappTaskId::from(""))],
+            "myapp.task.run",
+        ),
+        (
+            "other enum member and no task ID",
+            attribute::MyappTaskState::Other,
+            vec![],
+            "myapp.task.run",
+        ),
+    ];
+    for (case, state, options, expected) in by_state_cases {
+        trace::start_myapp_task_run_by_state(&context, &tracer, state, options).end();
+        assert_eq!(finished_name(), expected, "{case}");
+    }
+    let by_task_id_cases = [
+        ("task ID set", "t-9", attribute::MyappTaskState::Done, "run t-9"),
+        (
+            "empty task ID falls back to the state",
+            "",
+            attribute::MyappTaskState::Queued,
+            "run queued",
+        ),
+        (
+            "empty task ID and other enum member",
+            "",
+            attribute::MyappTaskState::Other,
+            "myapp.task.run",
+        ),
+    ];
+    for (case, task_id, state, expected) in by_task_id_cases {
+        trace::start_myapp_task_run_by_task_id(
+            &context,
+            &tracer,
+            attribute::MyappTaskId::from(task_id),
+            state,
+            [trace::MyappTaskRunByTaskIdStartAttr::QueueName(
+                attribute::MyappQueueName::from("reports"),
+            )],
+        )
+        .end();
+        assert_eq!(finished_name(), expected, "{case}");
+    }
+    for (host, expected) in [("worker-1", "dispatch worker-1:8080"), ("", "dispatch")] {
+        trace::start_myapp_task_dispatch_by_worker(
+            &context,
+            &tracer,
+            attribute::WorkerHostName::from(host),
+            attribute::WorkerHostPort::from(8080),
+            [],
+        )
+        .end();
+        assert_eq!(finished_name(), expected, "{host}");
+    }
+    trace::start_myapp_task_dispatch_fallback(
+        &context,
+        &tracer,
+        attribute::WorkerHostName::from("worker-1"),
+        attribute::WorkerHostPort::from(8080),
+        [],
+    )
+    .end();
+    assert_eq!(finished_name(), "dispatch");
+    trace::start_worker_task_dispatch_fallback(
+        &context,
+        &tracer,
+        attribute::MyappTaskAttempt::from(1),
+        attribute::WorkerHostName::from("worker-1"),
+        attribute::WorkerHostPort::from(8080),
+        [],
+    )
+    .end();
+    assert_eq!(finished_name(), "dispatch");
 }

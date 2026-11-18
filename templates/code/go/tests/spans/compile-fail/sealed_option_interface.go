@@ -10,4 +10,6 @@ type fakeAttr struct{}
 
 func (fakeAttr) taskRunStartAttr() attribute.KeyValue { return attribute.KeyValue{} }
 
-var invalid myappspan.TaskRunStartAttr = fakeAttr{}
+func (fakeAttr) taskRunByStateStartAttr() {}
+
+var invalid myappspan.TaskRunByStateStartAttr = fakeAttr{}

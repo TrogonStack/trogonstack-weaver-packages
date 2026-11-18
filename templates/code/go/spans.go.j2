@@ -15,6 +15,7 @@ attribute.{{ a.attr_type | map_text("attribute_type_method") }}({{ a.key | tojso
 {{ v }}.KeyValue()
 {%- endif -%}
 {%- endmacro -%}
+{%- set types = ctx.name_value_types -%}
 {%- filter regex_replace("(?m)`\\n(\\t?// )([.,;:!?)]+) ", "`${2}\n${1}") | regex_replace("(?m)`\\n\\t?// ([.,;:!?)]+)$", "`${1}") | regex_replace("(?m)`\\n(\\t?// ) (\\S)", "`\n${1}${2}") -%}
 {{ h.header() }}
 
@@ -22,6 +23,18 @@ package {{ ctx.namespace }}span
 
 import (
 	"context"
+{%- if "double[]" in types %}
+	"math"
+{%- endif %}
+{%- if types | select("in", ["boolean", "int", "double", "boolean[]", "int[]", "double[]"]) | list | length > 0 %}
+	"strconv"
+{%- endif %}
+{%- if ctx.uses_name_templates %}
+	"strings"
+{%- endif %}
+{%- if "string[]" in types %}
+	"unicode/utf8"
+{%- endif %}
 {% if ctx.uses_attributes %}
 	"go.opentelemetry.io/otel/attribute"
 {%- endif %}
@@ -32,14 +45,281 @@ import (
 	"{{ imp.path }}"
 {%- endfor %}
 )
-{% for def in ctx.spans %}
+{% if ctx.uses_name_templates %}
+type spanNamePart struct {
+	text string
+	key  attribute.Key
+	enum bool
+}
+
+func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
+	for _, template := range templates {
+		if length, ok := spanNameLength(kvs, template); ok {
+			return spanNameBuild(kvs, template, length)
+		}
+	}
+	return fallback
+}
+
+func spanNameValue(kvs []attribute.KeyValue, key attribute.Key) (attribute.Value, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key == key {
+			return kvs[index].Value, true
+		}
+	}
+	return attribute.Value{}, false
+}
+
+// The length is an upper bound, so the builder never grows and the name is its only allocation.
+func spanNameLength(kvs []attribute.KeyValue, template []spanNamePart) (int, bool) {
+	length := 0
+	for _, part := range template {
+		if part.key == "" {
+			length += len(part.text)
+			continue
+		}
+		value, found := spanNameValue(kvs, part.key)
+		if !found {
+			return 0, false
+		}
+		switch value.Type() {
+{%- if "string" in types %}
+		case attribute.STRING:
+			text := value.AsString()
+			if text == "" || (part.enum && text == "_OTHER") {
+				return 0, false
+			}
+			length += len(text)
+{%- endif %}
+{%- if "boolean" in types %}
+		case attribute.BOOL:
+			length += len("false")
+{%- endif %}
+{%- if "int" in types %}
+		case attribute.INT64:
+			length += len("-9223372036854775808")
+{%- endif %}
+{%- if "double" in types %}
+		case attribute.FLOAT64:
+			length += len("-1.7976931348623157e+308")
+{%- endif %}
+{%- if "boolean[]" in types %}
+		case attribute.BOOLSLICE:
+			elements := value.AsBoolSlice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]") + len("false ")*len(elements)
+{%- endif %}
+{%- if "int[]" in types %}
+		case attribute.INT64SLICE:
+			elements := value.AsInt64Slice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]") + len("-9223372036854775808,")*len(elements)
+{%- endif %}
+{%- if "double[]" in types %}
+		case attribute.FLOAT64SLICE:
+			elements := value.AsFloat64Slice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("invalid: []") + len("-0.0000012345678901234567,")*len(elements)
+{%- endif %}
+{%- if "string[]" in types %}
+		case attribute.STRINGSLICE:
+			elements := value.AsStringSlice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]")
+			for _, element := range elements {
+				// encoding/json escapes one byte to at most six, as in \u001f.
+				length += len(`"",`) + 6*len(element)
+			}
+{%- endif %}
+		}
+	}
+	return length, true
+}
+
+// Values are written as attribute.Value.Emit writes them, so names keep the text they had.
+func spanNameBuild(kvs []attribute.KeyValue, template []spanNamePart, length int) string {
+	var name strings.Builder
+	name.Grow(length)
+{%- if types | select("in", ["int", "double", "int[]"]) | list | length > 0 %}
+	var number [32]byte
+{%- endif %}
+	for _, part := range template {
+		if part.key == "" {
+			name.WriteString(part.text)
+			continue
+		}
+		value, _ := spanNameValue(kvs, part.key)
+		switch value.Type() {
+{%- if "string" in types %}
+		case attribute.STRING:
+			name.WriteString(value.AsString())
+{%- endif %}
+{%- if "boolean" in types %}
+		case attribute.BOOL:
+			name.WriteString(strconv.FormatBool(value.AsBool()))
+{%- endif %}
+{%- if "int" in types %}
+		case attribute.INT64:
+			name.Write(strconv.AppendInt(number[:0], value.AsInt64(), 10))
+{%- endif %}
+{%- if "double" in types %}
+		case attribute.FLOAT64:
+			name.Write(strconv.AppendFloat(number[:0], value.AsFloat64(), 'g', -1, 64))
+{%- endif %}
+{%- if "boolean[]" in types %}
+		case attribute.BOOLSLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsBoolSlice() {
+				if index > 0 {
+					name.WriteByte(' ')
+				}
+				name.WriteString(strconv.FormatBool(element))
+			}
+			name.WriteByte(']')
+{%- endif %}
+{%- if "int[]" in types %}
+		case attribute.INT64SLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsInt64Slice() {
+				if index > 0 {
+					name.WriteByte(',')
+				}
+				name.Write(strconv.AppendInt(number[:0], element, 10))
+			}
+			name.WriteByte(']')
+{%- endif %}
+{%- if "double[]" in types %}
+		case attribute.FLOAT64SLICE:
+			spanNameWriteFloats(&name, value.AsFloat64Slice())
+{%- endif %}
+{%- if "string[]" in types %}
+		case attribute.STRINGSLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsStringSlice() {
+				if index > 0 {
+					name.WriteByte(',')
+				}
+				spanNameWriteQuoted(&name, element)
+			}
+			name.WriteByte(']')
+{%- endif %}
+		}
+	}
+	return name.String()
+}
+{%- if "double[]" in types %}
+
+// Emit writes a float array as JSON, and falls back to fmt formatting when JSON cannot hold NaN or an infinity.
+func spanNameWriteFloats(name *strings.Builder, elements []float64) {
+	var number [32]byte
+	for _, element := range elements {
+		if math.IsInf(element, 0) || math.IsNaN(element) {
+			name.WriteString("invalid: [")
+			for index, element := range elements {
+				if index > 0 {
+					name.WriteByte(' ')
+				}
+				name.Write(strconv.AppendFloat(number[:0], element, 'g', -1, 64))
+			}
+			name.WriteByte(']')
+			return
+		}
+	}
+	name.WriteByte('[')
+	for index, element := range elements {
+		if index > 0 {
+			name.WriteByte(',')
+		}
+		format := byte('f')
+		if magnitude := math.Abs(element); magnitude != 0 && (magnitude < 1e-6 || magnitude >= 1e21) {
+			format = 'e'
+		}
+		text := strconv.AppendFloat(number[:0], element, format, -1, 64)
+		// encoding/json drops the leading zero of a negative exponent, as in 1e-07 to 1e-7.
+		if length := len(text); format == 'e' && text[length-4] == 'e' && text[length-3] == '-' && text[length-2] == '0' {
+			text[length-2] = text[length-1]
+			text = text[:length-1]
+		}
+		name.Write(text)
+	}
+	name.WriteByte(']')
+}
+{%- endif %}
+{%- if "string[]" in types %}
+
+// Emit writes a string array as JSON, which escapes HTML characters and replaces invalid UTF-8.
+func spanNameWriteQuoted(name *strings.Builder, text string) {
+	const hexadecimal = "0123456789abcdef"
+	name.WriteByte('"')
+	start := 0
+	for index := 0; index < len(text); {
+		if character := text[index]; character < utf8.RuneSelf {
+			if character >= ' ' && character != '"' && character != '\\' && character != '<' && character != '>' && character != '&' {
+				index++
+				continue
+			}
+			name.WriteString(text[start:index])
+			switch character {
+			case '"', '\\':
+				name.WriteByte('\\')
+				name.WriteByte(character)
+			case '\b':
+				name.WriteString(`\b`)
+			case '\f':
+				name.WriteString(`\f`)
+			case '\n':
+				name.WriteString(`\n`)
+			case '\r':
+				name.WriteString(`\r`)
+			case '\t':
+				name.WriteString(`\t`)
+			default:
+				name.WriteString(`\u00`)
+				name.WriteByte(hexadecimal[character>>4])
+				name.WriteByte(hexadecimal[character&0xf])
+			}
+			index++
+			start = index
+			continue
+		}
+		symbol, size := utf8.DecodeRuneInString(text[index:])
+		switch {
+		case symbol == utf8.RuneError && size == 1:
+			name.WriteString(text[start:index])
+			name.WriteString(`�`)
+		case symbol == ' ' || symbol == ' ':
+			name.WriteString(text[start:index])
+			name.WriteString(`\u202`)
+			name.WriteByte(hexadecimal[symbol&0xf])
+		default:
+			index += size
+			continue
+		}
+		index += size
+		start = index
+	}
+	name.WriteString(text[start:])
+	name.WriteByte('"')
+}
+{%- endif %}
+{% endif %}
+{%- for def in ctx.spans %}
 {%- set name = n.exported(def.short_name) %}
 {%- set private = n.unexported(def.short_name) if def.short_name else "bare" %}
 {%- set span = name or "Span" %}
 {%- set start = "Start" ~ name %}
+{%- set multi = def.starters[0].id %}
 {%- set deprecated = d.notice(def) %}
 {%- set opt_in = "Opt-in: the convention records `" ~ def.id ~ "` only when a user asks for it." if def.requirement_level == "opt_in" else none -%}
-{% if def.optional %}
+{% if def.optional and not multi %}
 {{ [name ~ "StartAttr is an attribute " ~ start ~ " accepts in addition to the ones it requires."] | join | comment }}
 type {{ name }}StartAttr interface {
 	{{ private }}StartAttr() attribute.KeyValue
@@ -72,8 +352,58 @@ func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {{ name }}Attr {
 }
 {% endif %}
 {%- endfor %}
+{%- elif def.optional %}
+{%- for starter in def.starters if starter.optional %}
+{%- set starter_attr = name ~ n.exported(starter.id) ~ "StartAttr" %}
+{{ [starter_attr ~ " is an attribute " ~ start ~ n.exported(starter.id) ~ " accepts in addition to its parameters."] | join | comment }}
+type {{ starter_attr }} interface {
+	{{ private }}StartAttr() attribute.KeyValue
+	{{ private }}{{ n.exported(starter.id) }}StartAttr()
+}
+{% endfor %}
+{%- if def.has_late_attrs %}
+{{ [name ~ "Attr is an attribute a " ~ span ~ " also accepts after it started, through SetAttributes."] | join | comment }}
+type {{ name }}Attr interface {
+	{{ private }}StartAttr() attribute.KeyValue
+	{{ private }}Attr()
+}
+{% endif %}
+{%- for opt in def.optional if opt.accepted_by or not opt.sampling_relevant %}
+{%- set optname = n.exported(opt.attr_short_name) %}
+{%- set option = namespace(types=([] if opt.sampling_relevant else [name ~ "Attr"]), starters=[]) %}
+{%- for id in opt.accepted_by %}
+{%- set option.types = option.types + [name ~ n.exported(id) ~ "StartAttr"] %}
+{%- set option.starters = option.starters + [start ~ n.exported(id)] %}
+{%- endfor %}
+{%- set starters_doc = (option.starters[:-1] | join(", ") ~ ", or " ~ option.starters[-1]) if option.starters | length > 2 else option.starters | join(" or ") %}
+type {{ private }}Span{{ optname }} struct{ v {{ attr_type(opt) }} }
+
+func (o {{ private }}Span{{ optname }}) {{ private }}StartAttr() attribute.KeyValue {
+	return {{ attr_kv(opt, "o.v") }}
+}
+{% for id in opt.accepted_by %}
+func ({{ private }}Span{{ optname }}) {{ private }}{{ n.exported(id) }}StartAttr() {}
+{% endfor %}
+{%- if not opt.sampling_relevant %}
+func ({{ private }}Span{{ optname }}) {{ private }}Attr() {}
+{% endif %}
+{% if opt.sampling_relevant %}
+{{- ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` when " ~ starters_doc ~ " starts the span. Samplers read it, so it is accepted only at start.", opt.requirement_doc] | select | join("\n\n") | comment }}
+{%- elif option.starters %}
+{{- ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on a " ~ span ~ ", when " ~ starters_doc ~ " starts it or later through SetAttributes.", opt.requirement_doc] | select | join("\n\n") | comment }}
+{%- else %}
+{{- ["With" ~ name ~ optname ~ " sets `" ~ opt.key ~ "` on a " ~ span ~ " after it started, through SetAttributes.", opt.requirement_doc] | select | join("\n\n") | comment }}
 {%- endif %}
-{%- if not def.name_parts %}
+func With{{ name }}{{ optname }}(v {{ attr_type(opt) }}) {% if option.types | length == 1 %}{{ option.types[0] }}{% else %}interface {
+{%- for type in option.types %}
+	{{ type }}
+{%- endfor %}
+} {%- endif %} {
+	return {{ private }}Span{{ optname }}{v: v}
+}
+{% endfor %}
+{%- endif %}
+{%- if not def.name_derived %}
 {{ [name ~ "Name is the name the `" ~ def.id ~ "` span is started with.", def.name.note, "An empty " ~ name ~ "Name, including the zero one, names the span `" ~ def.type ~ "`."] | select | join("\n\n") | comment }}
 type {{ name }}Name struct{ value string }
 
@@ -152,7 +482,7 @@ func (s {{ span }}) RecordError(err error) {
 	s.raw().RecordError(err)
 }
 {% endif %}
-{%- if not def.name_parts %}
+{%- if not def.name_derived %}
 {{ ["SetName sets the name of the span. An empty " ~ name ~ "Name, including the zero one, names the span `" ~ def.type ~ "`."] | join | comment }}
 func (s {{ span }}) SetName(name {{ name }}Name) {
 	if name.value == "" {
@@ -165,18 +495,18 @@ func (s {{ span }}) SetName(name {{ name }}Name) {
 func (s {{ span }}) SetStatus(code codes.Code, description string) {
 	s.raw().SetStatus(code, description)
 }
-{%- set name_doc = "The span is named `" ~ def.name_template ~ "`, with each placeholder replaced by the value of the attribute it names." if def.name_parts else none %}
-
-{{ [start ~ " starts the `" ~ def.id ~ "` span from tracer with span kind " ~ def.kind ~ (", as a refinement of `" ~ def.refines ~ "`" if def.refines else "") ~ ".", def.brief, def.note, name_doc, opt_in, deprecated] | select | join("\n\n") | comment }}
-func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if not def.name_parts %}, name {{ name }}Name{% endif %}{% for req in def.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if def.optional %}, opts ...{{ name }}StartAttr{% endif %}) (context.Context, {{ span }}) {
-{%- if not def.name_parts %}
+{% for starter in def.starters %}
+{%- set starter_name = start ~ (n.exported(starter.id) if starter.id else "") %}
+{{ [starter_name ~ " starts the `" ~ def.id ~ "` span from tracer with span kind " ~ def.kind ~ (", as a refinement of `" ~ def.refines ~ "`" if def.refines else "") ~ ".", def.brief, def.note, starter.name_doc, opt_in, deprecated] | select | join("\n\n") | comment }}
+func {{ starter_name }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if not def.name_derived %}, name {{ name }}Name{% endif %}{% for req in starter.required %}, {{ n.unexported(req.attr_param) }} {{ attr_type(req) }}{% endfor %}{% if starter.optional %}, opts ...{{ name }}{{ n.exported(starter.id) if multi else "" }}StartAttr{% endif %}) (context.Context, {{ span }}) {
+{%- if not def.name_derived %}
 	if name.value == "" {
 		name = {{ name }}Name{value: {{ def.type | tojson }}}
 	}
 {%- endif %}
-{%- if def.required or def.optional %}
-	kvs := make([]attribute.KeyValue, 0, {{ def.required | length }}{% if def.optional %}+len(opts){% endif %})
-{%- for req in def.required %}
+{%- if starter.required or starter.optional %}
+	kvs := make([]attribute.KeyValue, 0, {{ starter.required | length }}{% if starter.optional %}+len(opts){% endif %})
+{%- for req in starter.required %}
 {%- if req.imported %}
 	kvs = append(kvs, {{ attr_kv(req, n.unexported(req.attr_param)) }})
 {%- else %}
@@ -185,7 +515,7 @@ func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if no
 	}
 {%- endif %}
 {%- endfor %}
-{%- if def.optional %}
+{%- if starter.optional %}
 	for _, opt := range opts {
 		if kv := opt.{{ private }}StartAttr(); kv.Valid() {
 			kvs = append(kvs, kv)
@@ -193,21 +523,26 @@ func {{ start }}(ctx context.Context, tracer {{ n.root() }}tracer.Tracer{% if no
 	}
 {%- endif %}
 {%- endif %}
-{%- if def.name_parts %}
-	name := {% for part in def.name_parts %}{% if not loop.first %} + {% endif %}{% if part.attr %}{{ attr_kv(part.attr, n.unexported(part.attr.attr_param)) }}.Value.Emit(){% else %}{{ part.text | tojson }}{% endif %}{% endfor %}
+{%- if starter.name_templates %}
+	name := spanName(kvs, {{ starter.name_fallback | tojson }}{% for template in starter.name_templates %},
+		[]spanNamePart{ {%- for part in template.parts %}{% if not loop.first %}, {% endif %}{% if part.key %}{key: {{ part.key | tojson }}{% if part.enum %}, enum: true{% endif %}}{% else %}{text: {{ part.text | tojson }}}{% endif %}{% endfor %}}{% endfor %},
+	)
 {%- endif %}
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
-{%- if def.name_parts %}
+{%- if starter.name_templates %}
 		name,
+{%- elif def.name_derived %}
+		{{ starter.name_fallback | tojson }},
 {%- else %}
 		name.value,
 {%- endif %}
 		trace.WithSpanKind(trace.{{ def.kind | map_text("span_kind") }}),
-{%- if def.required or def.optional %}
+{%- if starter.required or starter.optional %}
 		trace.WithAttributes(kvs...),
 {%- endif %}
 	)
 	return ctx, {{ span }}{span: span}
 }
-{% endfor %}{% endfilter %}
+{% endfor %}
+{%- endfor %}{% endfilter %}

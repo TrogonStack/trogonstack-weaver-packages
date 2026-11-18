@@ -1,0 +1,1 @@
+span myapp.task.run has more than one name template, so add annotations.code_generation.name_templates to give each template an ID

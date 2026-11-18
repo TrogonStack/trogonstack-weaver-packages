@@ -37,7 +37,6 @@ entities:
     brief: A physical or virtual machine.
     identity:
       - ref: host.id
-        requirement_level: required
     description:
       - ref: host.name
 events:

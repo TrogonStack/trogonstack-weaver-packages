@@ -12,11 +12,9 @@ entities:
     brief: A worker host.
     identity:
       - ref: myapp.host.id
-        requirement_level: required
   - type: myapp.host_worker
     requirement_level: recommended
     stability: stable
     brief: A worker host, under another name.
     identity:
       - ref: myapp.host.id
-        requirement_level: required

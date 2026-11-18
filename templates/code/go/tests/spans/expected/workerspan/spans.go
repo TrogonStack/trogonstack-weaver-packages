@@ -4,6 +4,8 @@ package workerspan
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -16,16 +18,95 @@ import (
 	"example.com/semconv/workerattr"
 )
 
-// TaskDispatchStartAttr is an attribute StartTaskDispatch accepts in
-// addition to the ones it requires.
-type TaskDispatchStartAttr interface {
+type spanNamePart struct {
+	text string
+	key  attribute.Key
+	enum bool
+}
+
+func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
+	for _, template := range templates {
+		if length, ok := spanNameLength(kvs, template); ok {
+			return spanNameBuild(kvs, template, length)
+		}
+	}
+	return fallback
+}
+
+func spanNameValue(kvs []attribute.KeyValue, key attribute.Key) (attribute.Value, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key == key {
+			return kvs[index].Value, true
+		}
+	}
+	return attribute.Value{}, false
+}
+
+// The length is an upper bound, so the builder never grows and the name is its only allocation.
+func spanNameLength(kvs []attribute.KeyValue, template []spanNamePart) (int, bool) {
+	length := 0
+	for _, part := range template {
+		if part.key == "" {
+			length += len(part.text)
+			continue
+		}
+		value, found := spanNameValue(kvs, part.key)
+		if !found {
+			return 0, false
+		}
+		switch value.Type() {
+		case attribute.STRING:
+			text := value.AsString()
+			if text == "" || (part.enum && text == "_OTHER") {
+				return 0, false
+			}
+			length += len(text)
+		case attribute.INT64:
+			length += len("-9223372036854775808")
+		}
+	}
+	return length, true
+}
+
+// Values are written as attribute.Value.Emit writes them, so names keep the text they had.
+func spanNameBuild(kvs []attribute.KeyValue, template []spanNamePart, length int) string {
+	var name strings.Builder
+	name.Grow(length)
+	var number [32]byte
+	for _, part := range template {
+		if part.key == "" {
+			name.WriteString(part.text)
+			continue
+		}
+		value, _ := spanNameValue(kvs, part.key)
+		switch value.Type() {
+		case attribute.STRING:
+			name.WriteString(value.AsString())
+		case attribute.INT64:
+			name.Write(strconv.AppendInt(number[:0], value.AsInt64(), 10))
+		}
+	}
+	return name.String()
+}
+
+// TaskDispatchByWorkerStartAttr is an attribute StartTaskDispatchByWorker
+// accepts in addition to its parameters.
+type TaskDispatchByWorkerStartAttr interface {
 	taskDispatchStartAttr() attribute.KeyValue
+	taskDispatchByWorkerStartAttr()
+}
+
+// TaskDispatchFallbackStartAttr is an attribute StartTaskDispatchFallback
+// accepts in addition to its parameters.
+type TaskDispatchFallbackStartAttr interface {
+	taskDispatchStartAttr() attribute.KeyValue
+	taskDispatchFallbackStartAttr()
 }
 
 // TaskDispatchAttr is an attribute a TaskDispatch also accepts after it
 // started, through SetAttributes.
 type TaskDispatchAttr interface {
-	TaskDispatchStartAttr
+	taskDispatchStartAttr() attribute.KeyValue
 	taskDispatchAttr()
 }
 
@@ -35,13 +116,22 @@ func (o taskDispatchSpanQueueName) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
+func (taskDispatchSpanQueueName) taskDispatchByWorkerStartAttr() {}
+
+func (taskDispatchSpanQueueName) taskDispatchFallbackStartAttr() {}
+
 func (taskDispatchSpanQueueName) taskDispatchAttr() {}
 
 // WithTaskDispatchQueueName sets `myapp.queue.name` on a TaskDispatch, when
-// StartTaskDispatch starts it or later through SetAttributes.
+// StartTaskDispatchByWorker or StartTaskDispatchFallback starts it or later
+// through SetAttributes.
 //
 // Recommended: When the task came from a named queue.
-func WithTaskDispatchQueueName(v myappattr.QueueName) TaskDispatchAttr {
+func WithTaskDispatchQueueName(v myappattr.QueueName) interface {
+	TaskDispatchAttr
+	TaskDispatchByWorkerStartAttr
+	TaskDispatchFallbackStartAttr
+} {
 	return taskDispatchSpanQueueName{v: v}
 }
 
@@ -51,9 +141,17 @@ func (o taskDispatchSpanTaskID) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskDispatchTaskID sets `myapp.task.id` when StartTaskDispatch starts
-// the span. Samplers read it, so it is accepted only at start.
-func WithTaskDispatchTaskID(v myappattr.TaskID) TaskDispatchStartAttr {
+func (taskDispatchSpanTaskID) taskDispatchByWorkerStartAttr() {}
+
+func (taskDispatchSpanTaskID) taskDispatchFallbackStartAttr() {}
+
+// WithTaskDispatchTaskID sets `myapp.task.id` when StartTaskDispatchByWorker
+// or StartTaskDispatchFallback starts the span. Samplers read it, so it is
+// accepted only at start.
+func WithTaskDispatchTaskID(v myappattr.TaskID) interface {
+	TaskDispatchByWorkerStartAttr
+	TaskDispatchFallbackStartAttr
+} {
 	return taskDispatchSpanTaskID{v: v}
 }
 
@@ -118,16 +216,17 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 	s.raw().SetStatus(code, description)
 }
 
-// StartTaskDispatch starts the `worker.task.dispatch` span from tracer with
-// span kind client, as a refinement of `myapp.task.dispatch`.
+// StartTaskDispatchByWorker starts the `worker.task.dispatch` span from
+// tracer with span kind client, as a refinement of `myapp.task.dispatch`.
 //
 // The scheduler handing a task to a worker.
 //
 // Ends when the worker accepts the task.
 //
-// The span is named `dispatch {worker.host.name}:{worker.host.port}`, with
-// each placeholder replaced by the value of the attribute it names.
-func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `dispatch {worker.host.name}:{worker.host.port}`.
+// Otherwise it is named `dispatch`.
+func StartTaskDispatchByWorker(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchByWorkerStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 3+len(opts))
 	if kv := myappTaskAttempt.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
@@ -143,10 +242,45 @@ func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, myappTa
 			kvs = append(kvs, kv)
 		}
 	}
-	name := "dispatch " + workerHostName.KeyValue().Value.Emit() + ":" + workerHostPort.KeyValue().Value.Emit()
+	name := spanName(kvs, "dispatch",
+		[]spanNamePart{{text: "dispatch "}, {key: "worker.host.name"}, {text: ":"}, {key: "worker.host.port"}},
+	)
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, TaskDispatch{span: span}
+}
+
+// StartTaskDispatchFallback starts the `worker.task.dispatch` span from
+// tracer with span kind client, as a refinement of `myapp.task.dispatch`.
+//
+// The scheduler handing a task to a worker.
+//
+// Ends when the worker accepts the task.
+//
+// The span is named `dispatch`.
+func StartTaskDispatchFallback(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchFallbackStartAttr) (context.Context, TaskDispatch) {
+	kvs := make([]attribute.KeyValue, 0, 3+len(opts))
+	if kv := myappTaskAttempt.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := workerHostName.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := workerHostPort.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskDispatchStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		"dispatch",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(kvs...),
 	)

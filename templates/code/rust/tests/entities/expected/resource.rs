@@ -112,52 +112,6 @@ impl From<MyappHostWorker> for ::opentelemetry_sdk::Resource {
     }
 }
 #[derive(Clone, Debug)]
-pub enum MyappOptionalAttr {
-    QueueName(super::attribute::MyappQueueName),
-    QueueSize(super::attribute::MyappQueueSize),
-}
-
-impl From<MyappOptionalAttr> for ::opentelemetry::KeyValue {
-    fn from(value: MyappOptionalAttr) -> Self {
-        match value {
-            MyappOptionalAttr::QueueName(value) => ::opentelemetry::KeyValue::from(value),
-            MyappOptionalAttr::QueueSize(value) => ::opentelemetry::KeyValue::from(value),
-        }
-    }
-}
-/// An entity with optional description only.
-/// Identifies the entity: `myapp.queue.name`.
-/// Describes the entity: `myapp.queue.size`.
-#[derive(Clone, Debug, Default)]
-pub struct MyappOptional {
-    options: ::smallvec::SmallVec<[MyappOptionalAttr; 2]>,
-}
-
-impl MyappOptional {
-    pub const NAME: &'static str = "myapp.optional";
-
-    pub fn new(options: impl IntoIterator<Item = MyappOptionalAttr>) -> Self {
-        Self {
-            options: options.into_iter().collect(),
-        }
-    }
-
-    pub fn attributes(&self) -> impl Iterator<Item = ::opentelemetry::KeyValue> + '_ {
-        ::std::iter::empty()
-            .chain(self.options.iter().cloned().map(::opentelemetry::KeyValue::from))
-    }
-}
-
-impl From<MyappOptional> for ::opentelemetry_sdk::Resource {
-    fn from(value: MyappOptional) -> Self {
-        let attributes = [
-        ].into_iter().chain(value.options.into_iter().map(::opentelemetry::KeyValue::from));
-        ::opentelemetry_sdk::Resource::builder_empty()
-            .with_schema_url(attributes, super::SCHEMA_URL)
-            .build()
-    }
-}
-#[derive(Clone, Debug)]
 pub enum MyappQueueAttr {
     QueueSize(super::attribute::MyappQueueSize),
 }

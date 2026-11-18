@@ -42,7 +42,8 @@ per signal, holding every namespace. Each generated type and function name
 starts with its namespace, the first dotted segment of the registry name;
 `vendor_prefixes` removes a leading vendor segment before choosing that
 namespace. For example, `myapp.task.id` becomes `attribute::MyappTaskId`,
-and the `myapp.task.run` span starter becomes `trace::start_myapp_task_run`.
+and the `myapp.task.run` span starter for the `by_state` name template becomes
+`trace::start_myapp_task_run_by_state`.
 
 | Module      | API                                                                                            |
 | ----------- | ---------------------------------------------------------------------------------------------- |
@@ -154,21 +155,71 @@ provides unit-specific boundaries; units absent from that map use SDK defaults.
 ### Spans
 
 A span starter takes a parent `Context`, a generated tracer, required typed
-attributes, and optional start attributes. A registry name template whose
-placeholders refer to required attributes is expanded from those values.
-Otherwise the starter takes a typed `Name`, constructed with `From` for a static
-string, owned `String`, or `Cow<'static, str>`. An empty name borrows the span's
-registry type; static names stay borrowed and owned names move into the span.
+attributes, and optional start attributes. A span with `name.templates` is
+named from the first template whose attributes the starter received, each set,
+not empty, and, for an enum, not `_OTHER`. A placeholder may name a required or
+an optional attribute. A template without placeholders ends the list and is the
+fallback; without one, the fallback is the span's registry type. A placeholder
+for an attribute the span does not declare fails generation, and Weaver rejects
+a template it cannot parse. A template whose attribute `stable_only` or
+`exclude_deprecated` leaves out is dropped. The starter doc comment quotes the
+templates, and the name is set once, when the span starts.
+
+A span with one template keeps the single `start_<name>` starter. A span with
+more than one template gets one starter for each template, so each template
+needs an ID. Weaver does not give a template a stable ID
+([open-telemetry/weaver#1916](https://github.com/open-telemetry/weaver/issues/1916)),
+so the span sets `annotations.code_generation.name_templates`. It is a map from
+an ID to the exact pattern of one template:
+
+```yaml
+name:
+  templates:
+    - "run {myapp.task.id}"
+    - "run {myapp.task.state}"
+annotations:
+  code_generation:
+    name_templates:
+      by_task_id: "run {myapp.task.id}"
+      by_state: "run {myapp.task.state}"
+```
+
+The map names a template by its pattern, not by its position, so a change to
+the order of the templates keeps every starter name. The starter for an ID is
+`start_<name>_<id>`, such as `trace::start_myapp_task_run_by_task_id`. Its
+parameters are the required attributes of the span and every attribute its
+template uses. The other attributes stay start attributes. Each starter takes
+its own start attribute enum, `<Name><Id>StartAttr`, such as
+`trace::MyappTaskRunByTaskIdStartAttr`. That enum has a variant only for an
+attribute that the starter does not take as a parameter, so a start attribute
+for a parameter does not compile. A starter without other attributes takes no
+`options`. A template without placeholders
+also gets a starter, and that starter takes no extra parameters. A template
+that `stable_only` or `exclude_deprecated` drops gets no starter. Every starter
+of a span returns the same span type.
+
+Each starter names the span from its own template first. If a value of that
+template is empty, `_OTHER`, or an empty array, the name falls back through the
+other templates of the span, in their order, and then to the span type. With
+the templates above, `start_myapp_task_run_by_state` with the state `_OTHER` and
+the task ID `t-9` names the span `run t-9`. If Weaver gives a template its own
+ID, the ID moves from the annotation onto the template, and the starter names
+stay the same.
+
+A span without `name.templates` takes a typed `Name`, since `name.note` is
+prose. Construct it with `From` for a static string, owned `String`, or
+`Cow<'static, str>`. An empty name borrows the span's registry type; static
+names stay borrowed and owned names move into the span.
 
 All starter attributes are present before sampling. Sampling-relevant
-attributes appear only in the start attribute enum. The separate late attribute
+attributes appear only in the start attribute enums. The separate late attribute
 enum is accepted by `set_attributes`. The wrapper exposes `end`,
 `end_with_timestamp`, `record_error`, `set_status`, `span_context`, and
 `is_recording`. Events and links take the late attribute enum, so
 `add_event`, `add_event_with_timestamp`, and `add_link` accept only declared
 attributes; a span with no late attributes takes none. `update_name` is emitted
 for spans with a typed `Name` and is absent when the name is derived from
-attributes. The wrapper does not expose the underlying span, so every attribute
+templates. The wrapper does not expose the underlying span, so every attribute
 it records is typed. `into_context` transfers the span into a parent context for nested spans and
 normal OpenTelemetry context attachment. The generated tracer and span wrappers
 retain the provider's concrete types. Their default type is the no-op API type;
@@ -177,11 +228,12 @@ context integration is needed. The typed span is the only generated surface;
 once the span is in a `Context`, the OpenTelemetry API's own `SpanRef` governs
 it, and context propagation is that API's boundary.
 
-Derived names borrow attribute values and write directly into a preallocated
-`String`, reserving known literal and string lengths plus space for other
-values. Nonempty derived names allocate their output buffer. Required attributes use a
-stack array and optional iterators, which the span builder collects into its
-owned attribute buffer.
+A span named from templates collects its start attributes into a `Vec`, which
+the span builder takes without copying, and reads the template values from it.
+A template that matches writes into a `String` preallocated from known literal
+and string lengths plus space for other values, so it allocates once. A literal
+fallback is borrowed. Other spans use a stack array for required attributes and
+chain the optional iterator.
 
 ### Events
 
@@ -278,7 +330,11 @@ const DURATION: &str = metric::MyappTaskDuration::NAME;
 
 The manifest must provide a schema URL ending in a schema version. Naming
 collisions, unusable enums, invalid aggregation, conflicting refinements, and
-filtering away required signal attributes fail generation. Attribute names use
+filtering away required signal attributes fail generation. A span fails when it
+has one name template and sets `annotations.code_generation.name_templates`,
+or has more than one and does not set it. It also fails when a template has no
+ID, an ID names a pattern that matches no template, two IDs name the same
+pattern, or an ID does not match `^[a-z][a-z0-9]*(_[a-z0-9]+)*$`. Attribute names use
 ASCII letter-led dotted segments containing letters, digits, and underscores.
 Namespace segments must be lowercase and may contain digits and underscores.
 

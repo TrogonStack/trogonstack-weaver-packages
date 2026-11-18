@@ -1,1 +1,1 @@
-Either 'schema_url' or both 'schema_base_url' and 'semconv_version' must be provided
+missing required field 'schema_url'

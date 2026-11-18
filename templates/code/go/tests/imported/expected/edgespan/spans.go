@@ -4,6 +4,8 @@ package edgespan
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -13,6 +15,77 @@ import (
 	"example.com/semconv/internal/scope"
 	"example.com/semconv/semconvtracer"
 )
+
+type spanNamePart struct {
+	text string
+	key  attribute.Key
+	enum bool
+}
+
+func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
+	for _, template := range templates {
+		if length, ok := spanNameLength(kvs, template); ok {
+			return spanNameBuild(kvs, template, length)
+		}
+	}
+	return fallback
+}
+
+func spanNameValue(kvs []attribute.KeyValue, key attribute.Key) (attribute.Value, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key == key {
+			return kvs[index].Value, true
+		}
+	}
+	return attribute.Value{}, false
+}
+
+// The length is an upper bound, so the builder never grows and the name is its only allocation.
+func spanNameLength(kvs []attribute.KeyValue, template []spanNamePart) (int, bool) {
+	length := 0
+	for _, part := range template {
+		if part.key == "" {
+			length += len(part.text)
+			continue
+		}
+		value, found := spanNameValue(kvs, part.key)
+		if !found {
+			return 0, false
+		}
+		switch value.Type() {
+		case attribute.STRING:
+			text := value.AsString()
+			if text == "" || (part.enum && text == "_OTHER") {
+				return 0, false
+			}
+			length += len(text)
+		case attribute.INT64:
+			length += len("-9223372036854775808")
+		}
+	}
+	return length, true
+}
+
+// Values are written as attribute.Value.Emit writes them, so names keep the text they had.
+func spanNameBuild(kvs []attribute.KeyValue, template []spanNamePart, length int) string {
+	var name strings.Builder
+	name.Grow(length)
+	var number [32]byte
+	for _, part := range template {
+		if part.key == "" {
+			name.WriteString(part.text)
+			continue
+		}
+		value, _ := spanNameValue(kvs, part.key)
+		switch value.Type() {
+		case attribute.STRING:
+			name.WriteString(value.AsString())
+		case attribute.INT64:
+			name.Write(strconv.AppendInt(number[:0], value.AsInt64(), 10))
+		}
+	}
+	return name.String()
+}
 
 // UpstreamRequestStartAttr is an attribute StartUpstreamRequest accepts in
 // addition to the ones it requires.
@@ -122,8 +195,9 @@ func (s UpstreamRequest) SetStatus(code codes.Code, description string) {
 //
 // A request to an upstream server.
 //
-// The span is named `{server.address}:{server.port}`, with each placeholder
-// replaced by the value of the attribute it names.
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `{server.address}:{server.port}`. Otherwise it is
+// named `edge.upstream.request`.
 func StartUpstreamRequest(ctx context.Context, tracer semconvtracer.Tracer, serverAddress string, serverPort int, opts ...UpstreamRequestStartAttr) (context.Context, UpstreamRequest) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	kvs = append(kvs, attribute.String("server.address", serverAddress))
@@ -133,7 +207,9 @@ func StartUpstreamRequest(ctx context.Context, tracer semconvtracer.Tracer, serv
 			kvs = append(kvs, kv)
 		}
 	}
-	name := attribute.String("server.address", serverAddress).Value.Emit() + ":" + attribute.Int("server.port", serverPort).Value.Emit()
+	name := spanName(kvs, "edge.upstream.request",
+		[]spanNamePart{{key: "server.address"}, {text: ":"}, {key: "server.port"}},
+	)
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,

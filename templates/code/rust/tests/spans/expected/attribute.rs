@@ -445,6 +445,8 @@ pub enum MyappTaskState {
     Queued,
     /// The task finished.
     Done,
+    /// A state the convention does not list.
+    Other,
 }
 
 #[allow(deprecated)]
@@ -459,6 +461,7 @@ impl AsRef<str> for MyappTaskState {
         match self {
             MyappTaskState::Queued => "queued",
             MyappTaskState::Done => "done",
+            MyappTaskState::Other => "_OTHER",
         }
     }
 }
@@ -478,6 +481,7 @@ impl From<MyappTaskState> for ::opentelemetry::KeyValue {
         let value: &'static str = match value {
             MyappTaskState::Queued => "queued",
             MyappTaskState::Done => "done",
+            MyappTaskState::Other => "_OTHER",
         };
         ::opentelemetry::KeyValue::new(MyappTaskState::KEY, value)
     }
@@ -490,6 +494,7 @@ impl From<MyappTaskState> for ::opentelemetry::logs::AnyValue {
         let value: &'static str = match value {
             MyappTaskState::Queued => "queued",
             MyappTaskState::Done => "done",
+            MyappTaskState::Other => "_OTHER",
         };
         value.into()
     }

@@ -4,6 +4,7 @@ package myappspan
 
 import (
 	"context"
+	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -15,6 +16,72 @@ import (
 	"example.com/myapptracer"
 	"example.com/upstream/errorattr"
 )
+
+type spanNamePart struct {
+	text string
+	key  attribute.Key
+	enum bool
+}
+
+func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
+	for _, template := range templates {
+		if length, ok := spanNameLength(kvs, template); ok {
+			return spanNameBuild(kvs, template, length)
+		}
+	}
+	return fallback
+}
+
+func spanNameValue(kvs []attribute.KeyValue, key attribute.Key) (attribute.Value, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key == key {
+			return kvs[index].Value, true
+		}
+	}
+	return attribute.Value{}, false
+}
+
+// The length is an upper bound, so the builder never grows and the name is its only allocation.
+func spanNameLength(kvs []attribute.KeyValue, template []spanNamePart) (int, bool) {
+	length := 0
+	for _, part := range template {
+		if part.key == "" {
+			length += len(part.text)
+			continue
+		}
+		value, found := spanNameValue(kvs, part.key)
+		if !found {
+			return 0, false
+		}
+		switch value.Type() {
+		case attribute.STRING:
+			text := value.AsString()
+			if text == "" || (part.enum && text == "_OTHER") {
+				return 0, false
+			}
+			length += len(text)
+		}
+	}
+	return length, true
+}
+
+// Values are written as attribute.Value.Emit writes them, so names keep the text they had.
+func spanNameBuild(kvs []attribute.KeyValue, template []spanNamePart, length int) string {
+	var name strings.Builder
+	name.Grow(length)
+	for _, part := range template {
+		if part.key == "" {
+			name.WriteString(part.text)
+			continue
+		}
+		value, _ := spanNameValue(kvs, part.key)
+		switch value.Type() {
+		case attribute.STRING:
+			name.WriteString(value.AsString())
+		}
+	}
+	return name.String()
+}
 
 // TaskDispatchStartAttr is an attribute StartTaskDispatch accepts in
 // addition to the ones it requires.
@@ -109,8 +176,10 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 //
 // Dispatch of a task.
 //
-// The span is named `task {myapp.task.id} failed with {error.type}`, with
-// each placeholder replaced by the value of the attribute it names.
+// The span is named from the first of these templates whose attributes are
+// all set, not empty, and not `_OTHER`:
+// `task {myapp.task.id} failed with {error.type}`. Otherwise it is named
+// `myapp.task.dispatch`.
 func StartTaskDispatch(ctx context.Context, tracer myapptracer.Tracer, errorType errorattr.Type, myappTaskID myappattr.TaskID, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	if kv := errorType.KeyValue(); kv.Valid() {
@@ -124,7 +193,9 @@ func StartTaskDispatch(ctx context.Context, tracer myapptracer.Tracer, errorType
 			kvs = append(kvs, kv)
 		}
 	}
-	name := "task " + myappTaskID.KeyValue().Value.Emit() + " failed with " + errorType.KeyValue().Value.Emit()
+	name := spanName(kvs, "myapp.task.dispatch",
+		[]spanNamePart{{text: "task "}, {key: "myapp.task.id"}, {text: " failed with "}, {key: "error.type", enum: true}},
+	)
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,
