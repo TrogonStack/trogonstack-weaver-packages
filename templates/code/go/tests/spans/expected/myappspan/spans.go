@@ -628,6 +628,252 @@ func StartQueueDrain(ctx context.Context, tracer semconvtracer.Tracer, name Queu
 	return ctx, QueueDrain{span: span}
 }
 
+// TaskClaimByTaskIDStartAttr is an attribute StartTaskClaimByTaskID accepts
+// in addition to its parameters.
+type TaskClaimByTaskIDStartAttr interface {
+	taskClaimStartAttr() attribute.KeyValue
+	taskClaimByTaskIDStartAttr()
+}
+
+// TaskClaimByHostNameAndHostPortStartAttr is an attribute
+// StartTaskClaimByHostNameAndHostPort accepts in addition to its parameters.
+type TaskClaimByHostNameAndHostPortStartAttr interface {
+	taskClaimStartAttr() attribute.KeyValue
+	taskClaimByHostNameAndHostPortStartAttr()
+}
+
+// TaskClaimFallbackStartAttr is an attribute StartTaskClaimFallback accepts
+// in addition to its parameters.
+type TaskClaimFallbackStartAttr interface {
+	taskClaimStartAttr() attribute.KeyValue
+	taskClaimFallbackStartAttr()
+}
+
+// TaskClaimAttr is an attribute a TaskClaim also accepts after it started,
+// through SetAttributes.
+type TaskClaimAttr interface {
+	taskClaimStartAttr() attribute.KeyValue
+	taskClaimAttr()
+}
+
+type taskClaimSpanTaskID struct{ v myappattr.TaskID }
+
+func (o taskClaimSpanTaskID) taskClaimStartAttr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+func (taskClaimSpanTaskID) taskClaimByHostNameAndHostPortStartAttr() {}
+
+func (taskClaimSpanTaskID) taskClaimFallbackStartAttr() {}
+
+func (taskClaimSpanTaskID) taskClaimAttr() {}
+
+// WithTaskClaimTaskID sets `myapp.task.id` on a TaskClaim, when
+// StartTaskClaimByHostNameAndHostPort or StartTaskClaimFallback starts it or
+// later through SetAttributes.
+func WithTaskClaimTaskID(v myappattr.TaskID) interface {
+	TaskClaimAttr
+	TaskClaimByHostNameAndHostPortStartAttr
+	TaskClaimFallbackStartAttr
+} {
+	return taskClaimSpanTaskID{v: v}
+}
+
+type taskClaimSpanHostName struct{ v workerattr.HostName }
+
+func (o taskClaimSpanHostName) taskClaimStartAttr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+func (taskClaimSpanHostName) taskClaimByTaskIDStartAttr() {}
+
+func (taskClaimSpanHostName) taskClaimFallbackStartAttr() {}
+
+func (taskClaimSpanHostName) taskClaimAttr() {}
+
+// WithTaskClaimHostName sets `worker.host.name` on a TaskClaim, when
+// StartTaskClaimByTaskID or StartTaskClaimFallback starts it or later
+// through SetAttributes.
+func WithTaskClaimHostName(v workerattr.HostName) interface {
+	TaskClaimAttr
+	TaskClaimByTaskIDStartAttr
+	TaskClaimFallbackStartAttr
+} {
+	return taskClaimSpanHostName{v: v}
+}
+
+type taskClaimSpanHostPort struct{ v workerattr.HostPort }
+
+func (o taskClaimSpanHostPort) taskClaimStartAttr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+func (taskClaimSpanHostPort) taskClaimByTaskIDStartAttr() {}
+
+func (taskClaimSpanHostPort) taskClaimFallbackStartAttr() {}
+
+func (taskClaimSpanHostPort) taskClaimAttr() {}
+
+// WithTaskClaimHostPort sets `worker.host.port` on a TaskClaim, when
+// StartTaskClaimByTaskID or StartTaskClaimFallback starts it or later
+// through SetAttributes.
+func WithTaskClaimHostPort(v workerattr.HostPort) interface {
+	TaskClaimAttr
+	TaskClaimByTaskIDStartAttr
+	TaskClaimFallbackStartAttr
+} {
+	return taskClaimSpanHostPort{v: v}
+}
+
+// TaskClaim is a started span of `myapp.task.claim`. The zero TaskClaim
+// records nothing.
+type TaskClaim struct{ span trace.Span }
+
+func (s TaskClaim) raw() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+// End ends the span.
+func (s TaskClaim) End(opts ...trace.SpanEndOption) {
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s TaskClaim) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s TaskClaim) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+func (TaskClaim) lateAttrs(attrs []TaskClaimAttr) []attribute.KeyValue {
+	kvs := make([]attribute.KeyValue, 0, len(attrs))
+	for _, attr := range attrs {
+		if kv := attr.taskClaimStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	return kvs
+}
+
+// SetAttributes sets attributes on the span after it started.
+func (s TaskClaim) SetAttributes(attrs ...TaskClaimAttr) {
+	s.raw().SetAttributes(s.lateAttrs(attrs)...)
+}
+
+// AddEvent adds an event called name to the span, with attrs.
+func (s TaskClaim) AddEvent(name string, attrs ...TaskClaimAttr) {
+	s.raw().AddEvent(name, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// AddLink links the span to sc, with attrs.
+func (s TaskClaim) AddLink(sc trace.SpanContext, attrs ...TaskClaimAttr) {
+	s.raw().AddLink(trace.Link{SpanContext: sc, Attributes: s.lateAttrs(attrs)})
+}
+
+// RecordError records err as an exception event on the span, with attrs.
+func (s TaskClaim) RecordError(err error, attrs ...TaskClaimAttr) {
+	s.raw().RecordError(err, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// SetStatus sets the status of the span.
+func (s TaskClaim) SetStatus(code codes.Code, description string) {
+	s.raw().SetStatus(code, description)
+}
+
+// StartTaskClaimByTaskID starts the `myapp.task.claim` span from tracer with
+// span kind internal.
+//
+// A worker claiming a task.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `claim {myapp.task.id}`,
+// `claim {worker.host.name}:{worker.host.port}`. Otherwise it is named
+// `claim`.
+func StartTaskClaimByTaskID(ctx context.Context, tracer semconvtracer.Tracer, myappTaskID myappattr.TaskID, opts ...TaskClaimByTaskIDStartAttr) (context.Context, TaskClaim) {
+	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskClaimStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	name := spanName(kvs, "claim",
+		[]spanNamePart{{text: "claim "}, {key: "myapp.task.id"}},
+		[]spanNamePart{{text: "claim "}, {key: "worker.host.name"}, {text: ":"}, {key: "worker.host.port"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, TaskClaim{span: span}
+}
+
+// StartTaskClaimByHostNameAndHostPort starts the `myapp.task.claim` span
+// from tracer with span kind internal.
+//
+// A worker claiming a task.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `claim {worker.host.name}:{worker.host.port}`,
+// `claim {myapp.task.id}`. Otherwise it is named `claim`.
+func StartTaskClaimByHostNameAndHostPort(ctx context.Context, tracer semconvtracer.Tracer, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskClaimByHostNameAndHostPortStartAttr) (context.Context, TaskClaim) {
+	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
+	if kv := workerHostName.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := workerHostPort.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskClaimStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	name := spanName(kvs, "claim",
+		[]spanNamePart{{text: "claim "}, {key: "worker.host.name"}, {text: ":"}, {key: "worker.host.port"}},
+		[]spanNamePart{{text: "claim "}, {key: "myapp.task.id"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, TaskClaim{span: span}
+}
+
+// StartTaskClaimFallback starts the `myapp.task.claim` span from tracer with
+// span kind internal.
+//
+// A worker claiming a task.
+//
+// The span is named `claim`.
+func StartTaskClaimFallback(ctx context.Context, tracer semconvtracer.Tracer, opts ...TaskClaimFallbackStartAttr) (context.Context, TaskClaim) {
+	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
+	for _, opt := range opts {
+		if kv := opt.taskClaimStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		"claim",
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, TaskClaim{span: span}
+}
+
 // TaskDispatchByWorkerStartAttr is an attribute StartTaskDispatchByWorker
 // accepts in addition to its parameters.
 type TaskDispatchByWorkerStartAttr interface {

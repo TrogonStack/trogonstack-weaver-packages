@@ -351,3 +351,39 @@ func TestStartTaskDispatchFallbackNamesTheSpanFromTheLiteralTemplate(t *testing.
 		t.Fatalf("Attributes() = %v, want %v", gotSet, want)
 	}
 }
+
+func TestTaskClaimStartersAreNamedByTheIDsDerivedFromTheirTemplates(t *testing.T) {
+	tests := []struct {
+		name  string
+		start func(context.Context, semconvtracer.Tracer) (context.Context, myappspan.TaskClaim)
+		want  string
+	}{
+		{"by task ID", func(ctx context.Context, tracer semconvtracer.Tracer) (context.Context, myappspan.TaskClaim) {
+			return myappspan.StartTaskClaimByTaskID(ctx, tracer, myappattr.NewTaskID("t-1"))
+		}, "claim t-1"},
+		{"by task ID falls back to the host template", func(ctx context.Context, tracer semconvtracer.Tracer) (context.Context, myappspan.TaskClaim) {
+			return myappspan.StartTaskClaimByTaskID(ctx, tracer, myappattr.NewTaskID(""), myappspan.WithTaskClaimHostName(workerattr.NewHostName("worker-1")), myappspan.WithTaskClaimHostPort(workerattr.NewHostPort(8080)))
+		}, "claim worker-1:8080"},
+		{"by host name and host port", func(ctx context.Context, tracer semconvtracer.Tracer) (context.Context, myappspan.TaskClaim) {
+			return myappspan.StartTaskClaimByHostNameAndHostPort(ctx, tracer, workerattr.NewHostName("worker-1"), workerattr.NewHostPort(8080), myappspan.WithTaskClaimTaskID(myappattr.NewTaskID("t-1")))
+		}, "claim worker-1:8080"},
+		{"by host name and host port falls back to the literal template", func(ctx context.Context, tracer semconvtracer.Tracer) (context.Context, myappspan.TaskClaim) {
+			return myappspan.StartTaskClaimByHostNameAndHostPort(ctx, tracer, workerattr.NewHostName(""), workerattr.NewHostPort(8080))
+		}, "claim"},
+		{"fallback", func(ctx context.Context, tracer semconvtracer.Tracer) (context.Context, myappspan.TaskClaim) {
+			return myappspan.StartTaskClaimFallback(ctx, tracer, myappspan.WithTaskClaimHostName(workerattr.NewHostName("worker-1")))
+		}, "claim"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tracer, sr := newTracer(t)
+
+			_, span := test.start(context.Background(), tracer)
+			span.End()
+
+			if got := sr.Ended()[0].Name(); got != test.want {
+				t.Fatalf("Name() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}

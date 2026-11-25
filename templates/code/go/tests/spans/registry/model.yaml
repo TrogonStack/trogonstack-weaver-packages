@@ -119,6 +119,24 @@ spans:
         requirement_level: recommended
       - ref: myapp.queue.name
         requirement_level: recommended
+  - type: myapp.task.claim
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A worker claiming a task.
+    name:
+      note: Named after the task, else after the worker, else `claim`.
+      templates:
+        - "claim {myapp.task.id}"
+        - "claim {worker.host.name}:{worker.host.port}"
+        - claim
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: recommended
+      - ref: worker.host.name
+        requirement_level: recommended
+      - ref: worker.host.port
+        requirement_level: recommended
   - type: myapp.queue.drain
     kind: consumer
     requirement_level: opt_in

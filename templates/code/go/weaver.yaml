@@ -561,8 +561,11 @@ templates:
   # placeholders, which is the fallback. A placeholder for an attribute the
   # span does not declare fails.
   # A span with more than one template gets one starter per template, named
-  # by `annotations.code_generation.name_templates`, a map from an ID to the
-  # pattern. Weaver gives a template no ID of its own (weaver#1916).
+  # by an ID. Weaver gives a template no ID of its own (weaver#1916), so the
+  # ID comes from `annotations.code_generation.name_templates`, a map from an
+  # ID to the pattern. Without it, each ID is derived from the template:
+  # `by_` and the short names of its attributes joined with `_and_`, or
+  # `fallback` for a template without placeholders. IDs that collide fail.
   # A span whose name has a single segment, such as a vendor-prefix-only name,
   # has nothing left after its namespace. Rather than failing, it renders
   # unprefixed: `Start`, `Span`, `Name`, and so on, in `<name>span`.
@@ -609,6 +612,23 @@ templates:
                                value_type: (if (.type | type) == "object" then (.key as $key | .type | enum_value_type($key)) else .type end)})
                       else {text: .value} end]}
              else empty end];
+      def name_template_id_pattern: "^[a-z][a-z0-9]*(_[a-z0-9]+)*$";
+      def derived_name_template_id:
+        [.parts[] | select(.type == "attribute") | .attribute]
+        | reduce .[] as $key ([]; if any(.[]; . == $key) then . else . + [$key] end)
+        | if length == 0 then "fallback"
+          else "by_" + (map(ns | .short_name | gsub("\\."; "_") | ascii_downcase) | join("_and_")) end;
+      def derived_name_template_ids($span):
+        [(.name.templates // [])[] | {pattern, id: derived_name_template_id}] as $derived
+        | [$derived | group_by(.id)[] | select(length > 1)
+           | "`\(.[0].id)`: " + (map("`\(.pattern)`") | join(" and "))] as $same
+        | [$derived[] | select(.id | test(name_template_id_pattern) | not)
+           | "`\(.id)` from `\(.pattern)`"] as $invalid
+        | if ($same | length) > 0
+          then error("span \($span) has name templates that derive the same ID \($same | join("; ")), so add annotations.code_generation.name_templates to give each template an ID")
+          elif ($invalid | length) > 0
+          then error("span \($span) has name templates whose derived ID is not lower snake case: \($invalid | join(", ")), so add annotations.code_generation.name_templates to give each template an ID")
+          else ($derived | map({key: .pattern, value: .id}) | from_entries) end;
       def name_template_ids:
         .id as $span
         | [(.name.templates // [])[] | .pattern] as $patterns
@@ -617,11 +637,11 @@ templates:
           then (if $ids == null then null
                 else error("span \($span) has annotations.code_generation.name_templates, which is only for a span with more than one name template") end)
           elif $ids == null
-          then error("span \($span) has more than one name template, so add annotations.code_generation.name_templates to give each template an ID")
+          then derived_name_template_ids($span)
           elif ($ids | type) != "object"
           then error("span \($span) has annotations.code_generation.name_templates that is not a map from an ID to a template pattern")
           else ($ids | to_entries) as $entries
-            | [$entries[] | select(.key | test("^[a-z][a-z0-9]*(_[a-z0-9]+)*$") | not) | .key] as $invalid
+            | [$entries[] | select(.key | test(name_template_id_pattern) | not) | .key] as $invalid
             | [$entries[] | select(.value as $pattern | $patterns | any(. == $pattern) | not) | .key] as $unknown
             | [$entries | group_by(.value)[] | select(length > 1) | map(.key) | sort | join(" and ")] as $shared
             | [$patterns[] | select(. as $pattern | $entries | any(.value == $pattern) | not)] as $unnamed

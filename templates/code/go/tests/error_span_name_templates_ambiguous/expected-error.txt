@@ -1,0 +1,1 @@
+span myapp.task.run has name templates that derive the same ID `by_task_id`: `run {myapp.task.id}` and `exec {myapp.task.id}`, so add annotations.code_generation.name_templates to give each template an ID

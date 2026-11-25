@@ -414,12 +414,27 @@ doc comment quotes the templates.
 
 A span with one template keeps the single `Start<Name>` starter. A span with
 more than one template gets one starter for each template, so each template
-needs an ID. Weaver does not give a template a stable ID
+needs an ID. Weaver gives a template no ID of its own
 ([open-telemetry/weaver#1916](https://github.com/open-telemetry/weaver/issues/1916)),
-so the span sets `annotations.code_generation.name_templates`, as above. It is
-a map from an ID to the exact pattern of one template. It names a template by
-its pattern, not by its position, so a change to the order of the templates
-keeps every starter name.
+so the package derives one from each template:
+
+- A template with placeholders gets `by_` and the short name of each distinct
+  attribute it uses, in the order they first appear, joined with `_and_`. The
+  short name is the attribute key without its namespace, in lower snake case.
+- A template without placeholders gets `fallback`.
+
+So `run {myapp.task.id}` derives `by_task_id`, `run {myapp.task.state}`
+derives `by_task_state`, and `dispatch {worker.host.name}:{worker.host.port}`
+derives `by_host_name_and_host_port`. A derived ID does not depend on the
+position of its template, so a change to the order of the templates keeps every
+starter name.
+
+Set `annotations.code_generation.name_templates` to choose the IDs yourself, as
+above. It is a map from an ID to the exact pattern of one template, and it must
+name every template of the span. Set it to give a starter a shorter name, such
+as `by_worker`. Set it also when two templates derive the same ID, such as
+`run {myapp.task.id}` and `exec {myapp.task.id}`. Without it, that span fails
+the generation.
 
 The starter for an ID is `Start<Name><Id>`, with the ID in PascalCase and the
 usual initialisms, so `by_task_id` becomes `StartTaskRunByTaskID`. Its
@@ -447,9 +462,6 @@ ctx, span := myappspan.StartTaskRunByState(ctx, tracer, myappattr.TaskStateOther
 ```
 
 the span is named `run task_0001`, because the state is `_OTHER`.
-
-If Weaver gives a template its own ID, the ID moves from the annotation onto
-the template, and the starter names stay the same.
 
 A value in the name has the text that `attribute.Value.Emit` gives it, such as
 `8080`, `1.5`, `[1,2]`, or `["a","b"]`. The starter writes each value directly
@@ -805,8 +817,10 @@ or is tied to no schema, when:
 - Two spans or refinements in one package render to the same Go identifier,
   such as `myapp.task.run` and `myapp.task_run`.
 - A span with one name template sets
-  `annotations.code_generation.name_templates`, or a span with more than one
-  does not set it.
+  `annotations.code_generation.name_templates`.
+- A span with more than one name template does not set
+  `annotations.code_generation.name_templates`, and two of its templates
+  derive the same ID, or a derived ID is not lower snake case.
 - A name template has no ID in `annotations.code_generation.name_templates`,
   an ID names a pattern that matches no template, or two IDs name the same
   pattern.
