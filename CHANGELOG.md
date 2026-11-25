@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.4.0...v0.5.0) (2026-11-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* **go,rust:** Put the span name pattern in name.templates. The name.note field is now documentation only, so a span that set its pattern there now takes a typed name.
+
+### Features
+
+* **go,rust:** Name spans from weaver name.templates ([#72](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/72)) ([8d15197](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/8d151977fa5620fd4cb9d91f0418afa47c0135b6))
+
+
+### Bug Fixes
+
+* **ci:** Give the Releaser key step its project ([#70](https://github.com/TrogonStack/trogonstack-weaver-packages/issues/70)) ([d93fc34](https://github.com/TrogonStack/trogonstack-weaver-packages/commit/d93fc34d5a5792e63a4a4ec73ef091ac1e383a0d))
+
 ## [0.4.0](https://github.com/TrogonStack/trogonstack-weaver-packages/compare/v0.3.0...v0.4.0) (2026-11-03)
 
 
