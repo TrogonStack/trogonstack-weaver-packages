@@ -4,6 +4,10 @@ package myappspan
 
 import (
 	"context"
+	"math"
+	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -15,6 +19,523 @@ import (
 	"example.com/semconv/semconvtracer"
 	"example.com/semconv/workerattr"
 )
+
+type spanNamePart struct {
+	text string
+	key  attribute.Key
+	enum bool
+}
+
+func spanName(kvs []attribute.KeyValue, fallback string, templates ...[]spanNamePart) string {
+	for _, template := range templates {
+		if length, ok := spanNameLength(kvs, template); ok {
+			return spanNameBuild(kvs, template, length)
+		}
+	}
+	return fallback
+}
+
+func spanNameValue(kvs []attribute.KeyValue, key attribute.Key) (attribute.Value, bool) {
+	for index := len(kvs) - 1; index >= 0; index-- {
+		if kvs[index].Key == key {
+			return kvs[index].Value, true
+		}
+	}
+	return attribute.Value{}, false
+}
+
+// The length is an upper bound, so the builder never grows and the name is its only allocation.
+func spanNameLength(kvs []attribute.KeyValue, template []spanNamePart) (int, bool) {
+	length := 0
+	for _, part := range template {
+		if part.key == "" {
+			length += len(part.text)
+			continue
+		}
+		value, found := spanNameValue(kvs, part.key)
+		if !found {
+			return 0, false
+		}
+		switch value.Type() {
+		case attribute.STRING:
+			text := value.AsString()
+			if text == "" || (part.enum && text == "_OTHER") {
+				return 0, false
+			}
+			length += len(text)
+		case attribute.INT64:
+			length += len("-9223372036854775808")
+		case attribute.FLOAT64:
+			length += len("-1.7976931348623157e+308")
+		case attribute.BOOLSLICE:
+			elements := value.AsBoolSlice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]") + len("false ")*len(elements)
+		case attribute.INT64SLICE:
+			elements := value.AsInt64Slice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]") + len("-9223372036854775808,")*len(elements)
+		case attribute.FLOAT64SLICE:
+			elements := value.AsFloat64Slice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("invalid: []") + len("-0.0000012345678901234567,")*len(elements)
+		case attribute.STRINGSLICE:
+			elements := value.AsStringSlice()
+			if len(elements) == 0 {
+				return 0, false
+			}
+			length += len("[]")
+			for _, element := range elements {
+				// encoding/json escapes one byte to at most six, as in \u001f.
+				length += len(`"",`) + 6*len(element)
+			}
+		}
+	}
+	return length, true
+}
+
+// Values are written as attribute.Value.Emit writes them, so names keep the text they had.
+func spanNameBuild(kvs []attribute.KeyValue, template []spanNamePart, length int) string {
+	var name strings.Builder
+	name.Grow(length)
+	var number [32]byte
+	for _, part := range template {
+		if part.key == "" {
+			name.WriteString(part.text)
+			continue
+		}
+		value, _ := spanNameValue(kvs, part.key)
+		switch value.Type() {
+		case attribute.STRING:
+			name.WriteString(value.AsString())
+		case attribute.INT64:
+			name.Write(strconv.AppendInt(number[:0], value.AsInt64(), 10))
+		case attribute.FLOAT64:
+			name.Write(strconv.AppendFloat(number[:0], value.AsFloat64(), 'g', -1, 64))
+		case attribute.BOOLSLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsBoolSlice() {
+				if index > 0 {
+					name.WriteByte(' ')
+				}
+				name.WriteString(strconv.FormatBool(element))
+			}
+			name.WriteByte(']')
+		case attribute.INT64SLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsInt64Slice() {
+				if index > 0 {
+					name.WriteByte(',')
+				}
+				name.Write(strconv.AppendInt(number[:0], element, 10))
+			}
+			name.WriteByte(']')
+		case attribute.FLOAT64SLICE:
+			spanNameWriteFloats(&name, value.AsFloat64Slice())
+		case attribute.STRINGSLICE:
+			name.WriteByte('[')
+			for index, element := range value.AsStringSlice() {
+				if index > 0 {
+					name.WriteByte(',')
+				}
+				spanNameWriteQuoted(&name, element)
+			}
+			name.WriteByte(']')
+		}
+	}
+	return name.String()
+}
+
+// Emit writes a float array as JSON, and falls back to fmt formatting when JSON cannot hold NaN or an infinity.
+func spanNameWriteFloats(name *strings.Builder, elements []float64) {
+	var number [32]byte
+	for _, element := range elements {
+		if math.IsInf(element, 0) || math.IsNaN(element) {
+			name.WriteString("invalid: [")
+			for index, element := range elements {
+				if index > 0 {
+					name.WriteByte(' ')
+				}
+				name.Write(strconv.AppendFloat(number[:0], element, 'g', -1, 64))
+			}
+			name.WriteByte(']')
+			return
+		}
+	}
+	name.WriteByte('[')
+	for index, element := range elements {
+		if index > 0 {
+			name.WriteByte(',')
+		}
+		format := byte('f')
+		if magnitude := math.Abs(element); magnitude != 0 && (magnitude < 1e-6 || magnitude >= 1e21) {
+			format = 'e'
+		}
+		text := strconv.AppendFloat(number[:0], element, format, -1, 64)
+		// encoding/json drops the leading zero of a negative exponent, as in 1e-07 to 1e-7.
+		if length := len(text); format == 'e' && text[length-4] == 'e' && text[length-3] == '-' && text[length-2] == '0' {
+			text[length-2] = text[length-1]
+			text = text[:length-1]
+		}
+		name.Write(text)
+	}
+	name.WriteByte(']')
+}
+
+// Emit writes a string array as JSON, which escapes HTML characters and replaces invalid UTF-8.
+func spanNameWriteQuoted(name *strings.Builder, text string) {
+	const hexadecimal = "0123456789abcdef"
+	name.WriteByte('"')
+	start := 0
+	for index := 0; index < len(text); {
+		if character := text[index]; character < utf8.RuneSelf {
+			if character >= ' ' && character != '"' && character != '\\' && character != '<' && character != '>' && character != '&' {
+				index++
+				continue
+			}
+			name.WriteString(text[start:index])
+			switch character {
+			case '"', '\\':
+				name.WriteByte('\\')
+				name.WriteByte(character)
+			case '\b':
+				name.WriteString(`\b`)
+			case '\f':
+				name.WriteString(`\f`)
+			case '\n':
+				name.WriteString(`\n`)
+			case '\r':
+				name.WriteString(`\r`)
+			case '\t':
+				name.WriteString(`\t`)
+			default:
+				name.WriteString(`\u00`)
+				name.WriteByte(hexadecimal[character>>4])
+				name.WriteByte(hexadecimal[character&0xf])
+			}
+			index++
+			start = index
+			continue
+		}
+		symbol, size := utf8.DecodeRuneInString(text[index:])
+		switch {
+		case symbol == utf8.RuneError && size == 1:
+			name.WriteString(text[start:index])
+			name.WriteString(`�`)
+		case symbol == ' ' || symbol == ' ':
+			name.WriteString(text[start:index])
+			name.WriteString(`\u202`)
+			name.WriteByte(hexadecimal[symbol&0xf])
+		default:
+			index += size
+			continue
+		}
+		index += size
+		start = index
+	}
+	name.WriteString(text[start:])
+	name.WriteByte('"')
+}
+
+// NameArrays is a started span of `myapp.name.arrays`. The zero NameArrays
+// records nothing.
+type NameArrays struct{ span trace.Span }
+
+func (s NameArrays) raw() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+// End ends the span.
+func (s NameArrays) End(opts ...trace.SpanEndOption) {
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s NameArrays) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s NameArrays) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+// AddEvent adds an event called name to the span.
+func (s NameArrays) AddEvent(name string) {
+	s.raw().AddEvent(name)
+}
+
+// AddLink links the span to sc.
+func (s NameArrays) AddLink(sc trace.SpanContext) {
+	s.raw().AddLink(trace.Link{SpanContext: sc})
+}
+
+// RecordError records err as an exception event on the span.
+func (s NameArrays) RecordError(err error) {
+	s.raw().RecordError(err)
+}
+
+// SetStatus sets the status of the span.
+func (s NameArrays) SetStatus(code codes.Code, description string) {
+	s.raw().SetStatus(code, description)
+}
+
+// StartNameArrays starts the `myapp.name.arrays` span from tracer with span
+// kind internal.
+//
+// A span named from array values.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty:
+// `{myapp.array.tags}:{myapp.array.indices}:{myapp.array.samples}:{myapp.array.flags}`.
+// Otherwise it is named `myapp.name.arrays`.
+func StartNameArrays(ctx context.Context, tracer semconvtracer.Tracer, myappArrayFlags myappattr.ArrayFlags, myappArrayIndices myappattr.ArrayIndices, myappArraySamples myappattr.ArraySamples, myappArrayTags myappattr.ArrayTags) (context.Context, NameArrays) {
+	kvs := make([]attribute.KeyValue, 0, 4)
+	if kv := myappArrayFlags.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := myappArrayIndices.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := myappArraySamples.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := myappArrayTags.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	name := spanName(kvs, "myapp.name.arrays",
+		[]spanNamePart{{key: "myapp.array.tags"}, {text: ":"}, {key: "myapp.array.indices"}, {text: ":"}, {key: "myapp.array.samples"}, {text: ":"}, {key: "myapp.array.flags"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, NameArrays{span: span}
+}
+
+// NameAttempt is a started span of `myapp.name.attempt`. The zero
+// NameAttempt records nothing.
+type NameAttempt struct{ span trace.Span }
+
+func (s NameAttempt) raw() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+// End ends the span.
+func (s NameAttempt) End(opts ...trace.SpanEndOption) {
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s NameAttempt) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s NameAttempt) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+// AddEvent adds an event called name to the span.
+func (s NameAttempt) AddEvent(name string) {
+	s.raw().AddEvent(name)
+}
+
+// AddLink links the span to sc.
+func (s NameAttempt) AddLink(sc trace.SpanContext) {
+	s.raw().AddLink(trace.Link{SpanContext: sc})
+}
+
+// RecordError records err as an exception event on the span.
+func (s NameAttempt) RecordError(err error) {
+	s.raw().RecordError(err)
+}
+
+// SetStatus sets the status of the span.
+func (s NameAttempt) SetStatus(code codes.Code, description string) {
+	s.raw().SetStatus(code, description)
+}
+
+// StartNameAttempt starts the `myapp.name.attempt` span from tracer with
+// span kind internal.
+//
+// A span named from an integer value.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `attempt {myapp.task.attempt}`. Otherwise it is
+// named `myapp.name.attempt`.
+func StartNameAttempt(ctx context.Context, tracer semconvtracer.Tracer, myappTaskAttempt myappattr.TaskAttempt) (context.Context, NameAttempt) {
+	kvs := make([]attribute.KeyValue, 0, 1)
+	if kv := myappTaskAttempt.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	name := spanName(kvs, "myapp.name.attempt",
+		[]spanNamePart{{text: "attempt "}, {key: "myapp.task.attempt"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, NameAttempt{span: span}
+}
+
+// NameFloat is a started span of `myapp.name.float`. The zero NameFloat
+// records nothing.
+type NameFloat struct{ span trace.Span }
+
+func (s NameFloat) raw() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+// End ends the span.
+func (s NameFloat) End(opts ...trace.SpanEndOption) {
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s NameFloat) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s NameFloat) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+// AddEvent adds an event called name to the span.
+func (s NameFloat) AddEvent(name string) {
+	s.raw().AddEvent(name)
+}
+
+// AddLink links the span to sc.
+func (s NameFloat) AddLink(sc trace.SpanContext) {
+	s.raw().AddLink(trace.Link{SpanContext: sc})
+}
+
+// RecordError records err as an exception event on the span.
+func (s NameFloat) RecordError(err error) {
+	s.raw().RecordError(err)
+}
+
+// SetStatus sets the status of the span.
+func (s NameFloat) SetStatus(code codes.Code, description string) {
+	s.raw().SetStatus(code, description)
+}
+
+// StartNameFloat starts the `myapp.name.float` span from tracer with span
+// kind internal.
+//
+// A span named from a floating point value.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `{myapp.number.value}`. Otherwise it is named
+// `myapp.name.float`.
+func StartNameFloat(ctx context.Context, tracer semconvtracer.Tracer, myappNumberValue myappattr.NumberValue) (context.Context, NameFloat) {
+	kvs := make([]attribute.KeyValue, 0, 1)
+	if kv := myappNumberValue.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	name := spanName(kvs, "myapp.name.float",
+		[]spanNamePart{{key: "myapp.number.value"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, NameFloat{span: span}
+}
+
+// NameIndices is a started span of `myapp.name.indices`. The zero
+// NameIndices records nothing.
+type NameIndices struct{ span trace.Span }
+
+func (s NameIndices) raw() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+// End ends the span.
+func (s NameIndices) End(opts ...trace.SpanEndOption) {
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s NameIndices) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s NameIndices) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+// AddEvent adds an event called name to the span.
+func (s NameIndices) AddEvent(name string) {
+	s.raw().AddEvent(name)
+}
+
+// AddLink links the span to sc.
+func (s NameIndices) AddLink(sc trace.SpanContext) {
+	s.raw().AddLink(trace.Link{SpanContext: sc})
+}
+
+// RecordError records err as an exception event on the span.
+func (s NameIndices) RecordError(err error) {
+	s.raw().RecordError(err)
+}
+
+// SetStatus sets the status of the span.
+func (s NameIndices) SetStatus(code codes.Code, description string) {
+	s.raw().SetStatus(code, description)
+}
+
+// StartNameIndices starts the `myapp.name.indices` span from tracer with
+// span kind internal.
+//
+// A span named from one array value.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `indices {myapp.array.indices}`. Otherwise it is
+// named `myapp.name.indices`.
+func StartNameIndices(ctx context.Context, tracer semconvtracer.Tracer, myappArrayIndices myappattr.ArrayIndices) (context.Context, NameIndices) {
+	kvs := make([]attribute.KeyValue, 0, 1)
+	if kv := myappArrayIndices.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	name := spanName(kvs, "myapp.name.indices",
+		[]spanNamePart{{text: "indices "}, {key: "myapp.array.indices"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, NameIndices{span: span}
+}
 
 // QueueDrainName is the name the `myapp.queue.drain` span is started with.
 //
@@ -107,16 +628,270 @@ func StartQueueDrain(ctx context.Context, tracer semconvtracer.Tracer, name Queu
 	return ctx, QueueDrain{span: span}
 }
 
-// TaskDispatchStartAttr is an attribute StartTaskDispatch accepts in
-// addition to the ones it requires.
-type TaskDispatchStartAttr interface {
+// TaskClaimByTaskIDStartAttr is an attribute StartTaskClaimByTaskID accepts
+// in addition to its parameters.
+type TaskClaimByTaskIDStartAttr interface {
+	taskClaimStartAttr() attribute.KeyValue
+	taskClaimByTaskIDStartAttr()
+}
+
+// TaskClaimByHostNameAndHostPortStartAttr is an attribute
+// StartTaskClaimByHostNameAndHostPort accepts in addition to its parameters.
+type TaskClaimByHostNameAndHostPortStartAttr interface {
+	taskClaimStartAttr() attribute.KeyValue
+	taskClaimByHostNameAndHostPortStartAttr()
+}
+
+// TaskClaimFallbackStartAttr is an attribute StartTaskClaimFallback accepts
+// in addition to its parameters.
+type TaskClaimFallbackStartAttr interface {
+	taskClaimStartAttr() attribute.KeyValue
+	taskClaimFallbackStartAttr()
+}
+
+// TaskClaimAttr is an attribute a TaskClaim also accepts after it started,
+// through SetAttributes.
+type TaskClaimAttr interface {
+	taskClaimStartAttr() attribute.KeyValue
+	taskClaimAttr()
+}
+
+type taskClaimSpanTaskID struct{ v myappattr.TaskID }
+
+func (o taskClaimSpanTaskID) taskClaimStartAttr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+func (taskClaimSpanTaskID) taskClaimByHostNameAndHostPortStartAttr() {}
+
+func (taskClaimSpanTaskID) taskClaimFallbackStartAttr() {}
+
+func (taskClaimSpanTaskID) taskClaimAttr() {}
+
+// WithTaskClaimTaskID sets `myapp.task.id` on a TaskClaim, when
+// StartTaskClaimByHostNameAndHostPort or StartTaskClaimFallback starts it or
+// later through SetAttributes.
+func WithTaskClaimTaskID(v myappattr.TaskID) interface {
+	TaskClaimAttr
+	TaskClaimByHostNameAndHostPortStartAttr
+	TaskClaimFallbackStartAttr
+} {
+	return taskClaimSpanTaskID{v: v}
+}
+
+type taskClaimSpanHostName struct{ v workerattr.HostName }
+
+func (o taskClaimSpanHostName) taskClaimStartAttr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+func (taskClaimSpanHostName) taskClaimByTaskIDStartAttr() {}
+
+func (taskClaimSpanHostName) taskClaimFallbackStartAttr() {}
+
+func (taskClaimSpanHostName) taskClaimAttr() {}
+
+// WithTaskClaimHostName sets `worker.host.name` on a TaskClaim, when
+// StartTaskClaimByTaskID or StartTaskClaimFallback starts it or later
+// through SetAttributes.
+func WithTaskClaimHostName(v workerattr.HostName) interface {
+	TaskClaimAttr
+	TaskClaimByTaskIDStartAttr
+	TaskClaimFallbackStartAttr
+} {
+	return taskClaimSpanHostName{v: v}
+}
+
+type taskClaimSpanHostPort struct{ v workerattr.HostPort }
+
+func (o taskClaimSpanHostPort) taskClaimStartAttr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+func (taskClaimSpanHostPort) taskClaimByTaskIDStartAttr() {}
+
+func (taskClaimSpanHostPort) taskClaimFallbackStartAttr() {}
+
+func (taskClaimSpanHostPort) taskClaimAttr() {}
+
+// WithTaskClaimHostPort sets `worker.host.port` on a TaskClaim, when
+// StartTaskClaimByTaskID or StartTaskClaimFallback starts it or later
+// through SetAttributes.
+func WithTaskClaimHostPort(v workerattr.HostPort) interface {
+	TaskClaimAttr
+	TaskClaimByTaskIDStartAttr
+	TaskClaimFallbackStartAttr
+} {
+	return taskClaimSpanHostPort{v: v}
+}
+
+// TaskClaim is a started span of `myapp.task.claim`. The zero TaskClaim
+// records nothing.
+type TaskClaim struct{ span trace.Span }
+
+func (s TaskClaim) raw() trace.Span {
+	if s.span == nil {
+		return noop.Span{}
+	}
+	return s.span
+}
+
+// End ends the span.
+func (s TaskClaim) End(opts ...trace.SpanEndOption) {
+	s.raw().End(opts...)
+}
+
+// SpanContext returns the span context of the span.
+func (s TaskClaim) SpanContext() trace.SpanContext {
+	return s.raw().SpanContext()
+}
+
+// IsRecording reports whether the span records events.
+func (s TaskClaim) IsRecording() bool {
+	return s.raw().IsRecording()
+}
+
+func (TaskClaim) lateAttrs(attrs []TaskClaimAttr) []attribute.KeyValue {
+	kvs := make([]attribute.KeyValue, 0, len(attrs))
+	for _, attr := range attrs {
+		if kv := attr.taskClaimStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	return kvs
+}
+
+// SetAttributes sets attributes on the span after it started.
+func (s TaskClaim) SetAttributes(attrs ...TaskClaimAttr) {
+	s.raw().SetAttributes(s.lateAttrs(attrs)...)
+}
+
+// AddEvent adds an event called name to the span, with attrs.
+func (s TaskClaim) AddEvent(name string, attrs ...TaskClaimAttr) {
+	s.raw().AddEvent(name, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// AddLink links the span to sc, with attrs.
+func (s TaskClaim) AddLink(sc trace.SpanContext, attrs ...TaskClaimAttr) {
+	s.raw().AddLink(trace.Link{SpanContext: sc, Attributes: s.lateAttrs(attrs)})
+}
+
+// RecordError records err as an exception event on the span, with attrs.
+func (s TaskClaim) RecordError(err error, attrs ...TaskClaimAttr) {
+	s.raw().RecordError(err, trace.WithAttributes(s.lateAttrs(attrs)...))
+}
+
+// SetStatus sets the status of the span.
+func (s TaskClaim) SetStatus(code codes.Code, description string) {
+	s.raw().SetStatus(code, description)
+}
+
+// StartTaskClaimByTaskID starts the `myapp.task.claim` span from tracer with
+// span kind internal.
+//
+// A worker claiming a task.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `claim {myapp.task.id}`,
+// `claim {worker.host.name}:{worker.host.port}`. Otherwise it is named
+// `claim`.
+func StartTaskClaimByTaskID(ctx context.Context, tracer semconvtracer.Tracer, myappTaskID myappattr.TaskID, opts ...TaskClaimByTaskIDStartAttr) (context.Context, TaskClaim) {
+	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskClaimStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	name := spanName(kvs, "claim",
+		[]spanNamePart{{text: "claim "}, {key: "myapp.task.id"}},
+		[]spanNamePart{{text: "claim "}, {key: "worker.host.name"}, {text: ":"}, {key: "worker.host.port"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, TaskClaim{span: span}
+}
+
+// StartTaskClaimByHostNameAndHostPort starts the `myapp.task.claim` span
+// from tracer with span kind internal.
+//
+// A worker claiming a task.
+//
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `claim {worker.host.name}:{worker.host.port}`,
+// `claim {myapp.task.id}`. Otherwise it is named `claim`.
+func StartTaskClaimByHostNameAndHostPort(ctx context.Context, tracer semconvtracer.Tracer, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskClaimByHostNameAndHostPortStartAttr) (context.Context, TaskClaim) {
+	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
+	if kv := workerHostName.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := workerHostPort.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskClaimStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	name := spanName(kvs, "claim",
+		[]spanNamePart{{text: "claim "}, {key: "worker.host.name"}, {text: ":"}, {key: "worker.host.port"}},
+		[]spanNamePart{{text: "claim "}, {key: "myapp.task.id"}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, TaskClaim{span: span}
+}
+
+// StartTaskClaimFallback starts the `myapp.task.claim` span from tracer with
+// span kind internal.
+//
+// A worker claiming a task.
+//
+// The span is named `claim`.
+func StartTaskClaimFallback(ctx context.Context, tracer semconvtracer.Tracer, opts ...TaskClaimFallbackStartAttr) (context.Context, TaskClaim) {
+	kvs := make([]attribute.KeyValue, 0, 0+len(opts))
+	for _, opt := range opts {
+		if kv := opt.taskClaimStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		"claim",
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, TaskClaim{span: span}
+}
+
+// TaskDispatchByWorkerStartAttr is an attribute StartTaskDispatchByWorker
+// accepts in addition to its parameters.
+type TaskDispatchByWorkerStartAttr interface {
 	taskDispatchStartAttr() attribute.KeyValue
+	taskDispatchByWorkerStartAttr()
+}
+
+// TaskDispatchFallbackStartAttr is an attribute StartTaskDispatchFallback
+// accepts in addition to its parameters.
+type TaskDispatchFallbackStartAttr interface {
+	taskDispatchStartAttr() attribute.KeyValue
+	taskDispatchFallbackStartAttr()
 }
 
 // TaskDispatchAttr is an attribute a TaskDispatch also accepts after it
 // started, through SetAttributes.
 type TaskDispatchAttr interface {
-	TaskDispatchStartAttr
+	taskDispatchStartAttr() attribute.KeyValue
 	taskDispatchAttr()
 }
 
@@ -126,13 +901,22 @@ func (o taskDispatchSpanQueueName) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
+func (taskDispatchSpanQueueName) taskDispatchByWorkerStartAttr() {}
+
+func (taskDispatchSpanQueueName) taskDispatchFallbackStartAttr() {}
+
 func (taskDispatchSpanQueueName) taskDispatchAttr() {}
 
 // WithTaskDispatchQueueName sets `myapp.queue.name` on a TaskDispatch, when
-// StartTaskDispatch starts it or later through SetAttributes.
+// StartTaskDispatchByWorker or StartTaskDispatchFallback starts it or later
+// through SetAttributes.
 //
 // Recommended: When the task came from a named queue.
-func WithTaskDispatchQueueName(v myappattr.QueueName) TaskDispatchAttr {
+func WithTaskDispatchQueueName(v myappattr.QueueName) interface {
+	TaskDispatchAttr
+	TaskDispatchByWorkerStartAttr
+	TaskDispatchFallbackStartAttr
+} {
 	return taskDispatchSpanQueueName{v: v}
 }
 
@@ -142,13 +926,22 @@ func (o taskDispatchSpanTaskAttempt) taskDispatchStartAttr() attribute.KeyValue 
 	return o.v.KeyValue()
 }
 
+func (taskDispatchSpanTaskAttempt) taskDispatchByWorkerStartAttr() {}
+
+func (taskDispatchSpanTaskAttempt) taskDispatchFallbackStartAttr() {}
+
 func (taskDispatchSpanTaskAttempt) taskDispatchAttr() {}
 
 // WithTaskDispatchTaskAttempt sets `myapp.task.attempt` on a TaskDispatch,
-// when StartTaskDispatch starts it or later through SetAttributes.
+// when StartTaskDispatchByWorker or StartTaskDispatchFallback starts it or
+// later through SetAttributes.
 //
 // Opt-in: the convention records it only when a user asks for it.
-func WithTaskDispatchTaskAttempt(v myappattr.TaskAttempt) TaskDispatchAttr {
+func WithTaskDispatchTaskAttempt(v myappattr.TaskAttempt) interface {
+	TaskDispatchAttr
+	TaskDispatchByWorkerStartAttr
+	TaskDispatchFallbackStartAttr
+} {
 	return taskDispatchSpanTaskAttempt{v: v}
 }
 
@@ -158,9 +951,17 @@ func (o taskDispatchSpanTaskID) taskDispatchStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
-// WithTaskDispatchTaskID sets `myapp.task.id` when StartTaskDispatch starts
-// the span. Samplers read it, so it is accepted only at start.
-func WithTaskDispatchTaskID(v myappattr.TaskID) TaskDispatchStartAttr {
+func (taskDispatchSpanTaskID) taskDispatchByWorkerStartAttr() {}
+
+func (taskDispatchSpanTaskID) taskDispatchFallbackStartAttr() {}
+
+// WithTaskDispatchTaskID sets `myapp.task.id` when StartTaskDispatchByWorker
+// or StartTaskDispatchFallback starts the span. Samplers read it, so it is
+// accepted only at start.
+func WithTaskDispatchTaskID(v myappattr.TaskID) interface {
+	TaskDispatchByWorkerStartAttr
+	TaskDispatchFallbackStartAttr
+} {
 	return taskDispatchSpanTaskID{v: v}
 }
 
@@ -225,16 +1026,17 @@ func (s TaskDispatch) SetStatus(code codes.Code, description string) {
 	s.raw().SetStatus(code, description)
 }
 
-// StartTaskDispatch starts the `myapp.task.dispatch` span from tracer with
-// span kind client.
+// StartTaskDispatchByWorker starts the `myapp.task.dispatch` span from
+// tracer with span kind client.
 //
 // The scheduler handing a task to a worker.
 //
 // Ends when the worker accepts the task.
 //
-// The span is named `dispatch {worker.host.name}:{worker.host.port}`, with
-// each placeholder replaced by the value of the attribute it names.
-func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchStartAttr) (context.Context, TaskDispatch) {
+// The span is named from the first of these templates whose attributes are
+// all set and not empty: `dispatch {worker.host.name}:{worker.host.port}`.
+// Otherwise it is named `dispatch`.
+func StartTaskDispatchByWorker(ctx context.Context, tracer semconvtracer.Tracer, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchByWorkerStartAttr) (context.Context, TaskDispatch) {
 	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
 	if kv := workerHostName.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
@@ -247,7 +1049,9 @@ func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, workerH
 			kvs = append(kvs, kv)
 		}
 	}
-	name := "dispatch " + workerHostName.KeyValue().Value.Emit() + ":" + workerHostPort.KeyValue().Value.Emit()
+	name := spanName(kvs, "dispatch",
+		[]spanNamePart{{text: "dispatch "}, {key: "worker.host.name"}, {text: ":"}, {key: "worker.host.port"}},
+	)
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
 		name,
@@ -257,17 +1061,78 @@ func StartTaskDispatch(ctx context.Context, tracer semconvtracer.Tracer, workerH
 	return ctx, TaskDispatch{span: span}
 }
 
-// TaskRunStartAttr is an attribute StartTaskRun accepts in addition to the
-// ones it requires.
-type TaskRunStartAttr interface {
+// StartTaskDispatchFallback starts the `myapp.task.dispatch` span from
+// tracer with span kind client.
+//
+// The scheduler handing a task to a worker.
+//
+// Ends when the worker accepts the task.
+//
+// The span is named `dispatch`.
+func StartTaskDispatchFallback(ctx context.Context, tracer semconvtracer.Tracer, workerHostName workerattr.HostName, workerHostPort workerattr.HostPort, opts ...TaskDispatchFallbackStartAttr) (context.Context, TaskDispatch) {
+	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
+	if kv := workerHostName.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	if kv := workerHostPort.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskDispatchStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		"dispatch",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, TaskDispatch{span: span}
+}
+
+// TaskRunByTaskIDStartAttr is an attribute StartTaskRunByTaskID accepts in
+// addition to its parameters.
+type TaskRunByTaskIDStartAttr interface {
 	taskRunStartAttr() attribute.KeyValue
+	taskRunByTaskIDStartAttr()
+}
+
+// TaskRunByStateStartAttr is an attribute StartTaskRunByState accepts in
+// addition to its parameters.
+type TaskRunByStateStartAttr interface {
+	taskRunStartAttr() attribute.KeyValue
+	taskRunByStateStartAttr()
 }
 
 // TaskRunAttr is an attribute a TaskRun also accepts after it started,
 // through SetAttributes.
 type TaskRunAttr interface {
-	TaskRunStartAttr
+	taskRunStartAttr() attribute.KeyValue
 	taskRunAttr()
+}
+
+type taskRunSpanQueueName struct{ v myappattr.QueueName }
+
+func (o taskRunSpanQueueName) taskRunStartAttr() attribute.KeyValue {
+	return o.v.KeyValue()
+}
+
+func (taskRunSpanQueueName) taskRunByTaskIDStartAttr() {}
+
+func (taskRunSpanQueueName) taskRunByStateStartAttr() {}
+
+func (taskRunSpanQueueName) taskRunAttr() {}
+
+// WithTaskRunQueueName sets `myapp.queue.name` on a TaskRun, when
+// StartTaskRunByTaskID or StartTaskRunByState starts it or later through
+// SetAttributes.
+func WithTaskRunQueueName(v myappattr.QueueName) interface {
+	TaskRunAttr
+	TaskRunByTaskIDStartAttr
+	TaskRunByStateStartAttr
+} {
+	return taskRunSpanQueueName{v: v}
 }
 
 type taskRunSpanTaskID struct{ v myappattr.TaskID }
@@ -276,25 +1141,17 @@ func (o taskRunSpanTaskID) taskRunStartAttr() attribute.KeyValue {
 	return o.v.KeyValue()
 }
 
+func (taskRunSpanTaskID) taskRunByStateStartAttr() {}
+
 func (taskRunSpanTaskID) taskRunAttr() {}
 
-// WithTaskRunTaskID sets `myapp.task.id` on a TaskRun, when StartTaskRun
-// starts it or later through SetAttributes.
-func WithTaskRunTaskID(v myappattr.TaskID) TaskRunAttr {
+// WithTaskRunTaskID sets `myapp.task.id` on a TaskRun, when
+// StartTaskRunByState starts it or later through SetAttributes.
+func WithTaskRunTaskID(v myappattr.TaskID) interface {
+	TaskRunAttr
+	TaskRunByStateStartAttr
+} {
 	return taskRunSpanTaskID{v: v}
-}
-
-// TaskRunName is the name the `myapp.task.run` span is started with.
-//
-// `run {myapp.task.id}`
-//
-// An empty TaskRunName, including the zero one, names the span
-// `myapp.task.run`.
-type TaskRunName struct{ value string }
-
-// NewTaskRunName returns name as a TaskRunName.
-func NewTaskRunName(name string) TaskRunName {
-	return TaskRunName{value: name}
 }
 
 // TaskRun is a started span of `myapp.task.run`. The zero TaskRun records
@@ -353,28 +1210,54 @@ func (s TaskRun) RecordError(err error, attrs ...TaskRunAttr) {
 	s.raw().RecordError(err, trace.WithAttributes(s.lateAttrs(attrs)...))
 }
 
-// SetName sets the name of the span. An empty TaskRunName, including the
-// zero one, names the span `myapp.task.run`.
-func (s TaskRun) SetName(name TaskRunName) {
-	if name.value == "" {
-		name = TaskRunName{value: "myapp.task.run"}
-	}
-	s.raw().SetName(name.value)
-}
-
 // SetStatus sets the status of the span.
 func (s TaskRun) SetStatus(code codes.Code, description string) {
 	s.raw().SetStatus(code, description)
 }
 
-// StartTaskRun starts the `myapp.task.run` span from tracer with span kind
-// internal.
+// StartTaskRunByTaskID starts the `myapp.task.run` span from tracer with
+// span kind internal.
 //
 // One run of a task.
-func StartTaskRun(ctx context.Context, tracer semconvtracer.Tracer, name TaskRunName, myappTaskState myappattr.TaskState, opts ...TaskRunStartAttr) (context.Context, TaskRun) {
-	if name.value == "" {
-		name = TaskRunName{value: "myapp.task.run"}
+//
+// The span is named from the first of these templates whose attributes are
+// all set, not empty, and not `_OTHER`: `run {myapp.task.id}`,
+// `run {myapp.task.state}`. Otherwise it is named `myapp.task.run`.
+func StartTaskRunByTaskID(ctx context.Context, tracer semconvtracer.Tracer, myappTaskID myappattr.TaskID, myappTaskState myappattr.TaskState, opts ...TaskRunByTaskIDStartAttr) (context.Context, TaskRun) {
+	kvs := make([]attribute.KeyValue, 0, 2+len(opts))
+	if kv := myappTaskID.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
 	}
+	if kv := myappTaskState.KeyValue(); kv.Valid() {
+		kvs = append(kvs, kv)
+	}
+	for _, opt := range opts {
+		if kv := opt.taskRunStartAttr(); kv.Valid() {
+			kvs = append(kvs, kv)
+		}
+	}
+	name := spanName(kvs, "myapp.task.run",
+		[]spanNamePart{{text: "run "}, {key: "myapp.task.id"}},
+		[]spanNamePart{{text: "run "}, {key: "myapp.task.state", enum: true}},
+	)
+	ctx, span := scope.TraceTracer(tracer).Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(kvs...),
+	)
+	return ctx, TaskRun{span: span}
+}
+
+// StartTaskRunByState starts the `myapp.task.run` span from tracer with span
+// kind internal.
+//
+// One run of a task.
+//
+// The span is named from the first of these templates whose attributes are
+// all set, not empty, and not `_OTHER`: `run {myapp.task.state}`,
+// `run {myapp.task.id}`. Otherwise it is named `myapp.task.run`.
+func StartTaskRunByState(ctx context.Context, tracer semconvtracer.Tracer, myappTaskState myappattr.TaskState, opts ...TaskRunByStateStartAttr) (context.Context, TaskRun) {
 	kvs := make([]attribute.KeyValue, 0, 1+len(opts))
 	if kv := myappTaskState.KeyValue(); kv.Valid() {
 		kvs = append(kvs, kv)
@@ -384,9 +1267,13 @@ func StartTaskRun(ctx context.Context, tracer semconvtracer.Tracer, name TaskRun
 			kvs = append(kvs, kv)
 		}
 	}
+	name := spanName(kvs, "myapp.task.run",
+		[]spanNamePart{{text: "run "}, {key: "myapp.task.state", enum: true}},
+		[]spanNamePart{{text: "run "}, {key: "myapp.task.id"}},
+	)
 	ctx, span := scope.TraceTracer(tracer).Start(
 		ctx,
-		name.value,
+		name,
 		trace.WithSpanKind(trace.SpanKindInternal),
 		trace.WithAttributes(kvs...),
 	)

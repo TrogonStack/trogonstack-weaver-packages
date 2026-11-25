@@ -16,6 +16,10 @@ attributes:
           value: done
           stability: stable
           brief: The task finished.
+        - id: other
+          value: _OTHER
+          stability: stable
+          brief: A state the convention does not list.
     stability: stable
     brief: Current state of the task.
   - key: myapp.task.attempt
@@ -38,6 +42,31 @@ attributes:
     stability: stable
     brief: Port the worker listens on.
     examples: 8080
+  - key: myapp.number.value
+    type: double
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [1.5]
+  - key: myapp.array.flags
+    type: boolean[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [[true]]
+  - key: myapp.array.indices
+    type: int[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [[1]]
+  - key: myapp.array.samples
+    type: double[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [[1.5]]
+  - key: myapp.array.tags
+    type: string[]
+    stability: stable
+    brief: Synthetic naming value.
+    examples: [["a"]]
 spans:
   - type: myapp.task.dispatch
     kind: client
@@ -46,7 +75,15 @@ spans:
     brief: The scheduler handing a task to a worker.
     note: Ends when the worker accepts the task.
     name:
-      note: "`dispatch {worker.host.name}:{worker.host.port}`"
+      note: Named after the worker it goes to, when the worker has a host name.
+      templates:
+        - "dispatch {worker.host.name}:{worker.host.port}"
+        - dispatch
+    annotations:
+      code_generation:
+        name_templates:
+          by_worker: "dispatch {worker.host.name}:{worker.host.port}"
+          fallback: dispatch
     attributes:
       - ref: worker.host.name
         requirement_level: required
@@ -66,11 +103,39 @@ spans:
     stability: stable
     brief: One run of a task.
     name:
-      note: "`run {myapp.task.id}`"
+      note: Named after the task when its id is known, else after its state.
+      templates:
+        - "run {myapp.task.id}"
+        - "run {myapp.task.state}"
+    annotations:
+      code_generation:
+        name_templates:
+          by_task_id: "run {myapp.task.id}"
+          by_state: "run {myapp.task.state}"
     attributes:
       - ref: myapp.task.state
         requirement_level: required
       - ref: myapp.task.id
+        requirement_level: recommended
+      - ref: myapp.queue.name
+        requirement_level: recommended
+  - type: myapp.task.claim
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A worker claiming a task.
+    name:
+      note: Named after the task, else after the worker, else `claim`.
+      templates:
+        - "claim {myapp.task.id}"
+        - "claim {worker.host.name}:{worker.host.port}"
+        - claim
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: recommended
+      - ref: worker.host.name
+        requirement_level: recommended
+      - ref: worker.host.port
         requirement_level: recommended
   - type: myapp.queue.drain
     kind: consumer
@@ -82,6 +147,60 @@ spans:
     deprecated:
       reason: obsoleted
       note: Drain queues by dispatching their tasks instead.
+  - type: myapp.name.attempt
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A span named from an integer value.
+    name:
+      note: "`attempt {myapp.task.attempt}`"
+      templates:
+        - "attempt {myapp.task.attempt}"
+    attributes:
+      - ref: myapp.task.attempt
+        requirement_level: required
+  - type: myapp.name.float
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A span named from a floating point value.
+    name:
+      note: "`{myapp.number.value}`"
+      templates:
+        - "{myapp.number.value}"
+    attributes:
+      - ref: myapp.number.value
+        requirement_level: required
+  - type: myapp.name.indices
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A span named from one array value.
+    name:
+      note: "`indices {myapp.array.indices}`"
+      templates:
+        - "indices {myapp.array.indices}"
+    attributes:
+      - ref: myapp.array.indices
+        requirement_level: required
+  - type: myapp.name.arrays
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A span named from array values.
+    name:
+      note: "`{myapp.array.tags}:{myapp.array.indices}:{myapp.array.samples}:{myapp.array.flags}`"
+      templates:
+        - "{myapp.array.tags}:{myapp.array.indices}:{myapp.array.samples}:{myapp.array.flags}"
+    attributes:
+      - ref: myapp.array.tags
+        requirement_level: required
+      - ref: myapp.array.indices
+        requirement_level: required
+      - ref: myapp.array.samples
+        requirement_level: required
+      - ref: myapp.array.flags
+        requirement_level: required
 span_refinements:
   - id: worker.task.dispatch
     ref: myapp.task.dispatch

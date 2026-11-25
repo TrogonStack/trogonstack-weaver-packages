@@ -49,7 +49,6 @@ entities:
     note: Identified by its name across its lifetime.
     identity:
       - ref: myapp.host.name
-        requirement_level: required
     description:
       - ref: myapp.host.type
         requirement_level: recommended
@@ -61,19 +60,8 @@ entities:
     brief: A queue of tasks.
     identity:
       - ref: myapp.queue.name
-        requirement_level: required
     description:
       - ref: myapp.queue.size
-  - type: myapp.optional
-    requirement_level: recommended
-    stability: stable
-    brief: An entity with optional description only.
-    identity:
-      - ref: myapp.queue.name
-        requirement_level: recommended
-    description:
-      - ref: myapp.queue.size
-        requirement_level: recommended
 entity_refinements:
   - id: myapp.host.worker
     ref: myapp.host

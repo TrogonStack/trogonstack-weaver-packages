@@ -1,6 +1,69 @@
 #![allow(deprecated)]
 use ::opentelemetry::trace::{TraceContextExt as _, Tracer as _};
-use ::std::fmt::Write as _;
+
+mod span_name {
+    use ::std::fmt::Write as _;
+
+    pub(super) enum Part {
+        Text(&'static str),
+        Attribute(&'static str),
+        Enum(&'static str),
+    }
+
+    pub(super) fn select(attributes: &[::opentelemetry::KeyValue], fallback: &'static str, templates: &[&[Part]]) -> ::std::borrow::Cow<'static, str> {
+        for template in templates {
+            let Some(capacity) = capacity(attributes, template) else { continue };
+            let mut name = String::with_capacity(capacity);
+            for part in *template {
+                match part {
+                    Part::Text(text) => name.push_str(text),
+                    Part::Attribute(key) | Part::Enum(key) => {
+                        if let Some(value) = value(attributes, key) {
+                            write!(&mut name, "{value}").expect("writing a span name to String cannot fail");
+                        }
+                    }
+                }
+            }
+            return ::std::borrow::Cow::Owned(name);
+        }
+        ::std::borrow::Cow::Borrowed(fallback)
+    }
+
+    fn value<'a>(attributes: &'a [::opentelemetry::KeyValue], key: &str) -> Option<&'a ::opentelemetry::Value> {
+        attributes.iter().rev().find(|attribute| attribute.key.as_str() == key).map(|attribute| &attribute.value)
+    }
+
+    fn capacity(attributes: &[::opentelemetry::KeyValue], template: &[Part]) -> Option<usize> {
+        template.iter().try_fold(0, |capacity, part| {
+            let length = match part {
+                Part::Text(text) => text.len(),
+                Part::Attribute(key) => length(value(attributes, key)?)?,
+                Part::Enum(key) => match value(attributes, key)? {
+                    ::opentelemetry::Value::String(text) if text.as_str() == "_OTHER" => return None,
+                    value => length(value)?,
+                },
+            };
+            Some(capacity + length)
+        })
+    }
+
+    fn length(value: &::opentelemetry::Value) -> Option<usize> {
+        use ::opentelemetry::{Array, Value};
+        match value {
+            Value::String(text) if text.as_str().is_empty() => None,
+            Value::String(text) => Some(text.as_str().len()),
+            Value::I64(_) => Some(20),
+            Value::F64(_) => Some(328),
+            Value::Bool(_) => Some(5),
+            Value::Array(Array::String(values)) if values.is_empty() => None,
+            Value::Array(Array::String(values)) => Some(values.iter().map(|value| value.as_str().len() + 3).sum::<usize>() + 2),
+            Value::Array(Array::I64(values)) => (!values.is_empty()).then(|| values.len() * 21 + 2),
+            Value::Array(Array::F64(values)) => (!values.is_empty()).then(|| values.len() * 328 + 2),
+            Value::Array(Array::Bool(values)) => (!values.is_empty()).then(|| values.len() * 6 + 2),
+            _ => Some(0),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum MyappTaskDispatchStartAttr {
@@ -67,16 +130,15 @@ impl Default for MyappTaskDispatch {
     }
 }
 
+/// The span is named from the first of these templates whose attributes are all set, not empty, and not `_OTHER`: `task {myapp.task.id} failed with {error.type}`. Otherwise it is named `myapp.task.dispatch`.
 pub fn r#start_myapp_task_dispatch<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#error_type: upstream::attribute::ErrorType, r#myapp_task_id: super::attribute::MyappTaskId, options: impl IntoIterator<Item = MyappTaskDispatchStartAttr>) -> MyappTaskDispatch<T::Span> {
-    let mut name = String::with_capacity("task ".len() + ::std::convert::AsRef::<str>::as_ref(&r#myapp_task_id).len() + " failed with ".len() + ::std::convert::AsRef::<str>::as_ref(&r#error_type).len());
-    name.push_str("task ");
-    write!(&mut name, "{}", r#myapp_task_id).expect("writing a span name to String cannot fail");
-    name.push_str(" failed with ");
-    write!(&mut name, "{}", r#error_type).expect("writing a span name to String cannot fail");
-    let attributes: [::opentelemetry::KeyValue; 2] = [::opentelemetry::KeyValue::from(r#error_type), ::opentelemetry::KeyValue::from(r#myapp_task_id)];
+    let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [::opentelemetry::KeyValue::from(r#error_type), ::opentelemetry::KeyValue::from(r#myapp_task_id)].into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)).collect();
+    let name = span_name::select(&attributes, "myapp.task.dispatch", &[
+        &[span_name::Part::Text("task "), span_name::Part::Attribute("myapp.task.id"), span_name::Part::Text(" failed with "), span_name::Part::Enum("error.type")],
+    ]);
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Internal)
-        .with_attributes(attributes.into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)))
+        .with_attributes(attributes)
         .start_with_context(tracer.inner(), context);
     MyappTaskDispatch { span }
 }

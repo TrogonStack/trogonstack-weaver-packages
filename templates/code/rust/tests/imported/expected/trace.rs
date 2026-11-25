@@ -1,6 +1,64 @@
 #![allow(deprecated)]
 use ::opentelemetry::trace::{TraceContextExt as _, Tracer as _};
-use ::std::fmt::Write as _;
+
+mod span_name {
+    use ::std::fmt::Write as _;
+
+    pub(super) enum Part {
+        Text(&'static str),
+        Attribute(&'static str),
+    }
+
+    pub(super) fn select(attributes: &[::opentelemetry::KeyValue], fallback: &'static str, templates: &[&[Part]]) -> ::std::borrow::Cow<'static, str> {
+        for template in templates {
+            let Some(capacity) = capacity(attributes, template) else { continue };
+            let mut name = String::with_capacity(capacity);
+            for part in *template {
+                match part {
+                    Part::Text(text) => name.push_str(text),
+                    Part::Attribute(key) => {
+                        if let Some(value) = value(attributes, key) {
+                            write!(&mut name, "{value}").expect("writing a span name to String cannot fail");
+                        }
+                    }
+                }
+            }
+            return ::std::borrow::Cow::Owned(name);
+        }
+        ::std::borrow::Cow::Borrowed(fallback)
+    }
+
+    fn value<'a>(attributes: &'a [::opentelemetry::KeyValue], key: &str) -> Option<&'a ::opentelemetry::Value> {
+        attributes.iter().rev().find(|attribute| attribute.key.as_str() == key).map(|attribute| &attribute.value)
+    }
+
+    fn capacity(attributes: &[::opentelemetry::KeyValue], template: &[Part]) -> Option<usize> {
+        template.iter().try_fold(0, |capacity, part| {
+            let length = match part {
+                Part::Text(text) => text.len(),
+                Part::Attribute(key) => length(value(attributes, key)?)?,
+            };
+            Some(capacity + length)
+        })
+    }
+
+    fn length(value: &::opentelemetry::Value) -> Option<usize> {
+        use ::opentelemetry::{Array, Value};
+        match value {
+            Value::String(text) if text.as_str().is_empty() => None,
+            Value::String(text) => Some(text.as_str().len()),
+            Value::I64(_) => Some(20),
+            Value::F64(_) => Some(328),
+            Value::Bool(_) => Some(5),
+            Value::Array(Array::String(values)) if values.is_empty() => None,
+            Value::Array(Array::String(values)) => Some(values.iter().map(|value| value.as_str().len() + 3).sum::<usize>() + 2),
+            Value::Array(Array::I64(values)) => (!values.is_empty()).then(|| values.len() * 21 + 2),
+            Value::Array(Array::F64(values)) => (!values.is_empty()).then(|| values.len() * 328 + 2),
+            Value::Array(Array::Bool(values)) => (!values.is_empty()).then(|| values.len() * 6 + 2),
+            _ => Some(0),
+        }
+    }
+}
 
 /// A request named from attempted methods.
 pub struct EdgeUpstreamMethods<S: ::opentelemetry::trace::Span = ::opentelemetry::trace::noop::NoopSpan> {
@@ -40,15 +98,12 @@ impl Default for EdgeUpstreamMethods {
     }
 }
 
+/// The span is named from the first of these templates whose attributes are all set and not empty: `{http.request.method_list}`. Otherwise it is named `edge.upstream.methods`.
 pub fn r#start_edge_upstream_methods<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#http_request_method_list: Vec<::opentelemetry::StringValue>) -> EdgeUpstreamMethods<T::Span> {
-    let mut name = String::with_capacity(r#http_request_method_list.iter().map(|value| value.as_str().len() + 3).sum::<usize>() + 2);
-    name.push('[');
-    for (index, value) in r#http_request_method_list.iter().enumerate() {
-        if index > 0 { name.push(','); }
-        write!(&mut name, "\"{}\"", value).expect("writing a span name to String cannot fail");
-    }
-    name.push(']');
-    let attributes: [::opentelemetry::KeyValue; 1] = [::opentelemetry::KeyValue::new("http.request.method_list", ::opentelemetry::Value::Array(::opentelemetry::Array::String(r#http_request_method_list)))];
+    let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [::opentelemetry::KeyValue::new("http.request.method_list", ::opentelemetry::Value::Array(::opentelemetry::Array::String(r#http_request_method_list)))].into_iter().collect();
+    let name = span_name::select(&attributes, "edge.upstream.methods", &[
+        &[span_name::Part::Attribute("http.request.method_list")],
+    ]);
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Client)
         .with_attributes(attributes)
@@ -123,15 +178,15 @@ impl Default for EdgeUpstreamRequest {
     }
 }
 
+/// The span is named from the first of these templates whose attributes are all set and not empty: `{server.address}:{server.port}`. Otherwise it is named `edge.upstream.request`.
 pub fn r#start_edge_upstream_request<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>, r#server_address: ::opentelemetry::StringValue, r#server_port: i64, options: impl IntoIterator<Item = EdgeUpstreamRequestStartAttr>) -> EdgeUpstreamRequest<T::Span> {
-    let mut name = String::with_capacity(r#server_address.as_str().len() + ":".len() + 20);
-    write!(&mut name, "{}", r#server_address).expect("writing a span name to String cannot fail");
-    name.push(':');
-    write!(&mut name, "{}", r#server_port).expect("writing a span name to String cannot fail");
-    let attributes: [::opentelemetry::KeyValue; 2] = [::opentelemetry::KeyValue::new("server.address", r#server_address), ::opentelemetry::KeyValue::new("server.port", r#server_port)];
+    let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [::opentelemetry::KeyValue::new("server.address", r#server_address), ::opentelemetry::KeyValue::new("server.port", r#server_port)].into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)).collect();
+    let name = span_name::select(&attributes, "edge.upstream.request", &[
+        &[span_name::Part::Attribute("server.address"), span_name::Part::Text(":"), span_name::Part::Attribute("server.port")],
+    ]);
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::Client)
-        .with_attributes(attributes.into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)))
+        .with_attributes(attributes)
         .start_with_context(tracer.inner(), context);
     EdgeUpstreamRequest { span }
 }

@@ -3,6 +3,7 @@ fn main() {
     trace::start_myapp_task_dispatch(
         &opentelemetry::Context::new(),
         &tracer::Tracer::default(),
+        trace::MyappTaskDispatchName::ByWorker,
         [],
     );
 }

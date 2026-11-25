@@ -1,0 +1,25 @@
+file_format: definition/2
+attributes:
+  - key: myapp.task.id
+    type: string
+    stability: stable
+    brief: Unique identifier of the task.
+    examples: ["task_0001"]
+  - key: myapp.queue.name
+    type: string
+    stability: stable
+    brief: Name of the queue the task came from.
+    examples: ["reports"]
+spans:
+  - type: myapp.task.run
+    kind: internal
+    name:
+      note: Named after the queue, which the span does not declare.
+      templates:
+        - "run {myapp.queue.name}"
+    requirement_level: recommended
+    stability: stable
+    brief: One run of a task.
+    attributes:
+      - ref: myapp.task.id
+        requirement_level: required

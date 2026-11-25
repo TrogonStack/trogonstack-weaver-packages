@@ -70,7 +70,6 @@ entities:
     brief: A host running the application.
     identity:
       - ref: myapp.host.name
-        requirement_level: required
     description:
       - ref: myapp.host.type
         requirement_level: recommended

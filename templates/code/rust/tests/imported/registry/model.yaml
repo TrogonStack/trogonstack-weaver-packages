@@ -42,6 +42,8 @@ spans:
     brief: A request to an upstream server.
     name:
       note: "`{server.address}:{server.port}`"
+      templates:
+        - "{server.address}:{server.port}"
     attributes:
       - ref: server.address
         requirement_level: required
@@ -60,6 +62,8 @@ spans:
     brief: A request named from attempted methods.
     name:
       note: "`{http.request.method_list}`"
+      templates:
+        - "{http.request.method_list}"
     attributes:
       - ref: http.request.method_list
         requirement_level: required

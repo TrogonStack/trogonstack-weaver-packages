@@ -20,6 +20,7 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     let parent = trace::start_myapp_task_dispatch(
         &opentelemetry::Context::new(),
         &tracer,
+        trace::MyappTaskDispatchName::ByWorker,
         attribute::WorkerHostName::from("worker-1"),
         attribute::WorkerHostPort::from(8080),
         [trace::MyappTaskDispatchStartAttr::TaskId(
@@ -32,7 +33,9 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     let mut child = trace::start_myapp_task_run(
         &context,
         &tracer,
-        trace::MyappTaskRunName::from("run task-1"),
+        trace::MyappTaskRunName::ByTaskId {
+            myapp_task_id: attribute::MyappTaskId::from("task-1"),
+        },
         attribute::MyappTaskState::Done,
         [],
     );
@@ -45,6 +48,7 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     let mut refined = trace::start_worker_task_dispatch(
         &opentelemetry::Context::new(),
         &tracer,
+        trace::WorkerTaskDispatchName::ByWorker,
         attribute::MyappTaskAttempt::from(3),
         attribute::WorkerHostName::from("worker-2"),
         attribute::WorkerHostPort::from(9090),
@@ -54,8 +58,8 @@ fn derived_names_refinements_parent_context_and_late_attributes() {
     let mut fallback = trace::start_myapp_task_run(
         &opentelemetry::Context::new(),
         &tracer,
-        trace::MyappTaskRunName::default(),
-        attribute::MyappTaskState::Done,
+        trace::MyappTaskRunName::ByState,
+        attribute::MyappTaskState::Other,
         [],
     );
     fallback.end();
@@ -178,7 +182,7 @@ fn typed_events_links_names_and_span_context_reach_the_exporter() {
     let linked = trace::start_myapp_task_run(
         &opentelemetry::Context::new(),
         &tracer,
-        trace::MyappTaskRunName::from("linked"),
+        trace::MyappTaskRunName::ByState,
         attribute::MyappTaskState::Done,
         [],
     );
@@ -186,6 +190,7 @@ fn typed_events_links_names_and_span_context_reach_the_exporter() {
     let mut span = trace::start_myapp_task_dispatch(
         &opentelemetry::Context::new(),
         &tracer,
+        trace::MyappTaskDispatchName::ByWorker,
         attribute::WorkerHostName::from("worker-1"),
         attribute::WorkerHostPort::from(8080),
         [],
@@ -268,4 +273,345 @@ fn typed_events_links_names_and_span_context_reach_the_exporter() {
     assert!(spans
         .iter()
         .any(|span| span.name == trace::MyappNameStatic::NAME));
+}
+
+fn recording_tracer() -> (
+    SdkTracerProvider,
+    InMemorySpanExporter,
+    tracer::Tracer<opentelemetry_sdk::trace::SdkTracer>,
+) {
+    let exporter = InMemorySpanExporter::default();
+    let provider = SdkTracerProvider::builder()
+        .with_simple_exporter(exporter.clone())
+        .build();
+    let tracer = tracer::Tracer::new(&provider, Default::default());
+    (provider, exporter, tracer)
+}
+
+fn take_finished(
+    provider: &SdkTracerProvider,
+    exporter: &InMemorySpanExporter,
+) -> opentelemetry_sdk::trace::SpanData {
+    provider.force_flush().unwrap();
+    let mut spans = exporter.get_finished_spans().unwrap();
+    exporter.reset();
+    assert_eq!(spans.len(), 1);
+    spans.remove(0)
+}
+
+fn values_of(span: &opentelemetry_sdk::trace::SpanData, key: &str) -> Vec<opentelemetry::Value> {
+    span.attributes
+        .iter()
+        .filter(|attribute| attribute.key.as_str() == key)
+        .map(|attribute| attribute.value.clone())
+        .collect()
+}
+
+#[test]
+fn each_name_variant_names_the_span_from_its_own_template_first() {
+    let (provider, exporter, tracer) = recording_tracer();
+    let context = opentelemetry::Context::new();
+    let by_state_cases = [
+        (
+            "state set",
+            attribute::MyappTaskState::Done,
+            vec![trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("t-9"))],
+            "run done",
+        ),
+        (
+            "other enum member falls back to the task ID option",
+            attribute::MyappTaskState::Other,
+            vec![trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from(
+                "task_0001",
+            ))],
+            "run task_0001",
+        ),
+        (
+            "last task ID option wins",
+            attribute::MyappTaskState::Other,
+            vec![
+                trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("t-9")),
+                trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("t-10")),
+            ],
+            "run t-10",
+        ),
+        (
+            "other enum member and empty task ID",
+            attribute::MyappTaskState::Other,
+            vec![trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from(""))],
+            "myapp.task.run",
+        ),
+        (
+            "other enum member and no task ID",
+            attribute::MyappTaskState::Other,
+            vec![],
+            "myapp.task.run",
+        ),
+    ];
+    for (case, state, options, expected) in by_state_cases {
+        trace::start_myapp_task_run(&context, &tracer, trace::MyappTaskRunName::ByState, state, options)
+            .end();
+        assert_eq!(take_finished(&provider, &exporter).name, expected, "{case}");
+    }
+    let by_task_id_cases = [
+        ("task ID set", "t-9", attribute::MyappTaskState::Done, "run t-9"),
+        (
+            "empty task ID falls back to the state",
+            "",
+            attribute::MyappTaskState::Queued,
+            "run queued",
+        ),
+        (
+            "empty task ID and other enum member",
+            "",
+            attribute::MyappTaskState::Other,
+            "myapp.task.run",
+        ),
+    ];
+    for (case, task_id, state, expected) in by_task_id_cases {
+        trace::start_myapp_task_run(
+            &context,
+            &tracer,
+            trace::MyappTaskRunName::ByTaskId {
+                myapp_task_id: attribute::MyappTaskId::from(task_id),
+            },
+            state,
+            [trace::MyappTaskRunStartAttr::QueueName(attribute::MyappQueueName::from(
+                "reports",
+            ))],
+        )
+        .end();
+        let span = take_finished(&provider, &exporter);
+        assert_eq!(span.name, expected, "{case}");
+        assert_eq!(
+            values_of(&span, "myapp.task.id"),
+            [opentelemetry::Value::from(task_id)],
+            "{case}"
+        );
+    }
+    for (host, expected) in [("worker-1", "dispatch worker-1:8080"), ("", "dispatch")] {
+        trace::start_myapp_task_dispatch(
+            &context,
+            &tracer,
+            trace::MyappTaskDispatchName::ByWorker,
+            attribute::WorkerHostName::from(host),
+            attribute::WorkerHostPort::from(8080),
+            [],
+        )
+        .end();
+        assert_eq!(take_finished(&provider, &exporter).name, expected, "{host}");
+    }
+    trace::start_myapp_task_dispatch(
+        &context,
+        &tracer,
+        trace::MyappTaskDispatchName::Fallback,
+        attribute::WorkerHostName::from("worker-1"),
+        attribute::WorkerHostPort::from(8080),
+        [],
+    )
+    .end();
+    assert_eq!(take_finished(&provider, &exporter).name, "dispatch");
+    trace::start_worker_task_dispatch(
+        &context,
+        &tracer,
+        trace::WorkerTaskDispatchName::Fallback,
+        attribute::MyappTaskAttempt::from(1),
+        attribute::WorkerHostName::from("worker-1"),
+        attribute::WorkerHostPort::from(8080),
+        [],
+    )
+    .end();
+    assert_eq!(take_finished(&provider, &exporter).name, "dispatch");
+}
+
+#[test]
+fn a_variant_value_replaces_an_option_for_the_same_attribute() {
+    let (provider, exporter, tracer) = recording_tracer();
+    trace::start_myapp_task_run(
+        &opentelemetry::Context::new(),
+        &tracer,
+        trace::MyappTaskRunName::ByTaskId {
+            myapp_task_id: attribute::MyappTaskId::from("from-variant"),
+        },
+        attribute::MyappTaskState::Done,
+        [
+            trace::MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("from-option")),
+            trace::MyappTaskRunStartAttr::QueueName(attribute::MyappQueueName::from("reports")),
+        ],
+    )
+    .end();
+    let span = take_finished(&provider, &exporter);
+    assert_eq!(span.name, "run from-variant");
+    assert_eq!(
+        values_of(&span, "myapp.task.id"),
+        [opentelemetry::Value::from("from-variant")]
+    );
+    assert_eq!(
+        values_of(&span, "myapp.queue.name"),
+        [opentelemetry::Value::from("reports")]
+    );
+
+    trace::start_myapp_task_retry(
+        &opentelemetry::Context::new(),
+        &tracer,
+        trace::MyappTaskRetryName::ByHostNameAndHostPort {
+            worker_host_name: attribute::WorkerHostName::from("worker-1"),
+            worker_host_port: attribute::WorkerHostPort::from(8080),
+        },
+        attribute::MyappTaskState::Queued,
+        [
+            trace::MyappTaskRetryStartAttr::HostPort(attribute::WorkerHostPort::from(9090)),
+            trace::MyappTaskRetryStartAttr::HostName(attribute::WorkerHostName::from("worker-2")),
+            trace::MyappTaskRetryStartAttr::TaskAttempt(attribute::MyappTaskAttempt::from(2)),
+        ],
+    )
+    .end();
+    let span = take_finished(&provider, &exporter);
+    assert_eq!(span.name, "retry worker-1:8080");
+    assert_eq!(
+        values_of(&span, "worker.host.name"),
+        [opentelemetry::Value::from("worker-1")]
+    );
+    assert_eq!(
+        values_of(&span, "worker.host.port"),
+        [opentelemetry::Value::I64(8080)]
+    );
+    assert_eq!(
+        values_of(&span, "myapp.task.attempt"),
+        [opentelemetry::Value::I64(2)]
+    );
+}
+
+#[test]
+fn derived_name_ids_cover_named_field_unit_and_fallback_variants() {
+    let (provider, exporter, tracer) = recording_tracer();
+    let context = opentelemetry::Context::new();
+    let cases = [
+        (
+            "named fields",
+            trace::MyappTaskRetryName::ByHostNameAndHostPort {
+                worker_host_name: attribute::WorkerHostName::from("worker-1"),
+                worker_host_port: attribute::WorkerHostPort::from(8080),
+            },
+            attribute::MyappTaskState::Queued,
+            "retry worker-1:8080",
+        ),
+        (
+            "empty host name falls back to the state",
+            trace::MyappTaskRetryName::ByHostNameAndHostPort {
+                worker_host_name: attribute::WorkerHostName::from(""),
+                worker_host_port: attribute::WorkerHostPort::from(8080),
+            },
+            attribute::MyappTaskState::Queued,
+            "retry queued",
+        ),
+        (
+            "empty host name and other enum member fall back to the text",
+            trace::MyappTaskRetryName::ByHostNameAndHostPort {
+                worker_host_name: attribute::WorkerHostName::from(""),
+                worker_host_port: attribute::WorkerHostPort::from(8080),
+            },
+            attribute::MyappTaskState::Other,
+            "retry",
+        ),
+        (
+            "unit variant",
+            trace::MyappTaskRetryName::ByTaskState,
+            attribute::MyappTaskState::Done,
+            "retry done",
+        ),
+        (
+            "unit variant with other enum member and no host",
+            trace::MyappTaskRetryName::ByTaskState,
+            attribute::MyappTaskState::Other,
+            "retry",
+        ),
+        (
+            "fallback variant",
+            trace::MyappTaskRetryName::Fallback,
+            attribute::MyappTaskState::Done,
+            "retry",
+        ),
+    ];
+    for (case, name, state, expected) in cases {
+        trace::start_myapp_task_retry(&context, &tracer, name, state, []).end();
+        assert_eq!(take_finished(&provider, &exporter).name, expected, "{case}");
+    }
+    trace::start_myapp_task_retry(
+        &context,
+        &tracer,
+        trace::MyappTaskRetryName::ByTaskState,
+        attribute::MyappTaskState::Other,
+        [
+            trace::MyappTaskRetryStartAttr::HostName(attribute::WorkerHostName::from("worker-3")),
+            trace::MyappTaskRetryStartAttr::HostPort(attribute::WorkerHostPort::from(7070)),
+        ],
+    )
+    .end();
+    assert_eq!(
+        take_finished(&provider, &exporter).name,
+        "retry worker-3:7070"
+    );
+}
+
+fn start_retry_for(
+    tracer: &tracer::Tracer<opentelemetry_sdk::trace::SdkTracer>,
+    host: Option<(&'static str, i64)>,
+    use_state: bool,
+) {
+    let name = if let Some((host_name, host_port)) = host {
+        trace::MyappTaskRetryName::ByHostNameAndHostPort {
+            worker_host_name: attribute::WorkerHostName::from(host_name),
+            worker_host_port: attribute::WorkerHostPort::from(host_port),
+        }
+    } else if use_state {
+        trace::MyappTaskRetryName::ByTaskState
+    } else {
+        trace::MyappTaskRetryName::Fallback
+    };
+    trace::start_myapp_task_retry(
+        &opentelemetry::Context::new(),
+        tracer,
+        name,
+        attribute::MyappTaskState::Queued,
+        [],
+    )
+    .end();
+}
+
+fn start_run_for(
+    tracer: &tracer::Tracer<opentelemetry_sdk::trace::SdkTracer>,
+    task_id: Option<&'static str>,
+) {
+    let name = match task_id {
+        Some(task_id) => trace::MyappTaskRunName::ByTaskId {
+            myapp_task_id: attribute::MyappTaskId::from(task_id),
+        },
+        None => trace::MyappTaskRunName::ByState,
+    };
+    trace::start_myapp_task_run(
+        &opentelemetry::Context::new(),
+        tracer,
+        name,
+        attribute::MyappTaskState::Done,
+        [],
+    )
+    .end();
+}
+
+#[test]
+fn a_call_site_chooses_the_name_from_optional_values_and_starts_once() {
+    let (provider, exporter, tracer) = recording_tracer();
+    for (host, use_state, expected) in [
+        (Some(("worker-1", 8080)), true, "retry worker-1:8080"),
+        (None, true, "retry queued"),
+        (None, false, "retry"),
+    ] {
+        start_retry_for(&tracer, host, use_state);
+        assert_eq!(take_finished(&provider, &exporter).name, expected);
+    }
+    for (task_id, expected) in [(Some("t-1"), "run t-1"), (None, "run done")] {
+        start_run_for(&tracer, task_id);
+        assert_eq!(take_finished(&provider, &exporter).name, expected);
+    }
 }

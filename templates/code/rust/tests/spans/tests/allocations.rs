@@ -52,8 +52,33 @@ fn derived_name_only_allocates_output_and_attribute_vector() {
     let host = attribute::WorkerHostName::from("worker-1");
     let port = attribute::WorkerHostPort::from(8080);
     let (_, count) =
-        allocations(|| trace::start_myapp_task_dispatch(&context, &tracer, host, port, []));
+        allocations(|| trace::start_myapp_task_dispatch(
+            &context,
+            &tracer,
+            trace::MyappTaskDispatchName::ByWorker,
+            host,
+            port,
+            [],
+        ));
     assert_eq!(count, 2);
+}
+
+#[test]
+fn literal_fallback_name_only_allocates_the_attribute_vector() {
+    let tracer = tracer::Tracer::default();
+    let context = opentelemetry::Context::new();
+    let host = attribute::WorkerHostName::from("");
+    let port = attribute::WorkerHostPort::from(8080);
+    let (_, count) =
+        allocations(|| trace::start_myapp_task_dispatch(
+            &context,
+            &tracer,
+            trace::MyappTaskDispatchName::ByWorker,
+            host,
+            port,
+            [],
+        ));
+    assert_eq!(count, 1);
 }
 
 #[test]
@@ -73,7 +98,14 @@ fn long_owned_string_names_do_not_clone_or_reallocate() {
     let host = attribute::WorkerHostName::from("worker".repeat(1000));
     let port = attribute::WorkerHostPort::from(8080);
     let (_, count) =
-        allocations(|| trace::start_myapp_task_dispatch(&context, &tracer, host, port, []));
+        allocations(|| trace::start_myapp_task_dispatch(
+            &context,
+            &tracer,
+            trace::MyappTaskDispatchName::ByWorker,
+            host,
+            port,
+            [],
+        ));
     assert_eq!(count, 2);
 }
 #[test]

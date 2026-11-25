@@ -17,7 +17,6 @@ entities:
     brief: A host.
     identity:
       - ref: myapp.host.id
-        requirement_level: required
     description:
       - ref: myapp.host.type
         requirement_level: recommended
@@ -27,4 +26,3 @@ entities:
     brief: An entity whose type shares the name of another entity's option type.
     identity:
       - ref: myapp.host.id
-        requirement_level: required

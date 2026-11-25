@@ -1,0 +1,1 @@
+span myapp.task.run has name template `run {myapp.queue.name}` with placeholders for attributes the span does not declare: myapp.queue.name
