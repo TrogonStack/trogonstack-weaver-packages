@@ -42,8 +42,7 @@ per signal, holding every namespace. Each generated type and function name
 starts with its namespace, the first dotted segment of the registry name;
 `vendor_prefixes` removes a leading vendor segment before choosing that
 namespace. For example, `myapp.task.id` becomes `attribute::MyappTaskId`,
-and the `myapp.task.run` span starter for the `by_state` name template becomes
-`trace::start_myapp_task_run_by_state`.
+and the `myapp.task.run` span starter becomes `trace::start_myapp_task_run`.
 
 | Module      | API                                                                                            |
 | ----------- | ---------------------------------------------------------------------------------------------- |
@@ -168,8 +167,8 @@ templates, and the name is set once, when the span starts.
 Each span has one starter, `start_<name>`. A span with one template takes no
 name argument. A span with more than one template takes a
 `name: <Name>Name` argument before its required attributes. That enum has one
-variant for each template, and the variant chooses the template that names the
-span first. A variant holds, as named fields, the placeholder attributes of its
+variant for each template that the package keeps, and the variant chooses the
+template that names the span first. A variant holds, as named fields, the placeholder attributes of its
 template that the span does not require. A variant for a template without such
 attributes is a unit variant. With the templates above, the span
 `myapp.task.run` gets this enum:
@@ -212,7 +211,8 @@ of that template is empty, `_OTHER`, or an empty array, the name falls back
 through the other templates of the span, in their declared order, and then to
 the fallback. A start attribute can fill a later template. For example,
 `ByState` with the state `_OTHER` and the start attribute
-`MyappTaskRunStartAttr::TaskId("task_0001")` names the span `run task_0001`.
+`MyappTaskRunStartAttr::TaskId(attribute::MyappTaskId::from("task_0001"))`
+names the span `run task_0001`.
 
 Each template needs an ID, which becomes the variant name in PascalCase. Weaver
 gives a template no ID of its own
@@ -249,7 +249,8 @@ annotations:
 
 The map names a template by its pattern, not by its position, so a change to
 the order of the templates keeps every variant name. Use the map also to keep
-a variant name when you rename an attribute.
+a variant name when you rename an attribute. Change the pattern in the map to
+the new template, and keep its ID.
 
 A span without `name.templates` takes a typed `Name`, since `name.note` is
 prose. Construct it with `From` for a static string, owned `String`, or
@@ -376,10 +377,13 @@ const DURATION: &str = metric::MyappTaskDuration::NAME;
 The manifest must provide a schema URL ending in a schema version. Naming
 collisions, unusable enums, invalid aggregation, conflicting refinements, and
 filtering away required signal attributes fail generation. A span fails when it
-has one name template and sets `annotations.code_generation.name_templates`,
-or has more than one and does not set it. It also fails when a template has no
-ID, an ID names a pattern that matches no template, two IDs name the same
-pattern, or an ID does not match `^[a-z][a-z0-9]*(_[a-z0-9]+)*$`. Attribute names use
+has one name template and sets `annotations.code_generation.name_templates`.
+It fails when it has more than one, does not set the annotation, and two of
+its templates derive the same ID. With the annotation, it also fails when a
+template has no ID, an ID names a pattern that matches no template, two IDs
+name the same pattern, an ID does not match `^[a-z][a-z0-9]*(_[a-z0-9]+)*$`,
+or an ID is `self`, because the variant `Self` is a reserved Rust identifier.
+Attribute names use
 ASCII letter-led dotted segments containing letters, digits, and underscores.
 Namespace segments must be lowercase and may contain digits and underscores.
 

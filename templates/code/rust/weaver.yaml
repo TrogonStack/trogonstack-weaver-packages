@@ -326,6 +326,8 @@ templates:
             | [$patterns[] | select(. as $pattern | $entries | any(.value == $pattern) | not)] as $unnamed
             | if ($invalid | length) > 0
               then error("span \($span) has name template IDs that are not lower snake case: \($invalid | join(", "))")
+              elif ($entries | any(.key == "self"))
+              then error("span \($span) has the name template ID self, which renders to the reserved Rust identifier Self")
               elif ($unknown | length) > 0
               then error("span \($span) has name template IDs whose pattern matches none of its templates: \($unknown | join(", "))")
               elif ($shared | length) > 0
