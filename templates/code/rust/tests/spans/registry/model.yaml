@@ -119,6 +119,26 @@ spans:
         requirement_level: recommended
       - ref: myapp.queue.name
         requirement_level: recommended
+  - type: myapp.task.retry
+    kind: internal
+    requirement_level: recommended
+    stability: stable
+    brief: A retry of a task.
+    name:
+      note: Named after the worker that retries the task, else after the task state.
+      templates:
+        - "retry {worker.host.name}:{worker.host.port}"
+        - "retry {myapp.task.state}"
+        - retry
+    attributes:
+      - ref: myapp.task.state
+        requirement_level: required
+      - ref: worker.host.name
+        requirement_level: recommended
+      - ref: worker.host.port
+        requirement_level: recommended
+      - ref: myapp.task.attempt
+        requirement_level: recommended
   - type: myapp.queue.drain
     kind: consumer
     requirement_level: opt_in

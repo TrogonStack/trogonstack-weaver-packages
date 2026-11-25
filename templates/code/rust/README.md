@@ -165,12 +165,75 @@ a template it cannot parse. A template whose attribute `stable_only` or
 `exclude_deprecated` leaves out is dropped. The starter doc comment quotes the
 templates, and the name is set once, when the span starts.
 
-A span with one template keeps the single `start_<name>` starter. A span with
-more than one template gets one starter for each template, so each template
-needs an ID. Weaver does not give a template a stable ID
+Each span has one starter, `start_<name>`. A span with one template takes no
+name argument. A span with more than one template takes a
+`name: <Name>Name` argument before its required attributes. That enum has one
+variant for each template, and the variant chooses the template that names the
+span first. A variant holds, as named fields, the placeholder attributes of its
+template that the span does not require. A variant for a template without such
+attributes is a unit variant. With the templates above, the span
+`myapp.task.run` gets this enum:
+
+```rust
+pub enum MyappTaskRunName {
+    /// `run {myapp.task.id}`
+    ByTaskId { myapp_task_id: attribute::MyappTaskId },
+    /// `run {myapp.task.state}`
+    ByState,
+}
+```
+
+The state is a required attribute, so `ByState` holds no field and the starter
+takes the state as a parameter. A named-field variant without its field does
+not compile, and the starter of one span does not accept the name enum of
+another span. A call site that has an optional value chooses the variant with
+`match` or `if let` and makes one call:
+
+```rust
+let name = match task_id {
+    Some(task_id) => trace::MyappTaskRunName::ByTaskId { myapp_task_id: task_id },
+    None => trace::MyappTaskRunName::ByState,
+};
+let span = trace::start_myapp_task_run(&context, &tracer, name, state, []);
+```
+
+The enum exists whenever the span declares more than one template, also when
+`stable_only` or `exclude_deprecated` leaves only one of them.
+
+A span with optional attributes has one start attribute enum,
+`<Name>StartAttr`, such as `trace::MyappTaskRunStartAttr`. The starter takes
+`options` only when the span has optional attributes. A start attribute can
+give the same attribute as a field of the chosen variant. The value in the
+variant wins, and the starter drops the matching start attribute, so the span
+records the key once.
+
+The starter names the span from the template of the variant first. If a value
+of that template is empty, `_OTHER`, or an empty array, the name falls back
+through the other templates of the span, in their declared order, and then to
+the fallback. A start attribute can fill a later template. For example,
+`ByState` with the state `_OTHER` and the start attribute
+`MyappTaskRunStartAttr::TaskId("task_0001")` names the span `run task_0001`.
+
+Each template needs an ID, which becomes the variant name in PascalCase. Weaver
+gives a template no ID of its own
 ([open-telemetry/weaver#1916](https://github.com/open-telemetry/weaver/issues/1916)),
-so the span sets `annotations.code_generation.name_templates`. It is a map from
-an ID to the exact pattern of one template:
+so the package derives one. A template with placeholders gets `by_` and the
+short names of its distinct placeholder attributes, in order of first use, in
+lower snake case and joined with `_and_`. A template without placeholders gets
+`fallback`. The package derives the IDs before `stable_only` or
+`exclude_deprecated` drops a template, so the variant names do not change with
+those parameters. For example:
+
+| Template                                         | Derived ID                   | Variant                 |
+| ------------------------------------------------ | ---------------------------- | ----------------------- |
+| `run {myapp.task.id}`                            | `by_task_id`                 | `ByTaskId`              |
+| `dispatch {worker.host.name}:{worker.host.port}` | `by_host_name_and_host_port` | `ByHostNameAndHostPort` |
+| `retry`                                          | `fallback`                   | `Fallback`              |
+
+Two templates that use the same attributes derive the same ID, and generation
+fails. Set `annotations.code_generation.name_templates` on that span. It is a
+map from an ID to the exact pattern of one template, and it replaces the
+derived IDs for every template of the span:
 
 ```yaml
 name:
@@ -185,26 +248,8 @@ annotations:
 ```
 
 The map names a template by its pattern, not by its position, so a change to
-the order of the templates keeps every starter name. The starter for an ID is
-`start_<name>_<id>`, such as `trace::start_myapp_task_run_by_task_id`. Its
-parameters are the required attributes of the span and every attribute its
-template uses. The other attributes stay start attributes. Each starter takes
-its own start attribute enum, `<Name><Id>StartAttr`, such as
-`trace::MyappTaskRunByTaskIdStartAttr`. That enum has a variant only for an
-attribute that the starter does not take as a parameter, so a start attribute
-for a parameter does not compile. A starter without other attributes takes no
-`options`. A template without placeholders
-also gets a starter, and that starter takes no extra parameters. A template
-that `stable_only` or `exclude_deprecated` drops gets no starter. Every starter
-of a span returns the same span type.
-
-Each starter names the span from its own template first. If a value of that
-template is empty, `_OTHER`, or an empty array, the name falls back through the
-other templates of the span, in their order, and then to the span type. With
-the templates above, `start_myapp_task_run_by_state` with the state `_OTHER` and
-the task ID `t-9` names the span `run t-9`. If Weaver gives a template its own
-ID, the ID moves from the annotation onto the template, and the starter names
-stay the same.
+the order of the templates keeps every variant name. Use the map also to keep
+a variant name when you rename an attribute.
 
 A span without `name.templates` takes a typed `Name`, since `name.note` is
 prose. Construct it with `From` for a static string, owned `String`, or
@@ -212,7 +257,7 @@ prose. Construct it with `From` for a static string, owned `String`, or
 names stay borrowed and owned names move into the span.
 
 All starter attributes are present before sampling. Sampling-relevant
-attributes appear only in the start attribute enums. The separate late attribute
+attributes appear only in the start attribute enum. The separate late attribute
 enum is accepted by `set_attributes`. The wrapper exposes `end`,
 `end_with_timestamp`, `record_error`, `set_status`, `span_context`, and
 `is_recording`. Events and links take the late attribute enum, so

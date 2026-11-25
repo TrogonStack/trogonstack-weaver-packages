@@ -31,9 +31,10 @@ fn cloned_sdk_tracer_preserves_scope_and_exports_spans() {
     require_clone_and_debug(&original);
     let cloned = original.clone();
     drop(original);
-    let mut span = trace::start_myapp_task_run_by_state(
+    let mut span = trace::start_myapp_task_run(
         &Context::new(),
         &cloned,
+        trace::MyappTaskRunName::ByState,
         attribute::MyappTaskState::Done,
         [],
     );
@@ -71,9 +72,10 @@ impl opentelemetry::trace::TracerProvider for BareProvider {
 #[test]
 fn custom_tracer_without_clone_or_debug_still_constructs_and_starts_spans() {
     let tracer = tracer::Tracer::new(&BareProvider, InstrumentationOptions::default());
-    let mut span = trace::start_myapp_task_run_by_state(
+    let mut span = trace::start_myapp_task_run(
         &Context::new(),
         &tracer,
+        trace::MyappTaskRunName::ByState,
         attribute::MyappTaskState::Done,
         [],
     );

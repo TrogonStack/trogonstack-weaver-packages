@@ -3,6 +3,17 @@
 use ::opentelemetry::trace::{TraceContextExt as _, Tracer as _};
 
 {% import "signal_helpers.j2" as h %}
+{% macro name_select(templates, fallback) -%}
+{% if templates %}
+span_name::select(&attributes, {{ h.literal(fallback) }}, &[
+{% for template in templates %}
+        &[{% for part in template.parts %}{% if part.key %}span_name::Part::{{ "Enum" if part.enum else "Attribute" }}({{ h.literal(part.key) }}){% else %}span_name::Part::Text({{ h.literal(part.text) }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}],
+{% endfor %}
+    ])
+{%- else -%}
+::std::borrow::Cow::Borrowed({{ h.literal(fallback) }})
+{%- endif %}
+{%- endmacro %}
 {# A double needs room for full decimal notation, including subnormals. #}
 {% if ctx.name_part_kinds.attribute or ctx.name_part_kinds.enum %}
 mod span_name {
@@ -87,8 +98,7 @@ mod span_name {
 {% for def in ctx.spans %}
 {% set name = h.exported(def.qualified) %}
 {% set span = name %}
-{% set multi = def.starters[0].id %}
-{% if def.optional and not multi %}
+{% if def.optional %}
 #[derive(Clone, Debug)]
 pub enum {{ name }}StartAttr {
 {% for opt in def.optional %}
@@ -108,30 +118,6 @@ impl From<{{ name }}StartAttr> for ::opentelemetry::KeyValue {
         }
     }
 }
-{% elif def.optional %}
-{% for starter in def.starters if starter.optional %}
-{% set starter_name = h.exported(def.qualified ~ '.' ~ starter.id) %}
-/// An attribute `{{ ('start.' ~ def.qualified ~ '.' ~ starter.id) | snake_case }}` accepts in addition to its parameters.
-#[derive(Clone, Debug)]
-pub enum {{ starter_name }}StartAttr {
-{% for opt in starter.optional %}
-{% if opt.requirement_doc %}
-    {{ opt.requirement_doc | comment | indent(4) }}
-{% endif %}
-    {{ h.exported(opt.attr_short_name) }}({{ h.attr_type(opt) }}),
-{% endfor %}
-}
-
-impl From<{{ starter_name }}StartAttr> for ::opentelemetry::KeyValue {
-    fn from(value: {{ starter_name }}StartAttr) -> Self {
-        match value {
-{% for opt in starter.optional %}
-            {{ starter_name }}StartAttr::{{ h.exported(opt.attr_short_name) }}(value) => {{ h.attr_kv(opt, 'value') }},
-{% endfor %}
-        }
-    }
-}
-{% endfor %}
 {% endif %}
 {% if def.has_late_attrs %}
 #[derive(Clone, Debug)]
@@ -141,17 +127,6 @@ pub enum {{ name }}Attr {
 {% endfor %}
 }
 
-{% if multi %}
-impl From<{{ name }}Attr> for ::opentelemetry::KeyValue {
-    fn from(value: {{ name }}Attr) -> Self {
-        match value {
-{% for opt in def.optional if not opt.sampling_relevant %}
-            {{ name }}Attr::{{ h.exported(opt.attr_short_name) }}(value) => {{ h.attr_kv(opt, 'value') }},
-{% endfor %}
-        }
-    }
-}
-{% else %}
 impl From<{{ name }}Attr> for {{ name }}StartAttr {
     fn from(value: {{ name }}Attr) -> Self {
         match value {
@@ -162,8 +137,20 @@ impl From<{{ name }}Attr> for {{ name }}StartAttr {
     }
 }
 {% endif %}
+{% if def.name_variants %}
+/// The name template a `{{ def.id }}` span starts with.
+#[derive(Clone, Debug)]
+pub enum {{ name }}Name {
+{% for variant in def.name_variants %}
+    /// `{{ variant.pattern_doc }}`
+{% if variant.fields %}
+    {{ h.exported(variant.id) }} { {% for field in variant.fields %}{{ h.ident(field.attr_param) }}: {{ h.attr_type(field) }}{% if not loop.last %}, {% endif %}{% endfor %} },
+{% else %}
+    {{ h.exported(variant.id) }},
 {% endif %}
-{% if not def.name_derived %}
+{% endfor %}
+}
+{% elif not def.name_derived %}
 #[derive(Clone, Debug, Default)]
 pub struct {{ name }}Name(::std::borrow::Cow<'static, str>);
 
@@ -203,8 +190,8 @@ impl<S: ::opentelemetry::trace::Span> {{ span }}<S> {
     }
 {% endif %}
 {% if def.has_late_attrs %}
-{% set late_value = "::opentelemetry::KeyValue::from(attribute)" if multi else "::opentelemetry::KeyValue::from(" ~ name ~ "StartAttr::from(attribute))" %}
-{% set late_map = "::opentelemetry::KeyValue::from" if multi else "|attribute| " ~ late_value %}
+{% set late_value = "::opentelemetry::KeyValue::from(" ~ name ~ "StartAttr::from(attribute))" %}
+{% set late_map = "|attribute| " ~ late_value %}
     pub fn add_event(&mut self, name: impl Into<::std::borrow::Cow<'static, str>>, attributes: impl IntoIterator<Item = {{ name }}Attr>) {
         ::opentelemetry::trace::Span::add_event(&mut self.span, name, attributes.into_iter().map({{ late_map }}).collect());
     }
@@ -239,37 +226,65 @@ impl Default for {{ span }} {
         Self { span: super::tracer::Tracer::default().inner().start(Self::NAME) }
     }
 }
-{% for starter in def.starters %}
 {{ h.deprecated(def) }}
-{% if starter.name_doc %}
-{{ starter.name_doc | comment }}
+{% if def.name_doc %}
+{{ def.name_doc | comment }}
 {% endif %}
-pub fn {{ h.signal_fn('start', def.qualified ~ ('.' ~ starter.id if starter.id else '')) }}<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>{% if not def.name_derived %}, name: {{ name }}Name{% endif %}{% for req in starter.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if starter.optional %}, options: impl IntoIterator<Item = {{ h.exported(def.qualified ~ '.' ~ starter.id) if multi else name }}StartAttr>{% endif %}) -> {{ span }}<T::Span> {
-{% if starter.name_templates %}
-    let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [{% for req in starter.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}].into_iter(){% if starter.optional %}.chain(options.into_iter().map(::opentelemetry::KeyValue::from)){% endif %}.collect();
-    let name = span_name::select(&attributes, {{ h.literal(starter.name_fallback) }}, &[
-{% for template in starter.name_templates %}
-        &[{% for part in template.parts %}{% if part.key %}span_name::Part::{{ "Enum" if part.enum else "Attribute" }}({{ h.literal(part.key) }}){% else %}span_name::Part::Text({{ h.literal(part.text) }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}],
+pub fn {{ h.signal_fn('start', def.qualified) }}<T: ::opentelemetry::trace::Tracer>(context: &::opentelemetry::Context, tracer: &super::tracer::Tracer<T>{% if not def.name_derived or def.name_variants %}, name: {{ name }}Name{% endif %}{% for req in def.required %}, {{ h.ident(req.attr_param) }}: {{ h.attr_type(req) }}{% endfor %}{% if def.optional %}, options: impl IntoIterator<Item = {{ name }}StartAttr>{% endif %}) -> {{ span }}<T::Span> {
+{% if def.name_variants %}
+{% set fixed = (def.required | length) + def.name_field_capacity %}
+{% if def.optional %}
+    let options = options.into_iter();
+{% endif %}
+{% if def.required or def.optional or def.name_field_capacity > 0 %}
+    let mut attributes = ::std::vec::Vec::with_capacity({{ fixed }}{% if def.optional %} + options.size_hint().0{% endif %});
+{% if def.required %}
+    attributes.extend([{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}]);
+{% endif %}
+{% else %}
+    let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = ::std::vec::Vec::new();
+{% endif %}
+    let name = match name {
+{% for variant in def.name_variants %}
+        {{ name }}Name::{{ h.exported(variant.id) }}{% if variant.fields %} { {% for field in variant.fields %}{{ h.ident(field.attr_param) }}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %} => {
+{% for field in variant.fields %}
+            attributes.push({{ h.attr_kv(field, h.ident(field.attr_param)) }});
 {% endfor %}
-    ]);
+{% if def.optional %}
+{% if variant.fields %}
+            attributes.extend(options.filter(|option| !matches!(option, {% for field in variant.fields %}{{ name }}StartAttr::{{ h.exported(field.attr_short_name) }}(_){% if not loop.last %} | {% endif %}{% endfor %})).map(::opentelemetry::KeyValue::from));
+{% else %}
+            attributes.extend(options.map(::opentelemetry::KeyValue::from));
+{% endif %}
+{% endif %}
+            {{ name_select(variant.name_templates, variant.name_fallback) | indent(8) }}
+        }
+{% endfor %}
+    };
+    let span = tracer.inner().span_builder(name)
+        .with_kind(::opentelemetry::trace::SpanKind::{{ def.kind | pascal_case }})
+        .with_attributes(attributes)
+        .start_with_context(tracer.inner(), context);
+{% elif def.name_templates %}
+    let attributes: ::std::vec::Vec<::opentelemetry::KeyValue> = [{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}].into_iter(){% if def.optional %}.chain(options.into_iter().map(::opentelemetry::KeyValue::from)){% endif %}.collect();
+    let name = {{ name_select(def.name_templates, def.name_fallback) }};
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::{{ def.kind | pascal_case }})
         .with_attributes(attributes)
         .start_with_context(tracer.inner(), context);
 {% else %}
 {% if def.name_derived %}
-    let name = {{ h.literal(starter.name_fallback) }};
+    let name = {{ h.literal(def.name_fallback) }};
 {% else %}
     let name = if name.0.is_empty() { ::std::borrow::Cow::Borrowed({{ span }}::NAME) } else { name.0 };
 {% endif %}
-    let attributes: [::opentelemetry::KeyValue; {{ starter.required | length }}] = [{% for req in starter.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
+    let attributes: [::opentelemetry::KeyValue; {{ def.required | length }}] = [{% for req in def.required %}{{ h.attr_kv(req, h.ident(req.attr_param)) }}{% if not loop.last %}, {% endif %}{% endfor %}];
     let span = tracer.inner().span_builder(name)
         .with_kind(::opentelemetry::trace::SpanKind::{{ def.kind | pascal_case }})
-        .with_attributes(attributes{% if starter.optional %}.into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)){% endif %})
+        .with_attributes(attributes{% if def.optional %}.into_iter().chain(options.into_iter().map(::opentelemetry::KeyValue::from)){% endif %})
         .start_with_context(tracer.inner(), context);
 {% endif %}
     {{ span }} { span }
 }
-{% endfor %}
 {% endfor %}
 {% endfilter -%}{{ "\n" -}}

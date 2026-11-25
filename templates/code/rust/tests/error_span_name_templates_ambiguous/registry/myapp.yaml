@@ -14,10 +14,10 @@ spans:
   - type: myapp.task.run
     kind: internal
     name:
-      note: Two templates without IDs.
+      note: Two templates that derive the same ID.
       templates:
         - "run {myapp.task.id}"
-        - "run {myapp.queue.name}"
+        - "exec {myapp.task.id}"
     requirement_level: recommended
     stability: stable
     brief: One run of a task.
